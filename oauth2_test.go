@@ -77,8 +77,8 @@ func TestExchangingTransport(t *testing.T) {
 func TestFetchWithNoRedirect(t *testing.T) {
 	DefaultTransport = http.DefaultTransport
 
-	fetcher := newTestConf().(tokenFetcher)
-	_, err := fetcher.fetchToken(&Token{})
+	fetcher := newTestConf().(TokenFetcher)
+	_, err := fetcher.FetchToken(&Token{})
 	if err == nil {
 		t.Fatalf("Fetch should return an error if no refresh token is set")
 	}
