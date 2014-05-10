@@ -5,7 +5,7 @@
 // Example usage:
 //
 //      // Specify your configuration. (typically as a global variable)
-//      var config = oauth2.NewConfig(&oauth2.Options{
+//      config := oauth2.NewConfig(&oauth2.Options{
 //              ClientID:     YOUR_CLIENT_ID,
 //              ClientSecret: YOUR_CLIENT_SECRET,
 //              RedirectURL:  "http://you.example.org/handler",
@@ -102,43 +102,10 @@ type Options struct {
 	ApprovalPrompt string `json:"omit"`
 }
 
-// Config represents an OAuth 2.0 provider and client options to
-// provide authorized transports.
-type Config interface {
-	// NewTransport creates a transport which is configured to be
-	// authorized with the config provided.
-	NewTransport() (Transport, error)
-
-	// NewTransportWithCode creates a transport after going through
-	// the OAuth 2.0 exchange flow to retrieve a valid token from
-	// the exchange server.
-	NewTransportWithCode(exchangeCode string) (Transport, error)
-
-	// AuthCodeURL generates a URL to the consent page.
-	AuthCodeURL(state string) (string, error)
-
-	// Exchange ecxhanges the code with the provider to retrieve
-	// a new access token.
-	Exchange(exchangeCode string) (*Token, error)
-}
-
-// Config represents an OAuth 2.0 provider and client options to
-// provide authorized transports with a Bearer JWT token.
-type JWTConfig interface {
-	// NewTransport creates a transport which is configured to
-	// be authorized with OAuth 2.0 JWT Bearer flow.
-	NewTransport() (Transport, error)
-
-	// NewTransportWithUser creates a transport which is configured
-	// to be authorized with OAuth 2.0 JWT Bearer flow and
-	// impersonates the provided user.
-	NewTransportWithUser(user string) (Transport, error)
-}
-
 // NewConfig creates a generic OAuth 2.0 configuration that talks
 // to an OAuth 2.0 provider specified with authURL and tokenURL.
-func NewConfig(opts *Options, authURL, tokenURL string) (Config, error) {
-	conf := &config{
+func NewConfig(opts *Options, authURL, tokenURL string) (*Config, error) {
+	conf := &Config{
 		opts:     opts,
 		authURL:  authURL,
 		tokenURL: tokenURL,
@@ -149,8 +116,8 @@ func NewConfig(opts *Options, authURL, tokenURL string) (Config, error) {
 	return conf, nil
 }
 
-// config represents the configuration of an OAuth 2.0 consumer client.
-type config struct {
+// Config represents the configuration of an OAuth 2.0 consumer client.
+type Config struct {
 	opts *Options
 	// AuthURL is the URL the user will be directed to
 	// in order to grant access.
@@ -159,9 +126,14 @@ type config struct {
 	tokenURL string
 }
 
+// Options returns options.
+func (c *Config) Options() *Options {
+	return c.opts
+}
+
 // AuthCodeURL returns a URL to OAuth 2.0 provider's consent page
 // that asks for permissions for the required scopes explicitly.
-func (c *config) AuthCodeURL(state string) (authURL string, err error) {
+func (c *Config) AuthCodeURL(state string) (authURL string, err error) {
 	u, err := url.Parse(c.authURL)
 	if err != nil {
 		return
@@ -192,7 +164,7 @@ func (c *config) AuthCodeURL(state string) (authURL string, err error) {
 //     t, _ := c.NewTransport()
 //     t.SetToken(validToken)
 //
-func (c *config) NewTransport() (Transport, error) {
+func (c *Config) NewTransport() (Transport, error) {
 	return NewAuthorizedTransport(c, nil), nil
 }
 
@@ -200,7 +172,7 @@ func (c *config) NewTransport() (Transport, error) {
 // the provider to fetch a new access token (and refresh token). Once
 // it succesffully retrieves a new token, creates a new transport
 // authorized with it.
-func (c *config) NewTransportWithCode(exchangeCode string) (Transport, error) {
+func (c *Config) NewTransportWithCode(exchangeCode string) (Transport, error) {
 	token, err := c.Exchange(exchangeCode)
 	if err != nil {
 		return nil, err
@@ -210,7 +182,7 @@ func (c *config) NewTransportWithCode(exchangeCode string) (Transport, error) {
 
 // Exchange exchanges the exchange code with the OAuth 2.0 provider
 // to retrieve a new access token.
-func (c *config) Exchange(exchangeCode string) (*Token, error) {
+func (c *Config) Exchange(exchangeCode string) (*Token, error) {
 	token := &Token{}
 	err := c.updateToken(token, url.Values{
 		"grant_type":   {"authorization_code"},
@@ -227,7 +199,7 @@ func (c *config) Exchange(exchangeCode string) (*Token, error) {
 // FetchToken retrieves a new access token and updates the existing token
 // with the newly fetched credentials. If existing token doesn't
 // contain a refresh token, it returns an error.
-func (c *config) FetchToken(existing *Token) (*Token, error) {
+func (c *Config) FetchToken(existing *Token) (*Token, error) {
 	if existing == nil || existing.RefreshToken == "" {
 		return nil, errors.New("cannot fetch access token without refresh token.")
 	}
@@ -239,7 +211,7 @@ func (c *config) FetchToken(existing *Token) (*Token, error) {
 }
 
 // Checks if all required configuration fields have non-zero values.
-func (c *config) validate() error {
+func (c *Config) validate() error {
 	if c.opts.ClientID == "" {
 		return errors.New("A client ID should be provided.")
 	}
@@ -262,7 +234,7 @@ func (c *config) validate() error {
 	return nil
 }
 
-func (c *config) updateToken(tok *Token, v url.Values) error {
+func (c *Config) updateToken(tok *Token, v url.Values) error {
 	v.Set("client_id", c.opts.ClientID)
 	v.Set("client_secret", c.opts.ClientSecret)
 	r, err := (&http.Client{Transport: DefaultTransport}).PostForm(c.tokenURL, v)

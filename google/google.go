@@ -81,13 +81,13 @@ type ComputeEngineConfig struct{}
 
 // NewConfig creates a new OAuth2 config that uses Google
 // endpoints.
-func NewConfig(opts *oauth2.Options) (oauth2.Config, error) {
+func NewConfig(opts *oauth2.Options) (*oauth2.Config, error) {
 	return oauth2.NewConfig(opts, uriGoogleAuth, uriGoogleToken)
 }
 
 // NewServiceAccountConfig creates a new JWT config that can
 // fetch Bearer JWT tokens from Google endpoints.
-func NewServiceAccountConfig(opts *oauth2.JWTOptions) (oauth2.JWTConfig, error) {
+func NewServiceAccountConfig(opts *oauth2.JWTOptions) (*oauth2.JWTConfig, error) {
 	return oauth2.NewJWTConfig(opts, uriGoogleToken)
 }
 

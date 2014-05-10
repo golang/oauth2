@@ -38,36 +38,42 @@ type JWTOptions struct {
 
 // NewJWTConfig creates a new configuration with the specified options
 // and OAuth2 provider endpoint.
-func NewJWTConfig(opts *JWTOptions, aud string) (conf JWTConfig, err error) {
+func NewJWTConfig(opts *JWTOptions, aud string) (*JWTConfig, error) {
 	contents, err := ioutil.ReadFile(opts.PemFilename)
 	if err != nil {
-		return
+		return nil, err
 	}
-	conf = &jwtConfig{opts: opts, aud: aud, signature: contents}
-	return
+	return &JWTConfig{opts: opts, aud: aud, signature: contents}, nil
 }
 
-type jwtConfig struct {
+// JWTConfig represents an OAuth 2.0 provider and client options to
+// provide authorized transports with a Bearer JWT token.
+type JWTConfig struct {
 	opts      *JWTOptions
 	aud       string
 	signature []byte
 }
 
+// Options returns JWT options.
+func (c *JWTConfig) Options() *JWTOptions {
+	return c.opts
+}
+
 // NewTransport creates a transport that is authorize with the
 // parent JWT configuration.
-func (c *jwtConfig) NewTransport() (Transport, error) {
+func (c *JWTConfig) NewTransport() (Transport, error) {
 	return NewAuthorizedTransport(c, &Token{}), nil
 }
 
 // NewTransportWithUser creates a transport that is authorized by
 // the client and impersonates the specified user.
-func (c *jwtConfig) NewTransportWithUser(user string) (Transport, error) {
+func (c *JWTConfig) NewTransportWithUser(user string) (Transport, error) {
 	return NewAuthorizedTransport(c, &Token{Subject: user}), nil
 }
 
 // fetchToken retrieves a new access token and updates the existing token
 // with the newly fetched credentials.
-func (c *jwtConfig) FetchToken(existing *Token) (token *Token, err error) {
+func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
 
 	if existing == nil {
 		existing = &Token{}

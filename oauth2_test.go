@@ -15,7 +15,7 @@ func (t *mockTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 	return t.rt(req)
 }
 
-func newTestConf() Config {
+func newTestConf() *Config {
 	conf, _ := NewConfig(&Options{
 		ClientID:     "CLIENT_ID",
 		ClientSecret: "CLIENT_SECRET",
@@ -77,7 +77,7 @@ func TestExchangingTransport(t *testing.T) {
 func TestFetchWithNoRedirect(t *testing.T) {
 	DefaultTransport = http.DefaultTransport
 
-	fetcher := newTestConf().(TokenFetcher)
+	fetcher := newTestConf()
 	_, err := fetcher.FetchToken(&Token{})
 	if err == nil {
 		t.Fatalf("Fetch should return an error if no refresh token is set")
