@@ -72,11 +72,18 @@ type Transport interface {
 }
 
 type authorizedTransport struct {
-	fetcher tokenFetcher
+	fetcher TokenFetcher
 	token   *Token
 
 	// Mutex to protect token during auto refreshments.
 	mu sync.RWMutex
+}
+
+// NewAuthorizedTransport creates a tranport that uses the provided
+// token fetcher to retrieve new tokens if there is no access token
+// provided or it is expired.
+func NewAuthorizedTransport(fetcher TokenFetcher, token *Token) Transport {
+	return &authorizedTransport{fetcher: fetcher, token: token}
 }
 
 // RoundTrip authorizes the request with the existing token.
@@ -142,7 +149,7 @@ func (t *authorizedTransport) RefreshToken() error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	token, err := t.fetcher.fetchToken(t.token)
+	token, err := t.fetcher.FetchToken(t.token)
 	if err != nil {
 		return err
 	}

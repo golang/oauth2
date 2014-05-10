@@ -75,21 +75,35 @@ const (
 	uriGoogleToken = "https://accounts.google.com/o/oauth2/token"
 )
 
+// ComputeEngineConfig represents a OAuth 2.0 consumer client
+// running on Google Compute Engine.
+type ComputeEngineConfig struct{}
+
 // NewConfig creates a new OAuth2 config that uses Google
 // endpoints.
 func NewConfig(opts *oauth2.Options) (oauth2.Config, error) {
 	return oauth2.NewConfig(opts, uriGoogleAuth, uriGoogleToken)
 }
 
-// NewComputeEngineConfig creates a new config that can fetch tokens
-// from Google Compute Engine instance's metaserver.
-func NewComputeEngineConfig() (oauth2.Config, error) {
-	// Should fetch an access token from the meta server.
-	panic("not yet implemented")
-}
-
 // NewServiceAccountConfig creates a new JWT config that can
 // fetch Bearer JWT tokens from Google endpoints.
 func NewServiceAccountConfig(opts *oauth2.JWTOptions) (oauth2.JWTConfig, error) {
 	return oauth2.NewJWTConfig(opts, uriGoogleToken)
+}
+
+// NewComputeEngineConfig creates a new config that can fetch tokens
+// from Google Compute Engine instance's metaserver.
+func NewComputeEngineConfig() (*ComputeEngineConfig, error) {
+	// Should fetch an access token from the meta server.
+	return &ComputeEngineConfig{}, nil
+}
+
+// NewTransport creates an authorized transport.
+func (c *ComputeEngineConfig) NewTransport() (oauth2.Transport, error) {
+	return oauth2.NewAuthorizedTransport(c, nil), nil
+}
+
+// FetchToken retrieves a new access token via metadata server.
+func (c *ComputeEngineConfig) FetchToken(existing *oauth2.Token) (*oauth2.Token, error) {
+	panic("not yet implemented")
 }

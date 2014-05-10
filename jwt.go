@@ -56,18 +56,18 @@ type jwtConfig struct {
 // NewTransport creates a transport that is authorize with the
 // parent JWT configuration.
 func (c *jwtConfig) NewTransport() (Transport, error) {
-	return &authorizedTransport{fetcher: c, token: &Token{}}, nil
+	return NewAuthorizedTransport(c, &Token{}), nil
 }
 
 // NewTransportWithUser creates a transport that is authorized by
 // the client and impersonates the specified user.
 func (c *jwtConfig) NewTransportWithUser(user string) (Transport, error) {
-	return &authorizedTransport{fetcher: c, token: &Token{Subject: user}}, nil
+	return NewAuthorizedTransport(c, &Token{Subject: user}), nil
 }
 
 // fetchToken retrieves a new access token and updates the existing token
 // with the newly fetched credentials.
-func (c *jwtConfig) fetchToken(existing *Token) (token *Token, err error) {
+func (c *jwtConfig) FetchToken(existing *Token) (token *Token, err error) {
 
 	if existing == nil {
 		existing = &Token{}

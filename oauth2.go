@@ -52,14 +52,14 @@ type tokenRespBody struct {
 	IdToken      string        `json:"id_token"`
 }
 
-// tokenFetcher refreshes or fetches a new access token from the
+// TokenFetcher refreshes or fetches a new access token from the
 // provider. It should return an error if it's not capable of
 // retrieving a token.
-type tokenFetcher interface {
-	// fetchToken retrieves a new access token for the provider.
+type TokenFetcher interface {
+	// FetchToken retrieves a new access token for the provider.
 	// If the implementation doesn't know how to retrieve a new token,
 	// it returns an error.
-	fetchToken(existing *Token) (*Token, error)
+	FetchToken(existing *Token) (*Token, error)
 }
 
 // Options represents options to provide OAuth 2.0 client credentials
@@ -120,9 +120,6 @@ type Config interface {
 	// Exchange ecxhanges the code with the provider to retrieve
 	// a new access token.
 	Exchange(exchangeCode string) (*Token, error)
-
-	// TODO(jbd): Token fetcher strategy should be settable
-	// from external packages.
 }
 
 // Config represents an OAuth 2.0 provider and client options to
@@ -136,9 +133,6 @@ type JWTConfig interface {
 	// to be authorized with OAuth 2.0 JWT Bearer flow and
 	// impersonates the provided user.
 	NewTransportWithUser(user string) (Transport, error)
-
-	// TODO(jbd): Token fetcher strategy should be settable
-	// from external packages.
 }
 
 // NewConfig creates a generic OAuth 2.0 configuration that talks
@@ -155,7 +149,7 @@ func NewConfig(opts *Options, authURL, tokenURL string) (Config, error) {
 	return conf, nil
 }
 
-// config represent the configuration of an OAuth 2.0 consumer client.
+// config represents the configuration of an OAuth 2.0 consumer client.
 type config struct {
 	opts *Options
 	// AuthURL is the URL the user will be directed to
@@ -199,7 +193,7 @@ func (c *config) AuthCodeURL(state string) (authURL string, err error) {
 //     t.SetToken(validToken)
 //
 func (c *config) NewTransport() (Transport, error) {
-	return &authorizedTransport{fetcher: c}, nil
+	return NewAuthorizedTransport(c, nil), nil
 }
 
 // NewTransportWithCode exchanges the OAuth 2.0 exchange code with
@@ -211,7 +205,7 @@ func (c *config) NewTransportWithCode(exchangeCode string) (Transport, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &authorizedTransport{fetcher: c, token: token}, nil
+	return NewAuthorizedTransport(c, token), nil
 }
 
 // Exchange exchanges the exchange code with the OAuth 2.0 provider
@@ -230,10 +224,10 @@ func (c *config) Exchange(exchangeCode string) (*Token, error) {
 	return token, nil
 }
 
-// fetchToken retrieves a new access token and updates the existing token
+// FetchToken retrieves a new access token and updates the existing token
 // with the newly fetched credentials. If existing token doesn't
 // contain a refresh token, it returns an error.
-func (c *config) fetchToken(existing *Token) (*Token, error) {
+func (c *config) FetchToken(existing *Token) (*Token, error) {
 	if existing == nil || existing.RefreshToken == "" {
 		return nil, errors.New("cannot fetch access token without refresh token.")
 	}
@@ -309,7 +303,7 @@ func (c *config) updateToken(tok *Token, v url.Values) error {
 	tok.AccessToken = resp.AccessToken
 	tok.TokenType = resp.TokenType
 	// Don't overwrite `RefreshToken` with an empty value
-	if resp.RefreshToken == "" {
+	if resp.RefreshToken != "" {
 		tok.RefreshToken = resp.RefreshToken
 	}
 	if resp.ExpiresIn == 0 {
