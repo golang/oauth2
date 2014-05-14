@@ -82,7 +82,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/rakyll/oauth2"
+	"google.golang.org/oauth2"
 )
 
 const (
