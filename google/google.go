@@ -82,7 +82,7 @@ import (
 	"path"
 	"time"
 
-	"google.golang.org/oauth2"
+	"github.com/golang/oauth2"
 )
 
 const (

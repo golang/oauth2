@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/oauth2/jws"
+	"github.com/golang/oauth2/jws"
 )
 
 var (
