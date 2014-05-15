@@ -178,8 +178,8 @@ func (c *Config) AuthCodeURL(state string) (authURL string, err error) {
 //     t, _ := c.NewTransport()
 //     t.SetToken(validToken)
 //
-func (c *Config) NewTransport() (Transport, error) {
-	return NewAuthorizedTransport(c, nil), nil
+func (c *Config) NewTransport() Transport {
+	return NewAuthorizedTransport(c, nil)
 }
 
 // NewTransportWithCode exchanges the OAuth 2.0 exchange code with

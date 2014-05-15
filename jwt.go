@@ -75,14 +75,14 @@ func (c *JWTConfig) Options() *JWTOptions {
 
 // NewTransport creates a transport that is authorize with the
 // parent JWT configuration.
-func (c *JWTConfig) NewTransport() (Transport, error) {
-	return NewAuthorizedTransport(c, &Token{}), nil
+func (c *JWTConfig) NewTransport() Transport {
+	return NewAuthorizedTransport(c, &Token{})
 }
 
 // NewTransportWithUser creates a transport that is authorized by
 // the client and impersonates the specified user.
-func (c *JWTConfig) NewTransportWithUser(user string) (Transport, error) {
-	return NewAuthorizedTransport(c, &Token{Subject: user}), nil
+func (c *JWTConfig) NewTransportWithUser(user string) Transport {
+	return NewAuthorizedTransport(c, &Token{Subject: user})
 }
 
 // fetchToken retrieves a new access token and updates the existing token

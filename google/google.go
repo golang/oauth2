@@ -123,8 +123,8 @@ func NewComputeEngineConfig(account string) (*ComputeEngineConfig, error) {
 }
 
 // NewTransport creates an authorized transport.
-func (c *ComputeEngineConfig) NewTransport() (oauth2.Transport, error) {
-	return oauth2.NewAuthorizedTransport(c, nil), nil
+func (c *ComputeEngineConfig) NewTransport() oauth2.Transport {
+	return oauth2.NewAuthorizedTransport(c, nil)
 }
 
 // FetchToken retrieves a new access token via metadata server.
