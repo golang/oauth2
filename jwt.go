@@ -66,6 +66,7 @@ type JWTConfig struct {
 	opts      *JWTOptions
 	aud       string
 	signature []byte
+	cache     Cache
 }
 
 // Options returns JWT options.
@@ -152,4 +153,9 @@ func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
 
 	token.Expiry = time.Now().Add(time.Duration(b.ExpiresIn) * time.Second)
 	return
+}
+
+// Cache returns a cache if specified, otherwise nil.
+func (c *JWTConfig) Cache() Cache {
+	return c.cache
 }

@@ -74,6 +74,7 @@ type TokenFetcher interface {
 	// If the implementation doesn't know how to retrieve a new token,
 	// it returns an error.
 	FetchToken(existing *Token) (*Token, error)
+	Cache() Cache
 }
 
 // Options represents options to provide OAuth 2.0 client credentials
@@ -138,6 +139,8 @@ type Config struct {
 	authURL string
 	// TokenURL is the URL used to retrieve OAuth tokens.
 	tokenURL string
+
+	cache Cache
 }
 
 // Options returns options.
@@ -222,6 +225,11 @@ func (c *Config) FetchToken(existing *Token) (*Token, error) {
 		"refresh_token": {existing.RefreshToken},
 	})
 	return existing, err
+}
+
+// Cache returns a cache if specified, otherwise nil.
+func (c *Config) Cache() Cache {
+	return c.cache
 }
 
 // Checks if all required configuration fields have non-zero values.
