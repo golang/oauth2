@@ -98,7 +98,7 @@ func (t *authorizedTransport) RoundTrip(req *http.Request) (resp *http.Response,
 
 	if token == nil && cache != nil {
 		// Try to read from cache initially
-		token, _ := cache.Read()
+		token = cache.Read()
 	}
 	if token == nil || token.Expired() {
 		// Check if the token is refreshable.

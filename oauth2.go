@@ -64,6 +64,7 @@ type TokenFetcher interface {
 	// If the implementation doesn't know how to retrieve a new token,
 	// it returns an error.
 	FetchToken(existing *Token) (*Token, error)
+	// Cache returns the Cache implementation to read/persist user tokens.
 	Cache() Cache
 }
 
