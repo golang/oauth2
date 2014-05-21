@@ -94,6 +94,12 @@ func NewAuthorizedTransport(fetcher TokenFetcher, token *Token) Transport {
 // If token is expired, tries to refresh/fetch a new token.
 func (t *authorizedTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	token := t.Token()
+	cache := t.fetcher.Cache()
+
+	if token == nil && cache != nil {
+		// Try to read from cache initially
+		token, _ := cache.Read()
+	}
 	if token == nil || token.Expired() {
 		// Check if the token is refreshable.
 		// If token is refreshable, don't return an error,
@@ -159,6 +165,11 @@ func (t *authorizedTransport) RefreshToken() error {
 	}
 
 	t.token = token
+	cache := t.fetcher.Cache()
+	if cache != nil {
+		cache.Write(token)
+	}
+
 	return nil
 }
 
