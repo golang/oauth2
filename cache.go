@@ -24,8 +24,11 @@ func NewFileCache(filename string) *FileCache {
 
 // FileCache represents a file based token cacher.
 type FileCache struct {
-	filename         string
-	ErrorHandlerFunc func(error)
+	// Handler to be invoked if an error occurs
+	// during read or write operations.
+	ErrorHandler func(error)
+
+	filename string
 }
 
 // Read reads a cache token from the specified file.
@@ -34,8 +37,8 @@ func (f *FileCache) Read() (token *Token) {
 	if err == nil {
 		err = json.Unmarshal(data, token)
 	}
-	if f.ErrorHandlerFunc != nil {
-		f.ErrorHandlerFunc(err)
+	if f.ErrorHandler != nil {
+		f.ErrorHandler(err)
 	}
 	return
 }
@@ -46,7 +49,7 @@ func (f *FileCache) Write(token *Token) {
 	if err == nil {
 		err = ioutil.WriteFile(f.filename, data, 0644)
 	}
-	if f.ErrorHandlerFunc != nil {
-		f.ErrorHandlerFunc(err)
+	if f.ErrorHandler != nil {
+		f.ErrorHandler(err)
 	}
 }

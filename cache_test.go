@@ -12,7 +12,7 @@ import (
 func TestFileCacheErrorHandling(t *testing.T) {
 	var lastErr error
 	fileCache := NewFileCache("/path/that/doesnt/exist")
-	fileCache.ErrorHandlerFunc = func(err error) {
+	fileCache.ErrorHandler = func(err error) {
 		lastErr = err
 	}
 	fileCache.Read()
