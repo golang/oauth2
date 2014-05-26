@@ -134,11 +134,6 @@ type Config struct {
 	cache Cache
 }
 
-// Options returns options.
-func (c *Config) Options() *Options {
-	return c.opts
-}
-
 // AuthCodeURL returns a URL to OAuth 2.0 provider's consent page
 // that asks for permissions for the required scopes explicitly.
 func (c *Config) AuthCodeURL(state string) (authURL string, err error) {

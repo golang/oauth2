@@ -59,11 +59,6 @@ type JWTConfig struct {
 	cache     Cache
 }
 
-// Options returns JWT options.
-func (c *JWTConfig) Options() *JWTOptions {
-	return c.opts
-}
-
 // NewTransport creates a transport that is authorize with the
 // parent JWT configuration.
 func (c *JWTConfig) NewTransport() Transport {
