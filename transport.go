@@ -98,7 +98,7 @@ func (t *authorizedTransport) RoundTrip(req *http.Request) (resp *http.Response,
 	// Try to initialize the token from the cache.
 	if token == nil {
 		if c := t.fetcher.Cache(); c != nil {
-			token = c.Read()
+			token = c.Token()
 		}
 	}
 

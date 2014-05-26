@@ -5,23 +5,73 @@
 package oauth2
 
 import (
-	"os"
+	"io/ioutil"
+	"path"
 	"testing"
 )
 
-func TestFileCacheErrorHandling(t *testing.T) {
-	var lastErr error
-	fileCache := NewFileCache("/path/that/doesnt/exist")
-	fileCache.ErrorHandler = func(err error) {
-		lastErr = err
+var tokenBody = `{"access_token":"abc123","token_type":"Bearer","refresh_token":"def789","expiry":"0001-01-01T00:00:00Z"}`
+
+func TestNewFileCacheNotExist(t *testing.T) {
+	cache, err := NewFileCache("/path/that/doesnt/exist")
+	if err != nil {
+		t.Fatalf("NewFileCache shouldn't return an error for if cache file doesn't exist, but returned %v", err)
 	}
-	fileCache.Read()
-	if !os.IsNotExist(lastErr) {
-		t.Fatalf("Read should have invoked the error handling func with os.ErrNotExist, but read err is %v", lastErr)
+	if cache == nil {
+		t.Fatalf("A file cache should be inited with a non existing cache file")
 	}
-	lastErr = nil
-	fileCache.Write(&Token{})
-	if !os.IsNotExist(lastErr) {
-		t.Fatalf("Write should have invoked the error handling func with os.ErrNotExist, but read err is %v", lastErr)
+}
+
+func TestNewFileCache(t *testing.T) {
+	f, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = f.WriteString(tokenBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cache, err := NewFileCache(f.Name())
+	if err != nil {
+		t.Fatalf("Cache should have read the file cache at %v, but recieved %v", f.Name(), err)
+	}
+	token := cache.Token()
+	if token.AccessToken != "abc123" {
+		t.Fatalf("Cached access token is %v, expected to be abc123", token.AccessToken)
+	}
+	if token.RefreshToken != "def789" {
+		t.Fatalf("Cached refresh token is %v, expected to be def789", token.RefreshToken)
+	}
+}
+
+func TestFileCacheWrite(t *testing.T) {
+	dirName, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cache, err := NewFileCache(path.Join(dirName, "cache-file"))
+	cache.ErrorHandler = func(err error) {
+		if err != nil {
+			t.Fatalf("Cache write should have been succeeded succesfully, recieved %v", err)
+		}
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cache.Write(&Token{
+		AccessToken:  "abc123",
+		TokenType:    "Bearer",
+		RefreshToken: "def789",
+	})
+
+	data, err := ioutil.ReadFile(cache.filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != tokenBody {
+		t.Fatalf("Written token is different than the expected, %v is found", data)
 	}
 }
