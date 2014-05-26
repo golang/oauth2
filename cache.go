@@ -12,46 +12,39 @@ import (
 
 // Cache represents a token cacher.
 type Cache interface {
-	// Token returns the initial token retrieved from the cache,
-	// if there is no existing token nil value is returned.
-	Token() (token *Token)
+	// Reads a cached token.
+	// It may return a nil value if no token is cached.
+	Read() (token *Token, err error)
 	// Write writes a token to the specified file.
 	Write(token *Token)
 }
 
 // NewFileCache creates a new file cache.
-func NewFileCache(filename string) (cache *FileCache, err error) {
-	data, err := ioutil.ReadFile(filename)
-	if os.IsNotExist(err) {
-		// no token has cached before, skip reading
-		return &FileCache{filename: filename}, nil
-	}
-	if err != nil {
-		return
-	}
-	var token Token
-	if err = json.Unmarshal(data, &token); err != nil {
-		return
-	}
-	cache = &FileCache{filename: filename, initialToken: &token}
-	return
+func NewFileCache(filename string) (cache *FileCache) {
+	return &FileCache{filename: filename}
 }
 
 // FileCache represents a file based token cacher.
 type FileCache struct {
-	// Handler to be invoked if an error occurs
-	// during read or write operations.
+	// Handler to be invoked if an error occurs during writing.
 	ErrorHandler func(error)
 
-	initialToken *Token
-	filename     string
+	filename string
 }
 
-// Token returns the initial token read from the cache. It should be used to
-// warm the authorization mechanism, token refreshes and later writes don't
-// change the returned value. If no token is cached before, returns nil.
-func (f *FileCache) Token() (token *Token) {
-	return f.initialToken
+func (f *FileCache) Read() (token *Token, err error) {
+	data, err := ioutil.ReadFile(f.filename)
+	if os.IsNotExist(err) {
+		// no token has cached before, skip reading
+		return nil, nil
+	}
+	if err != nil {
+		return
+	}
+	if err = json.Unmarshal(data, &token); err != nil {
+		return
+	}
+	return
 }
 
 // Write writes a token to the specified file.

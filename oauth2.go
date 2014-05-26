@@ -188,6 +188,15 @@ func (c *Config) NewTransportWithCode(exchangeCode string) (Transport, error) {
 	return NewAuthorizedTransport(c, token), nil
 }
 
+func (c *Config) NewTransportWithCache(cache Cache) (Transport, error) {
+	token, err := cache.Read()
+	if err != nil {
+		return nil, err
+	}
+	c.cache = cache
+	return NewAuthorizedTransport(c, token), nil
+}
+
 // Exchange exchanges the exchange code with the OAuth 2.0 provider
 // to retrieve a new access token.
 func (c *Config) Exchange(exchangeCode string) (*Token, error) {

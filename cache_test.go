@@ -12,13 +12,14 @@ import (
 
 var tokenBody = `{"access_token":"abc123","token_type":"Bearer","refresh_token":"def789","expiry":"0001-01-01T00:00:00Z"}`
 
-func TestNewFileCacheNotExist(t *testing.T) {
-	cache, err := NewFileCache("/path/that/doesnt/exist")
+func TestFileCacheReadNotExist(t *testing.T) {
+	cache := NewFileCache("/path/that/doesnt/exist")
+	token, err := cache.Read()
 	if err != nil {
 		t.Fatalf("NewFileCache shouldn't return an error for if cache file doesn't exist, but returned %v", err)
 	}
-	if cache == nil {
-		t.Fatalf("A file cache should be inited with a non existing cache file")
+	if token != nil {
+		t.Fatalf("Token should be nil, but found %v", token)
 	}
 }
 
@@ -32,11 +33,12 @@ func TestNewFileCache(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cache, err := NewFileCache(f.Name())
+	cache := NewFileCache(f.Name())
+	token, err := cache.Read()
 	if err != nil {
-		t.Fatalf("Cache should have read the file cache at %v, but recieved %v", f.Name(), err)
+		t.Fatal(err)
 	}
-	token := cache.Token()
+
 	if token.AccessToken != "abc123" {
 		t.Fatalf("Cached access token is %v, expected to be abc123", token.AccessToken)
 	}
@@ -51,14 +53,11 @@ func TestFileCacheWrite(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cache, err := NewFileCache(path.Join(dirName, "cache-file"))
+	cache := NewFileCache(path.Join(dirName, "cache-file"))
 	cache.ErrorHandler = func(err error) {
 		if err != nil {
 			t.Fatalf("Cache write should have been succeeded succesfully, recieved %v", err)
 		}
-	}
-	if err != nil {
-		t.Fatal(err)
 	}
 
 	cache.Write(&Token{
