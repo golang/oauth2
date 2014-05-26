@@ -188,6 +188,9 @@ func (c *Config) NewTransportWithCode(exchangeCode string) (Transport, error) {
 	return NewAuthorizedTransport(c, token), nil
 }
 
+// NewTransportWithCache initializes a transport by reading the initial
+// token from the provided cache. If a token refreshing occurs, it
+// writes the newly fetched token back to the cache.
 func (c *Config) NewTransportWithCache(cache Cache) (Transport, error) {
 	token, err := cache.Read()
 	if err != nil {

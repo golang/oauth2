@@ -12,10 +12,9 @@ import (
 
 // Cache represents a token cacher.
 type Cache interface {
-	// Reads a cached token.
-	// It may return a nil value if no token is cached.
+	// Reads a cached token. It may return nil if none is cached.
 	Read() (token *Token, err error)
-	// Write writes a token to the specified file.
+	// Write writes a token to the cache.
 	Write(token *Token)
 }
 
@@ -32,6 +31,8 @@ type FileCache struct {
 	filename string
 }
 
+// Read reads the token from the cache file. If there exists no cache
+// file, it returns nil for the token.
 func (f *FileCache) Read() (token *Token, err error) {
 	data, err := ioutil.ReadFile(f.filename)
 	if os.IsNotExist(err) {
