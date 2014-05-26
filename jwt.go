@@ -76,6 +76,15 @@ func (c *JWTConfig) NewTransportWithUser(user string) Transport {
 	return NewAuthorizedTransport(c, &Token{Subject: user})
 }
 
+func (c *JWTConfig) NewTransportWithCache(cache Cache) (Transport, error) {
+	token, err := cache.Read()
+	if err != nil {
+		return nil, err
+	}
+	c.cache = cache
+	return NewAuthorizedTransport(c, token), nil
+}
+
 // fetchToken retrieves a new access token and updates the existing token
 // with the newly fetched credentials.
 func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
