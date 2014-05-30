@@ -108,8 +108,8 @@ func NewServiceAccountConfig(opts *oauth2.JWTOptions) (*oauth2.JWTConfig, error)
 // NewComputeEngineConfig creates a new config that can fetch tokens
 // from Google Compute Engine instance's metaserver. If no account is
 // provided, default is used.
-func NewComputeEngineConfig(account string) (*ComputeEngineConfig, error) {
-	return &ComputeEngineConfig{account: account}, nil
+func NewComputeEngineConfig(account string) *ComputeEngineConfig {
+	return &ComputeEngineConfig{account: account}
 }
 
 // NewTransport creates an authorized transport.
