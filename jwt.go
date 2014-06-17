@@ -56,7 +56,6 @@ type JWTConfig struct {
 	opts      *JWTOptions
 	aud       string
 	signature []byte
-	cache     Cache
 }
 
 // NewTransport creates a transport that is authorize with the
@@ -75,12 +74,7 @@ func (c *JWTConfig) NewTransportWithUser(user string) Transport {
 // token from the provided cache. If a token refreshing occurs, it
 // writes the newly fetched token back to the cache.
 func (c *JWTConfig) NewTransportWithCache(cache Cache) (Transport, error) {
-	token, err := cache.Read()
-	if err != nil {
-		return nil, err
-	}
-	c.cache = cache
-	return NewAuthorizedTransport(c, token), nil
+	return NewAuthorizedTransportWithCache(c, cache)
 }
 
 // fetchToken retrieves a new access token and updates the existing token
@@ -150,9 +144,4 @@ func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
 
 	token.Expiry = time.Now().Add(time.Duration(b.ExpiresIn) * time.Second)
 	return
-}
-
-// Cache returns a cache if specified, otherwise nil.
-func (c *JWTConfig) Cache() Cache {
-	return c.cache
 }

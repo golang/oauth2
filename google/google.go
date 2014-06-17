@@ -146,10 +146,3 @@ func (c *ComputeEngineConfig) FetchToken(existing *oauth2.Token) (token *oauth2.
 	}
 	return
 }
-
-// Cache returns nil. On Google Compute Engine, access tokens are
-// retrieved from the metaserver, no other persistence layer is
-// required.
-func (c *ComputeEngineConfig) Cache() oauth2.Cache {
-	return nil
-}
