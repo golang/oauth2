@@ -86,13 +86,17 @@ type authorizedTransport struct {
 	mu sync.RWMutex
 }
 
-// NewAuthorizedTransport creates a tranport that uses the provided
+// NewAuthorizedTransport creates a transport that uses the provided
 // token fetcher to retrieve new tokens if there is no access token
 // provided or it is expired.
 func NewAuthorizedTransport(fetcher TokenFetcher, token *Token) Transport {
 	return &authorizedTransport{fetcher: fetcher, token: token}
 }
 
+// NewAuthorizedTransportWithCache creates a new transport that uses
+// the provided token fetcher and cache. Before constructing the new
+// transport, it will try to read from the cache to see if there
+// is an existing token.
 func NewAuthorizedTransportWithCache(fetcher TokenFetcher, cache Cache) (transport Transport, err error) {
 	var token *Token
 	if token, err = cache.Read(); err != nil {
