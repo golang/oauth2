@@ -1,4 +1,4 @@
-// +build appenginevm
+// +build !appengine
 
 package google
 
