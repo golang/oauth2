@@ -30,7 +30,7 @@ func TestInitialTokenRead(t *testing.T) {
 	tr, _ := NewAuthorizedTransportWithCache(nil, cache)
 	server := newMockServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer abc" {
-			t.Fatalf("Transport doesn't read the token initially from the cache")
+			t.Errorf("Transport doesn't read the token initially from the cache")
 		}
 	})
 	defer server.Close()
@@ -49,7 +49,7 @@ func TestTokenWrite(t *testing.T) {
 	tr, _ := NewAuthorizedTransportWithCache(fetcher, cache)
 	server := newMockServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer abc" {
-			t.Fatalf("Transport doesn't read the token initially from the cache")
+			t.Errorf("Transport doesn't read the token initially from the cache")
 		}
 	})
 	defer server.Close()
@@ -57,14 +57,14 @@ func TestTokenWrite(t *testing.T) {
 	client := http.Client{Transport: tr}
 	client.Get(server.URL)
 	if cache.token.AccessToken != "abc" {
-		t.Fatalf("New token is not cached, found %v", cache.token)
+		t.Errorf("New token is not cached, found %v", cache.token)
 	}
 }
 
 func TestExpiredWithNoAccessToken(t *testing.T) {
 	token := &Token{}
 	if !token.Expired() {
-		t.Fatalf("Token should be expired if no access token is provided")
+		t.Errorf("Token should be expired if no access token is provided")
 	}
 }
 
@@ -73,7 +73,7 @@ func TestExpiredWithExpiry(t *testing.T) {
 		Expiry: time.Now().Add(-5 * time.Hour),
 	}
 	if !token.Expired() {
-		t.Fatalf("Token should be expired if no access token is provided")
+		t.Errorf("Token should be expired if no access token is provided")
 	}
 }
 
