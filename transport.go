@@ -177,7 +177,7 @@ func (t *authorizedTransport) RefreshToken() error {
 
 	t.token = token
 	if t.cache != nil {
-		t.cache.Write(token)
+		return t.cache.Write(token)
 	}
 
 	return nil

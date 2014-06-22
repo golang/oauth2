@@ -54,17 +54,15 @@ func TestFileCacheWrite(t *testing.T) {
 	}
 
 	cache := NewFileCache(path.Join(dirName, "cache-file"))
-	cache.ErrorHandler = func(err error) {
-		if err != nil {
-			t.Fatalf("Cache write should have been succeeded succesfully, recieved %v", err)
-		}
-	}
-
-	cache.Write(&Token{
+	err = cache.Write(&Token{
 		AccessToken:  "abc123",
 		TokenType:    "Bearer",
 		RefreshToken: "def789",
 	})
+
+	if err != nil {
+		t.Errorf("Cache write should have been succeeded succesfully, recieved %v", err)
+	}
 
 	data, err := ioutil.ReadFile(cache.filename)
 	if err != nil {

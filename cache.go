@@ -13,9 +13,9 @@ import (
 // Cache represents a token cacher.
 type Cache interface {
 	// Reads a cached token. It may return nil if none is cached.
-	Read() (token *Token, err error)
+	Read() (*Token, error)
 	// Write writes a token to the cache.
-	Write(token *Token)
+	Write(*Token) error
 }
 
 // NewFileCache creates a new file cache.
@@ -25,9 +25,6 @@ func NewFileCache(filename string) (cache *FileCache) {
 
 // FileCache represents a file based token cacher.
 type FileCache struct {
-	// Handler to be invoked if an error occurs during writing.
-	ErrorHandler func(error)
-
 	filename string
 }
 
@@ -49,12 +46,10 @@ func (f *FileCache) Read() (token *Token, err error) {
 }
 
 // Write writes a token to the specified file.
-func (f *FileCache) Write(token *Token) {
+func (f *FileCache) Write(token *Token) error {
 	data, err := json.Marshal(token)
 	if err == nil {
 		err = ioutil.WriteFile(f.filename, data, 0644)
 	}
-	if f.ErrorHandler != nil {
-		f.ErrorHandler(err)
-	}
+	return err
 }

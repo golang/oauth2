@@ -13,8 +13,9 @@ func (m *mockCache) Read() (token *Token, err error) {
 	return m.token, nil
 }
 
-func (m *mockCache) Write(token *Token) {
+func (m *mockCache) Write(token *Token) error {
 	m.token = token
+	return nil
 }
 
 type mockTokenFetcher struct{ token *Token }
