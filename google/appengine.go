@@ -14,7 +14,6 @@ import (
 type AppEngineConfig struct {
 	context appengine.Context
 	scopes  []string
-	cache   oauth2.Cache
 }
 
 // NewAppEngineConfig creates a new AppEngineConfig for the
@@ -32,12 +31,7 @@ func (c *AppEngineConfig) NewTransport() oauth2.Transport {
 // NewTransport returns a token-caching transport that authorizes
 // the requests with the application's service account.
 func (c *AppEngineConfig) NewTransportWithCache(cache oauth2.Cache) (oauth2.Transport, error) {
-	token, err := cache.Read()
-	if err != nil {
-		return nil, err
-	}
-	c.cache = cache
-	return oauth2.NewAuthorizedTransport(c, token), nil
+	return oauth2.NewAuthorizedTransportWithCache(c, cache)
 }
 
 // FetchToken fetches a new access token for the provided scopes.
@@ -50,8 +44,4 @@ func (c *AppEngineConfig) FetchToken(existing *oauth2.Token) (*oauth2.Token, err
 		AccessToken: token,
 		Expiry:      expiry,
 	}, nil
-}
-
-func (c *AppEngineConfig) Cache() oauth2.Cache {
-	return c.cache
 }
