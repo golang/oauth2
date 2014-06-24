@@ -21,7 +21,10 @@ func Example_config() {
 
 	// Redirect user to consent page to ask for permission
 	// for the scopes specified above.
-	url, _ := conf.AuthCodeURL("")
+	url, err := conf.AuthCodeURL("")
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("Visit the URL for the auth dialog: %v", url)
 
 	// Use the exchange code that is handled by the redirect URL.
@@ -29,7 +32,7 @@ func Example_config() {
 	// an access token and iniate a Transport that is
 	// authorized and authenticated the retrieved token.
 	var exchangeCode string
-	fmt.Scanln(&exchangeCode)
+	fmt.Scan(&exchangeCode)
 	t, err := conf.NewTransportWithCode(exchangeCode)
 	if err != nil {
 		log.Fatal(err)
@@ -38,7 +41,7 @@ func Example_config() {
 	// You can use t to initiate a new http.Client and
 	// start making authenticated requests.
 	client := http.Client{Transport: t}
-	client.Get("https://host/path")
+	client.Get("...")
 
 	// Alternatively, you can initiate a new transport
 	// with tokens from a cache.
@@ -55,11 +58,11 @@ func Example_config() {
 		log.Fatal(err)
 	}
 	client = http.Client{Transport: t}
-	client.Get("https://host/path")
+	client.Get("...")
 }
 
 func Example_jWTConfig() {
-	conf, _ := NewJWTConfig(&JWTOptions{
+	conf, err := NewJWTConfig(&JWTOptions{
 		Email: "xxx@developer.gserviceaccount.com",
 		// The path to the pem file. If you have a p12 file instead, you
 		// can use `openssl` to export the private key into a pem file.
@@ -68,18 +71,21 @@ func Example_jWTConfig() {
 		Scopes:      []string{"SCOPE1", "SCOPE2"},
 	},
 		"https://provider.com/o/oauth2/token")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Initiate an http.Client, the following GET request will be
 	// authorized and authenticated on the behalf of
 	// xxx@developer.gserviceaccount.com.
 	client := http.Client{Transport: conf.NewTransport()}
-	client.Get("https://host/path")
+	client.Get("...")
 
 	// If you would like to impersonate a user, you can
 	// create a transport with a subject. The following GET
 	// request will be made on the behalf of user@example.com.
 	client = http.Client{Transport: conf.NewTransportWithUser("user@example.com")}
-	client.Get("https://host/path")
+	client.Get("...")
 
 	// Alternatively you can iniate a transport with
 	// a token read from the cache.
@@ -93,5 +99,5 @@ func Example_jWTConfig() {
 	client = http.Client{Transport: t}
 	// The following request will be authorized by the token
 	// retrieved from the cache.
-	client.Get("https://host/path")
+	client.Get("...")
 }
