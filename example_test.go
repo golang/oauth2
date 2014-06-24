@@ -1,13 +1,18 @@
-package oauth2
+package oauth2_test
 
 import (
 	"fmt"
 	"log"
 	"net/http"
+	"testing"
+
+	"github.com/golang/oauth2"
 )
 
+func TestA(t *testing.T) {}
+
 func Example_config() {
-	conf, err := NewConfig(&Options{
+	conf, err := oauth2.NewConfig(&oauth2.Options{
 		ClientID:     "YOUR_CLIENT_ID",
 		ClientSecret: "YOUR_CLIENT_SECRET",
 		RedirectURL:  "YOUR_REDIRECT_URL",
@@ -47,7 +52,7 @@ func Example_config() {
 
 	// Alternatively, you can initiate a new transport
 	// with tokens from a cache.
-	cache := NewFileCache("/path/to/file")
+	cache := oauth2.NewFileCache("/path/to/file")
 	// NewTransportWithCache will try to read the cached
 	// token, if any error occurs, it returns the error.
 	// If a token is available at the cache, initiates
@@ -64,7 +69,7 @@ func Example_config() {
 }
 
 func Example_jWTConfig() {
-	conf, err := NewJWTConfig(&JWTOptions{
+	conf, err := oauth2.NewJWTConfig(&oauth2.JWTOptions{
 		Email: "xxx@developer.gserviceaccount.com",
 		// The path to the pem file. If you have a p12 file instead, you
 		// can use `openssl` to export the private key into a pem file.
@@ -93,7 +98,7 @@ func Example_jWTConfig() {
 	// a token read from the cache.
 	// If the existing access token expires, and a new access token is
 	// retrieved, the newly fetched token will be written to the cache.
-	cache := NewFileCache("/path/to/file")
+	cache := oauth2.NewFileCache("/path/to/file")
 	t, err := conf.NewTransportWithCache(cache)
 	if err != nil {
 		log.Fatal(err)

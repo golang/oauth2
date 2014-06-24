@@ -1,17 +1,22 @@
-package google
+package google_test
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"testing"
 
 	"github.com/golang/oauth2"
+	"github.com/golang/oauth2/google"
 	"google.golang.org/appengine"
 )
+
+func TestA(t *testing.T) {}
 
 func Example_webServer() {
 	// Your credentials should be obtained from the Google
 	// Developer Console (https://console.developers.google.com).
-	config, err := NewConfig(&oauth2.Options{
+	config, err := google.NewConfig(&oauth2.Options{
 		ClientID:     "YOUR_CLIENT_ID",
 		ClientSecret: "YOUR_CLIENT_SECRET",
 		RedirectURL:  "YOUR_REDIRECT_URL",
@@ -60,7 +65,7 @@ func Example_webServer() {
 func Example_serviceAccounts() {
 	// Your credentials should be obtained from the Google
 	// Developer Console (https://console.developers.google.com).
-	config, err := NewServiceAccountConfig(&oauth2.JWTOptions{
+	config, err := google.NewServiceAccountConfig(&oauth2.JWTOptions{
 		Email: "xxx@developer.gserviceaccount.com",
 		// The path to the pem file. If you have a p12 file instead, you
 		// can use `openssl` to export the private key into a pem file.
@@ -77,21 +82,21 @@ func Example_serviceAccounts() {
 	// Initiate an http.Client, the following GET request will be
 	// authorized and authenticated on the behalf of
 	// xxx@developer.gserviceaccount.com.
-	client := http.Client{Transport: conf.NewTransport()}
+	client := http.Client{Transport: config.NewTransport()}
 	client.Get("...")
 
 	// If you would like to impersonate a user, you can
 	// create a transport with a subject. The following GET
 	// request will be made on the behalf of user@example.com.
-	client = http.Client{Transport: conf.NewTransportWithUser("user@example.com")}
+	client = http.Client{Transport: config.NewTransportWithUser("user@example.com")}
 	client.Get("...")
 
 	// Alternatively you can iniate a transport with
 	// a token read from the cache.
 	// If the existing access token expires, and a new access token is
 	// retrieved, the newly fetched token will be written to the cache.
-	cache := NewFileCache("/path/to/file")
-	t, err := conf.NewTransportWithCache(cache)
+	cache := oauth2.NewFileCache("/path/to/file")
+	t, err := config.NewTransportWithCache(cache)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -103,13 +108,9 @@ func Example_serviceAccounts() {
 
 func Example_appEngine() {
 	context := appengine.NewContext(nil)
-	config, err := NewAppEngineConfig(context, []string{
+	config := google.NewAppEngineConfig(context, []string{
 		"https://www.googleapis.com/auth/bigquery",
 	})
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	// The following client will be authorized by the App Engine
 	// app's service account for the provided scopes.
 	client := http.Client{Transport: config.NewTransport()}
@@ -117,11 +118,8 @@ func Example_appEngine() {
 }
 
 func Example_computeEngine() {
-	// If no other account is specified, "default" is in use.
-	config, err := NewComputeEngineConfig("")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// If no other account is specified, "default" is used.
+	config := google.NewComputeEngineConfig("")
 	client := http.Client{Transport: config.NewTransport()}
 	client.Get("...")
 }
