@@ -11,6 +11,8 @@ import (
 	"google.golang.org/appengine"
 )
 
+// Remove after Go 1.4.
+// Related to https://codereview.appspot.com/107320046
 func TestA(t *testing.T) {}
 
 func Example_webServer() {
