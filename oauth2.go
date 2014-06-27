@@ -172,7 +172,7 @@ func (c *Config) NewTransport() Transport {
 // it succesffully retrieves a new token, creates a new transport
 // authorized with it.
 func (c *Config) NewTransportWithCode(exchangeCode string) (Transport, error) {
-	token, err := c.Exchange(exchangeCode)
+	token, err := c.exchange(exchangeCode)
 	if err != nil {
 		return nil, err
 	}
@@ -184,22 +184,6 @@ func (c *Config) NewTransportWithCode(exchangeCode string) (Transport, error) {
 // writes the newly fetched token back to the cache.
 func (c *Config) NewTransportWithCache(cache Cache) (Transport, error) {
 	return NewAuthorizedTransportWithCache(c, cache)
-}
-
-// Exchange exchanges the exchange code with the OAuth 2.0 provider
-// to retrieve a new access token.
-func (c *Config) Exchange(exchangeCode string) (*Token, error) {
-	token := &Token{}
-	err := c.updateToken(token, url.Values{
-		"grant_type":   {"authorization_code"},
-		"redirect_uri": {c.opts.RedirectURL},
-		"scope":        {strings.Join(c.opts.Scopes, " ")},
-		"code":         {exchangeCode},
-	})
-	if err != nil {
-		return nil, err
-	}
-	return token, nil
 }
 
 // FetchToken retrieves a new access token and updates the existing token
@@ -238,6 +222,22 @@ func (c *Config) validate() error {
 		return errors.New("A token URL should be provided.")
 	}
 	return nil
+}
+
+// Exchange exchanges the exchange code with the OAuth 2.0 provider
+// to retrieve a new access token.
+func (c *Config) exchange(exchangeCode string) (*Token, error) {
+	token := &Token{}
+	err := c.updateToken(token, url.Values{
+		"grant_type":   {"authorization_code"},
+		"redirect_uri": {c.opts.RedirectURL},
+		"scope":        {strings.Join(c.opts.Scopes, " ")},
+		"code":         {exchangeCode},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
 }
 
 func (c *Config) updateToken(tok *Token, v url.Values) error {
