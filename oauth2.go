@@ -5,32 +5,6 @@
 // Package oauth2 provides support for making
 // OAuth2 authorized and authenticated HTTP requests.
 // It can additionally grant authorization with Bearer JWT.
-//
-// Example usage:
-//
-//      // Specify your configuration. (typically as a global variable)
-//      config := oauth2.NewConfig(&oauth2.Options{
-//              ClientID:     YOUR_CLIENT_ID,
-//              ClientSecret: YOUR_CLIENT_SECRET,
-//              RedirectURL:  "http://you.example.org/handler",
-//              Scopes:       []string{ "scope1", "scope2" },
-//      }, OAUTH2_PROVIDER_AUTH_URL, OAUTH2_PROVIDER_TOKEN_URL)
-//
-//      // A landing page redirects to the OAuth provider to get the auth code.
-//      func landing(w http.ResponseWriter, r *http.Request) {
-//              http.Redirect(w, r, config.AuthCodeURL("foo"), http.StatusFound)
-//      }
-//
-//      // The user will be redirected back to this handler, that takes the
-//      // "code" query parameter and Exchanges it for an access token.
-//      func handler(w http.ResponseWriter, r *http.Request) {
-//              t, err := config.NewTransportWithCode(r.FormValue("code"))
-//              // The Transport now has a valid Token. Create an *http.Client
-//              // with which we can make authenticated API requests.
-//              c := t.Client()
-//              c.Post(...)
-//      }
-//
 package oauth2
 
 import (
