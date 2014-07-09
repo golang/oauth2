@@ -7,17 +7,6 @@ import (
 	"time"
 )
 
-type mockCache struct{ token *Token }
-
-func (m *mockCache) Read() (token *Token, err error) {
-	return m.token, nil
-}
-
-func (m *mockCache) Write(token *Token) error {
-	m.token = token
-	return nil
-}
-
 type mockTokenFetcher struct{ token *Token }
 
 func (f *mockTokenFetcher) FetchToken(existing *Token) (*Token, error) {
@@ -25,13 +14,10 @@ func (f *mockTokenFetcher) FetchToken(existing *Token) (*Token, error) {
 }
 
 func TestInitialTokenRead(t *testing.T) {
-	cache := &mockCache{token: &Token{
-		AccessToken: "abc",
-	}}
-	tr, _ := NewAuthorizedTransportWithCache(nil, cache)
+	tr := NewAuthorizedTransport(nil, &Token{AccessToken: "abc"})
 	server := newMockServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer abc" {
-			t.Errorf("Transport doesn't read the token initially from the cache")
+			t.Errorf("Transport doesn't set the Authorization header from the initial token")
 		}
 	})
 	defer server.Close()
@@ -39,26 +25,24 @@ func TestInitialTokenRead(t *testing.T) {
 	client.Get(server.URL)
 }
 
-func TestTokenWrite(t *testing.T) {
+func TestTokenFetch(t *testing.T) {
 	fetcher := &mockTokenFetcher{
 		token: &Token{
 			AccessToken: "abc",
 		},
 	}
-	// cache with expired token
-	cache := &mockCache{token: &Token{}}
-	tr, _ := NewAuthorizedTransportWithCache(fetcher, cache)
+	tr := NewAuthorizedTransport(fetcher, nil)
 	server := newMockServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer abc" {
-			t.Errorf("Transport doesn't read the token initially from the cache")
+			t.Errorf("Transport doesn't set the Authorization header from the fetched token")
 		}
 	})
 	defer server.Close()
 
 	client := http.Client{Transport: tr}
 	client.Get(server.URL)
-	if cache.token.AccessToken != "abc" {
-		t.Errorf("New token is not cached, found %v", cache.token)
+	if tr.Token().AccessToken != "abc" {
+		t.Errorf("New token is not set, found %v", tr.Token())
 	}
 }
 

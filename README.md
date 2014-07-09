@@ -8,7 +8,10 @@ oauth2 package contains a client implementation for OAuth 2.0 spec.
 go get github.com/golang/oauth2
 ~~~~
 
-See [godoc](http://godoc.org/github.com/golang/oauth2) for further documentation and examples.
+See godoc for further documentation and examples.
+
+* [github.com/golang/oauth2](http://godoc.org/github.com/golang/oauth2)
+* [github.com/golang/oauth2/google](http://godoc.org/github.com/golang/oauth2/google)
 
 ## Contributing
 
