@@ -153,13 +153,6 @@ func (c *Config) NewTransportWithCode(exchangeCode string) (Transport, error) {
 	return NewAuthorizedTransport(c, token), nil
 }
 
-// NewTransportWithCache initializes a transport by reading the initial
-// token from the provided cache. If a token refreshing occurs, it
-// writes the newly fetched token back to the cache.
-func (c *Config) NewTransportWithCache(cache Cache) (Transport, error) {
-	return NewAuthorizedTransportWithCache(c, cache)
-}
-
 // FetchToken retrieves a new access token and updates the existing token
 // with the newly fetched credentials. If existing token doesn't
 // contain a refresh token, it returns an error.

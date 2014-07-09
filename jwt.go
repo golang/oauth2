@@ -70,13 +70,6 @@ func (c *JWTConfig) NewTransportWithUser(user string) Transport {
 	return NewAuthorizedTransport(c, &Token{Subject: user})
 }
 
-// NewTransportWithCache initializes a transport by reading the initial
-// token from the provided cache. If a token refreshing occurs, it
-// writes the newly fetched token back to the cache.
-func (c *JWTConfig) NewTransportWithCache(cache Cache) (Transport, error) {
-	return NewAuthorizedTransportWithCache(c, cache)
-}
-
 // fetchToken retrieves a new access token and updates the existing token
 // with the newly fetched credentials.
 func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {

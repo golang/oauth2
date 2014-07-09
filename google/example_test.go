@@ -45,23 +45,6 @@ func Example_webServer() {
 	}
 	client := http.Client{Transport: t}
 	client.Get("...")
-
-	// Alternatively you can initiate a new transport
-	// with a token from a cache.
-	cache := oauth2.NewFileCache("/path/to/file")
-	// NewTransportWithCache will try to read the cached
-	// token, if any error occurs, it returns the error.
-	// If a token is available at the cache, initiates
-	// a new transport authorized and authenticated with
-	// the read token. If token expires, and a new access
-	// token is retrieved, it writes the newly fetched
-	// token to the cache.
-	t, err = config.NewTransportWithCache(cache)
-	if err != nil {
-		log.Fatal(err)
-	}
-	client = http.Client{Transport: t}
-	client.Get("...")
 }
 
 func Example_serviceAccounts() {
@@ -91,20 +74,6 @@ func Example_serviceAccounts() {
 	// create a transport with a subject. The following GET
 	// request will be made on the behalf of user@example.com.
 	client = http.Client{Transport: config.NewTransportWithUser("user@example.com")}
-	client.Get("...")
-
-	// Alternatively you can iniate a transport with
-	// a token read from the cache.
-	// If the existing access token expires, and a new access token is
-	// retrieved, the newly fetched token will be written to the cache.
-	cache := oauth2.NewFileCache("/path/to/file")
-	t, err := config.NewTransportWithCache(cache)
-	if err != nil {
-		log.Fatal(err)
-	}
-	client = http.Client{Transport: t}
-	// The following request will be authorized by the token
-	// retrieved from the cache.
 	client.Get("...")
 }
 
