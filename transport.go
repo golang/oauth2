@@ -76,9 +76,6 @@ type Transport interface {
 }
 
 type authorizedTransport struct {
-	// Cache to persist changes to the token that
-	// authorizes the current transport.
-	cache   Cache
 	fetcher TokenFetcher
 	token   *Token
 
@@ -91,19 +88,6 @@ type authorizedTransport struct {
 // provided or it is expired.
 func NewAuthorizedTransport(fetcher TokenFetcher, token *Token) Transport {
 	return &authorizedTransport{fetcher: fetcher, token: token}
-}
-
-// NewAuthorizedTransportWithCache creates a new transport that uses
-// the provided token fetcher and cache. Before constructing the new
-// transport, it will try to read from the cache to see if there
-// is an existing token.
-func NewAuthorizedTransportWithCache(fetcher TokenFetcher, cache Cache) (transport Transport, err error) {
-	var token *Token
-	if token, err = cache.Read(); err != nil {
-		return
-	}
-	transport = &authorizedTransport{fetcher: fetcher, cache: cache, token: token}
-	return
 }
 
 // RoundTrip authorizes the request with the existing token.
@@ -176,9 +160,6 @@ func (t *authorizedTransport) RefreshToken() error {
 	}
 
 	t.token = token
-	if t.cache != nil {
-		return t.cache.Write(token)
-	}
 
 	return nil
 }
