@@ -61,13 +61,13 @@ type JWTConfig struct {
 // NewTransport creates a transport that is authorize with the
 // parent JWT configuration.
 func (c *JWTConfig) NewTransport() Transport {
-	return NewAuthorizedTransport(c, &Token{})
+	return NewAuthorizedTransport(http.DefaultTransport, c, &Token{})
 }
 
 // NewTransportWithUser creates a transport that is authorized by
 // the client and impersonates the specified user.
 func (c *JWTConfig) NewTransportWithUser(user string) Transport {
-	return NewAuthorizedTransport(c, &Token{Subject: user})
+	return NewAuthorizedTransport(http.DefaultTransport, c, &Token{Subject: user})
 }
 
 // fetchToken retrieves a new access token and updates the existing token
@@ -100,7 +100,7 @@ func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
 	v.Set("assertion", payload)
 
 	//  Make a request with assertion to get a new token.
-	client := http.Client{Transport: DefaultTransport}
+	client := http.Client{}
 	resp, err := client.PostForm(c.aud, v)
 	if err != nil {
 		return nil, err

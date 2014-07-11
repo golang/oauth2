@@ -14,7 +14,7 @@ func (f *mockTokenFetcher) FetchToken(existing *Token) (*Token, error) {
 }
 
 func TestInitialTokenRead(t *testing.T) {
-	tr := NewAuthorizedTransport(nil, &Token{AccessToken: "abc"})
+	tr := NewAuthorizedTransport(http.DefaultTransport, nil, &Token{AccessToken: "abc"})
 	server := newMockServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer abc" {
 			t.Errorf("Transport doesn't set the Authorization header from the initial token")
@@ -31,7 +31,7 @@ func TestTokenFetch(t *testing.T) {
 			AccessToken: "abc",
 		},
 	}
-	tr := NewAuthorizedTransport(fetcher, nil)
+	tr := NewAuthorizedTransport(http.DefaultTransport, fetcher, nil)
 	server := newMockServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer abc" {
 			t.Errorf("Transport doesn't set the Authorization header from the fetched token")

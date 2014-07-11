@@ -18,10 +18,6 @@ import (
 	"time"
 )
 
-// The default transport implementation to be used while
-// making the authorized requests.
-var DefaultTransport = http.DefaultTransport
-
 type tokenRespBody struct {
 	AccessToken  string        `json:"access_token"`
 	TokenType    string        `json:"token_type"`
@@ -138,7 +134,7 @@ func (c *Config) AuthCodeURL(state string) (authURL string, err error) {
 //     t.SetToken(validToken)
 //
 func (c *Config) NewTransport() Transport {
-	return NewAuthorizedTransport(c, nil)
+	return NewAuthorizedTransport(http.DefaultTransport, c, nil)
 }
 
 // NewTransportWithCode exchanges the OAuth 2.0 exchange code with
@@ -150,7 +146,7 @@ func (c *Config) NewTransportWithCode(exchangeCode string) (Transport, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewAuthorizedTransport(c, token), nil
+	return NewAuthorizedTransport(http.DefaultTransport, c, token), nil
 }
 
 // FetchToken retrieves a new access token and updates the existing token
@@ -210,7 +206,7 @@ func (c *Config) exchange(exchangeCode string) (*Token, error) {
 func (c *Config) updateToken(tok *Token, v url.Values) error {
 	v.Set("client_id", c.opts.ClientID)
 	v.Set("client_secret", c.opts.ClientSecret)
-	r, err := (&http.Client{Transport: DefaultTransport}).PostForm(c.tokenURL, v)
+	r, err := (&http.Client{}).PostForm(c.tokenURL, v)
 	if err != nil {
 		return err
 	}

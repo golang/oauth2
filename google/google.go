@@ -61,7 +61,7 @@ func NewComputeEngineConfig(account string) *ComputeEngineConfig {
 
 // NewTransport creates an authorized transport.
 func (c *ComputeEngineConfig) NewTransport() oauth2.Transport {
-	return oauth2.NewAuthorizedTransport(c, nil)
+	return oauth2.NewAuthorizedTransport(http.DefaultTransport, c, nil)
 }
 
 // FetchToken retrieves a new access token via metadata server.
@@ -76,7 +76,7 @@ func (c *ComputeEngineConfig) FetchToken(existing *oauth2.Token) (token *oauth2.
 		return
 	}
 	req.Header.Add("X-Google-Metadata-Request", "True")
-	resp, err := (&http.Client{Transport: oauth2.DefaultTransport}).Do(req)
+	resp, err := (&http.Client{}).Do(req)
 	if err != nil {
 		return
 	}

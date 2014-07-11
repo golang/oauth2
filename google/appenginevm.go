@@ -3,6 +3,7 @@
 package google
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/golang/oauth2"
@@ -25,7 +26,7 @@ func NewAppEngineConfig(context appengine.Context, scopes []string) *AppEngineCo
 // NewTransport returns a transport that authorizes
 // the requests with the application's service account.
 func (c *AppEngineConfig) NewTransport() oauth2.Transport {
-	return oauth2.NewAuthorizedTransport(c, nil)
+	return oauth2.NewAuthorizedTransport(http.DefaultTransport, c, nil)
 }
 
 // FetchToken fetches a new access token for the provided scopes.

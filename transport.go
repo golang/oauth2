@@ -76,8 +76,9 @@ type Transport interface {
 }
 
 type authorizedTransport struct {
-	fetcher TokenFetcher
-	token   *Token
+	fetcher       TokenFetcher
+	token         *Token
+	origTransport http.RoundTripper
 
 	// Mutex to protect token during auto refreshments.
 	mu sync.RWMutex
@@ -86,8 +87,8 @@ type authorizedTransport struct {
 // NewAuthorizedTransport creates a transport that uses the provided
 // token fetcher to retrieve new tokens if there is no access token
 // provided or it is expired.
-func NewAuthorizedTransport(fetcher TokenFetcher, token *Token) Transport {
-	return &authorizedTransport{fetcher: fetcher, token: token}
+func NewAuthorizedTransport(origTransport http.RoundTripper, fetcher TokenFetcher, token *Token) Transport {
+	return &authorizedTransport{origTransport: origTransport, fetcher: fetcher, token: token}
 }
 
 // RoundTrip authorizes the request with the existing token.
@@ -118,7 +119,7 @@ func (t *authorizedTransport) RoundTrip(req *http.Request) (resp *http.Response,
 	req.Header.Set("Authorization", typ+" "+token.AccessToken)
 
 	// Make the HTTP request.
-	return DefaultTransport.RoundTrip(req)
+	return t.origTransport.RoundTrip(req)
 }
 
 // Token returns the existing token that authorizes the Transport.

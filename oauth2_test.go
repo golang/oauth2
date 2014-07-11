@@ -35,8 +35,6 @@ func newTestConf() *Config {
 }
 
 func TestAuthCodeURL(t *testing.T) {
-	DefaultTransport = http.DefaultTransport
-
 	conf := newTestConf()
 	url, err := conf.AuthCodeURL("foo")
 	if err != nil {
@@ -48,8 +46,13 @@ func TestAuthCodeURL(t *testing.T) {
 }
 
 func TestExchangePayload(t *testing.T) {
+	oldDefaultTransport := http.DefaultTransport
+	defer func() {
+		http.DefaultTransport = oldDefaultTransport
+	}()
+
 	conf := newTestConf()
-	DefaultTransport = &mockTransport{
+	http.DefaultTransport = &mockTransport{
 		rt: func(req *http.Request) (resp *http.Response, err error) {
 			headerContentType := req.Header.Get("Content-Type")
 			if headerContentType != "application/x-www-form-urlencoded" {
@@ -66,8 +69,13 @@ func TestExchangePayload(t *testing.T) {
 }
 
 func TestExchangingTransport(t *testing.T) {
+	oldDefaultTransport := http.DefaultTransport
+	defer func() {
+		http.DefaultTransport = oldDefaultTransport
+	}()
+
 	conf := newTestConf()
-	DefaultTransport = &mockTransport{
+	http.DefaultTransport = &mockTransport{
 		rt: func(req *http.Request) (resp *http.Response, err error) {
 			if req.URL.RequestURI() != "token-url" {
 				t.Fatalf("NewTransportWithCode should have exchanged the code, but it didn't.")
@@ -79,8 +87,6 @@ func TestExchangingTransport(t *testing.T) {
 }
 
 func TestFetchWithNoRedirect(t *testing.T) {
-	DefaultTransport = http.DefaultTransport
-
 	fetcher := newTestConf()
 	_, err := fetcher.FetchToken(&Token{})
 	if err == nil {
