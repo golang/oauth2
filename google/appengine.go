@@ -14,8 +14,11 @@ import (
 // AppEngineConfig represents a configuration for an
 // App Engine application's Google service account.
 type AppEngineConfig struct {
-	context appengine.Context
-	scopes  []string
+	// Default transport to be used while constructing
+	// oauth2.Transport instances from this configuration.
+	Transport *urlfetch.Transport
+	context   appengine.Context
+	scopes    []string
 }
 
 // NewAppEngineConfig creates a new AppEngineConfig for the
@@ -27,6 +30,9 @@ func NewAppEngineConfig(context appengine.Context, scopes []string) *AppEngineCo
 // NewTransport returns a transport that authorizes
 // the requests with the application's service account.
 func (c *AppEngineConfig) NewTransport() oauth2.Transport {
+	if c.Transport != nil {
+		return oauth2.NewAuthorizedTransport(c.Transport, c, nil)
+	}
 	transport := &urlfetch.Transport{
 		Context:                       c.context,
 		Deadline:                      0,
