@@ -76,7 +76,7 @@ func (c *ComputeEngineConfig) FetchToken(existing *oauth2.Token) (token *oauth2.
 		return
 	}
 	req.Header.Add("X-Google-Metadata-Request", "True")
-	resp, err := (&http.Client{}).Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return
 	}

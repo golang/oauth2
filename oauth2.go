@@ -206,7 +206,7 @@ func (c *Config) exchange(exchangeCode string) (*Token, error) {
 func (c *Config) updateToken(tok *Token, v url.Values) error {
 	v.Set("client_id", c.opts.ClientID)
 	v.Set("client_secret", c.opts.ClientSecret)
-	r, err := (&http.Client{}).PostForm(c.tokenURL, v)
+	r, err := http.DefaultClient.PostForm(c.tokenURL, v)
 	if err != nil {
 		return err
 	}

@@ -100,8 +100,7 @@ func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
 	v.Set("assertion", payload)
 
 	//  Make a request with assertion to get a new token.
-	client := http.Client{}
-	resp, err := client.PostForm(c.aud, v)
+	resp, err := http.DefaultClient.PostForm(c.aud, v)
 	if err != nil {
 		return nil, err
 	}
