@@ -3,11 +3,12 @@
 package google
 
 import (
-	"net/http"
 	"strings"
 
 	"github.com/golang/oauth2"
+
 	"google.golang.org/appengine"
+	"google.golang.org/appengine/urlfetch"
 )
 
 // AppEngineConfig represents a configuration for an
@@ -26,7 +27,12 @@ func NewAppEngineConfig(context appengine.Context, scopes []string) *AppEngineCo
 // NewTransport returns a transport that authorizes
 // the requests with the application's service account.
 func (c *AppEngineConfig) NewTransport() oauth2.Transport {
-	return oauth2.NewAuthorizedTransport(http.DefaultTransport, c, nil)
+	transport := &urlfetch.Transport{
+		Context:                       c.context,
+		Deadline:                      0,
+		AllowInvalidServerCertificate: false,
+	}
+	return oauth2.NewAuthorizedTransport(transport, c, nil)
 }
 
 // FetchToken fetches a new access token for the provided scopes.
