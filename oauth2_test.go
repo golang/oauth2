@@ -28,6 +28,7 @@ func newTestConf() *Config {
 			"scope1",
 			"scope2",
 		},
+		Domain:         "example.com",
 		AccessType:     "offline",
 		ApprovalPrompt: "force",
 	}, "auth-url", "token-url")
@@ -40,7 +41,7 @@ func TestAuthCodeURL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected to generate an auth URL, failed with %v.", err)
 	}
-	if url != "auth-url?access_type=offline&approval_prompt=force&client_id=CLIENT_ID&redirect_uri=REDIRECT_URL&response_type=code&scope=scope1+scope2&state=foo" {
+	if url != "auth-url?access_type=offline&approval_prompt=force&client_id=CLIENT_ID&hd=example.com&redirect_uri=REDIRECT_URL&response_type=code&scope=scope1+scope2&state=foo" {
 		t.Fatalf("Generated auth URL is not the expected. Found %v.", url)
 	}
 }
