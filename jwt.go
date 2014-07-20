@@ -42,19 +42,23 @@ type JWTOptions struct {
 
 // NewJWTConfig creates a new configuration with the specified options
 // and OAuth2 provider endpoint.
-func NewJWTConfig(opts *JWTOptions, aud string) (*JWTConfig, error) {
+func NewJWTConfig(opts *JWTOptions, aud string) (conf *JWTConfig, err error) {
+	var audURL *url.URL
+	if audURL, err = url.Parse(aud); err != nil {
+		return
+	}
 	contents, err := ioutil.ReadFile(opts.PemFilename)
 	if err != nil {
 		return nil, err
 	}
-	return &JWTConfig{opts: opts, aud: aud, signature: contents}, nil
+	return &JWTConfig{opts: opts, aud: audURL, signature: contents}, nil
 }
 
 // JWTConfig represents an OAuth 2.0 provider and client options to
 // provide authorized transports with a Bearer JWT token.
 type JWTConfig struct {
 	opts      *JWTOptions
-	aud       string
+	aud       *url.URL
 	signature []byte
 }
 
@@ -73,7 +77,6 @@ func (c *JWTConfig) NewTransportWithUser(user string) Transport {
 // fetchToken retrieves a new access token and updates the existing token
 // with the newly fetched credentials.
 func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
-
 	if existing == nil {
 		existing = &Token{}
 	}
@@ -81,7 +84,7 @@ func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
 	claimSet := &jws.ClaimSet{
 		Iss:   c.opts.Email,
 		Scope: strings.Join(c.opts.Scopes, " "),
-		Aud:   c.aud,
+		Aud:   c.aud.String(),
 	}
 
 	if existing.Subject != "" {
@@ -100,7 +103,7 @@ func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
 	v.Set("assertion", payload)
 
 	//  Make a request with assertion to get a new token.
-	resp, err := http.DefaultClient.PostForm(c.aud, v)
+	resp, err := http.DefaultClient.PostForm(c.aud.String(), v)
 	if err != nil {
 		return nil, err
 	}
