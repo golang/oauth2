@@ -42,10 +42,11 @@ type JWTOptions struct {
 
 // NewJWTConfig creates a new configuration with the specified options
 // and OAuth2 provider endpoint.
-func NewJWTConfig(opts *JWTOptions, aud string) (conf *JWTConfig, err error) {
+func NewJWTConfig(opts *JWTOptions, aud string) (*JWTConfig, error) {
 	var audURL *url.URL
+	var err error
 	if audURL, err = url.Parse(aud); err != nil {
-		return
+		return nil, err
 	}
 	contents, err := ioutil.ReadFile(opts.PemFilename)
 	if err != nil {

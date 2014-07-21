@@ -78,19 +78,20 @@ type Options struct {
 
 // NewConfig creates a generic OAuth 2.0 configuration that talks
 // to an OAuth 2.0 provider specified with authURL and tokenURL.
-func NewConfig(opts *Options, authURL, tokenURL string) (conf *Config, err error) {
+func NewConfig(opts *Options, authURL, tokenURL string) (*Config, error) {
 	var aURL, tURL *url.URL
+	var err error
 	if aURL, err = url.Parse(authURL); err != nil {
-		return
+		return nil, err
 	}
 	if tURL, err = url.Parse(tokenURL); err != nil {
-		return
+		return nil, err
 	}
-	conf = &Config{opts: opts, authURL: aURL, tokenURL: tURL}
+	conf := &Config{opts: opts, authURL: aURL, tokenURL: tURL}
 	if err = conf.validate(); err != nil {
 		return nil, err
 	}
-	return
+	return conf, nil
 }
 
 // Config represents the configuration of an OAuth 2.0 consumer client.
