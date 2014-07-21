@@ -79,12 +79,12 @@ type Options struct {
 // NewConfig creates a generic OAuth 2.0 configuration that talks
 // to an OAuth 2.0 provider specified with authURL and tokenURL.
 func NewConfig(opts *Options, authURL, tokenURL string) (*Config, error) {
-	var aURL, tURL *url.URL
-	var err error
-	if aURL, err = url.Parse(authURL); err != nil {
+	aURL, err := url.Parse(authURL)
+	if err != nil {
 		return nil, err
 	}
-	if tURL, err = url.Parse(tokenURL); err != nil {
+	tURL, err := url.Parse(tokenURL)
+	if err != nil {
 		return nil, err
 	}
 	conf := &Config{opts: opts, authURL: aURL, tokenURL: tURL}
@@ -107,15 +107,7 @@ type Config struct {
 // AuthCodeURL returns a URL to OAuth 2.0 provider's consent page
 // that asks for permissions for the required scopes explicitly.
 func (c *Config) AuthCodeURL(state string) (authURL string) {
-	u := url.URL{
-		Scheme:   c.authURL.Scheme,
-		Opaque:   c.authURL.Opaque,
-		User:     c.authURL.User,
-		Host:     c.authURL.Host,
-		Path:     c.authURL.Path,
-		RawQuery: c.authURL.RawQuery,
-		Fragment: c.authURL.Fragment,
-	}
+	u := *c.authURL
 	q := url.Values{
 		"response_type":   {"code"},
 		"client_id":       {c.opts.ClientID},
