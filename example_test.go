@@ -28,10 +28,7 @@ func Example_config() {
 
 	// Redirect user to consent page to ask for permission
 	// for the scopes specified above.
-	url, err := conf.AuthCodeURL("")
-	if err != nil {
-		log.Fatal(err)
-	}
+	url := conf.AuthCodeURL("")
 	fmt.Printf("Visit the URL for the auth dialog: %v", url)
 
 	// Use the exchange code that is handled by the redirect URL.

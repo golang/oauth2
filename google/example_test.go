@@ -32,10 +32,7 @@ func Example_webServer() {
 
 	// Redirect user to Google's consent page to ask for permission
 	// for the scopes specified above.
-	url, err := config.AuthCodeURL("")
-	if err != nil {
-		log.Fatal(err)
-	}
+	url := config.AuthCodeURL("")
 	fmt.Printf("Visit the URL for the auth dialog: %v", url)
 
 	// Handle the exchange code to initiate a transport

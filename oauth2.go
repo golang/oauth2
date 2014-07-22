@@ -82,12 +82,16 @@ type Options struct {
 // NewConfig creates a generic OAuth 2.0 configuration that talks
 // to an OAuth 2.0 provider specified with authURL and tokenURL.
 func NewConfig(opts *Options, authURL, tokenURL string) (*Config, error) {
-	conf := &Config{
-		opts:     opts,
-		authURL:  authURL,
-		tokenURL: tokenURL,
+	aURL, err := url.Parse(authURL)
+	if err != nil {
+		return nil, err
 	}
-	if err := conf.validate(); err != nil {
+	tURL, err := url.Parse(tokenURL)
+	if err != nil {
+		return nil, err
+	}
+	conf := &Config{opts: opts, authURL: aURL, tokenURL: tURL}
+	if err = conf.validate(); err != nil {
 		return nil, err
 	}
 	return conf, nil
@@ -98,18 +102,15 @@ type Config struct {
 	opts *Options
 	// AuthURL is the URL the user will be directed to
 	// in order to grant access.
-	authURL string
+	authURL *url.URL
 	// TokenURL is the URL used to retrieve OAuth tokens.
-	tokenURL string
+	tokenURL *url.URL
 }
 
 // AuthCodeURL returns a URL to OAuth 2.0 provider's consent page
 // that asks for permissions for the required scopes explicitly.
-func (c *Config) AuthCodeURL(state string) (authURL string, err error) {
-	u, err := url.Parse(c.authURL)
-	if err != nil {
-		return
-	}
+func (c *Config) AuthCodeURL(state string) (authURL string) {
+	u := *c.authURL
 	q := url.Values{
 		"response_type":   {"code"},
 		"client_id":       {c.opts.ClientID},
@@ -125,7 +126,7 @@ func (c *Config) AuthCodeURL(state string) (authURL string, err error) {
 	} else {
 		u.RawQuery += "&" + q
 	}
-	return u.String(), nil
+	return u.String()
 }
 
 // NewTransport creates a new authorizable transport. It doesn't
@@ -180,14 +181,6 @@ func (c *Config) validate() error {
 	if c.opts.RedirectURL == "" {
 		return errors.New("A redirect URL should be provided.")
 	}
-	// TODO(jbd): Validate the URLs. Maybe convert them to URL
-	// objects on construction.
-	if c.authURL == "" {
-		return errors.New("An auth URL should be provided.")
-	}
-	if c.tokenURL == "" {
-		return errors.New("A token URL should be provided.")
-	}
 	return nil
 }
 
@@ -210,7 +203,7 @@ func (c *Config) exchange(exchangeCode string) (*Token, error) {
 func (c *Config) updateToken(tok *Token, v url.Values) error {
 	v.Set("client_id", c.opts.ClientID)
 	v.Set("client_secret", c.opts.ClientSecret)
-	r, err := http.DefaultClient.PostForm(c.tokenURL, v)
+	r, err := http.DefaultClient.PostForm(c.tokenURL.String(), v)
 	if err != nil {
 		return err
 	}
