@@ -56,6 +56,9 @@ type Options struct {
 	// the configured OAuth provider.
 	ClientSecret string `json:"client_secret"`
 
+	// Domain is the email domain that authentication is restricted to.
+	Domain string
+
 	// RedirectURL is the URL to which the user will be returned after
 	// granting (or denying) access.
 	RedirectURL string `json:"redirect_url"`
@@ -116,6 +119,7 @@ func (c *Config) AuthCodeURL(state string) (authURL string) {
 		"state":           {state},
 		"access_type":     {c.opts.AccessType},
 		"approval_prompt": {c.opts.ApprovalPrompt},
+		"hd":              {c.opts.Domain},
 	}.Encode()
 	if u.RawQuery == "" {
 		u.RawQuery = q
