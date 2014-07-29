@@ -108,15 +108,22 @@ type Config struct {
 // that asks for permissions for the required scopes explicitly.
 func (c *Config) AuthCodeURL(state string) (authURL string) {
 	u := *c.authURL
-	q := url.Values{
-		"response_type":   {"code"},
-		"client_id":       {c.opts.ClientID},
-		"redirect_uri":    {c.opts.RedirectURL},
-		"scope":           {strings.Join(c.opts.Scopes, " ")},
-		"state":           {state},
-		"access_type":     {c.opts.AccessType},
-		"approval_prompt": {c.opts.ApprovalPrompt},
-	}.Encode()
+	vals := url.Values{
+		"response_type": {"code"},
+		"client_id":     {c.opts.ClientID},
+		"scope":         {strings.Join(c.opts.Scopes, " ")},
+		"state":         {state},
+	}
+	if c.opts.AccessType != "" {
+		vals.Set("access_type", c.opts.AccessType)
+	}
+	if c.opts.ApprovalPrompt != "" {
+		vals.Set("approval_prompt", c.opts.ApprovalPrompt)
+	}
+	if c.opts.RedirectURL != "" {
+		vals.Set("redirect_uri", c.opts.RedirectURL)
+	}
+	q := vals.Encode()
 	if u.RawQuery == "" {
 		u.RawQuery = q
 	} else {
@@ -172,11 +179,6 @@ func (c *Config) validate() error {
 	if c.opts.ClientSecret == "" {
 		return errors.New("A client secret should be provided.")
 	}
-	// TODO(jbd): Are redirect URIs allowed to be a
-	// non-value string in the spec?
-	if c.opts.RedirectURL == "" {
-		return errors.New("A redirect URL should be provided.")
-	}
 	return nil
 }
 
@@ -184,12 +186,17 @@ func (c *Config) validate() error {
 // to retrieve a new access token.
 func (c *Config) exchange(exchangeCode string) (*Token, error) {
 	token := &Token{}
-	err := c.updateToken(token, url.Values{
-		"grant_type":   {"authorization_code"},
-		"redirect_uri": {c.opts.RedirectURL},
-		"scope":        {strings.Join(c.opts.Scopes, " ")},
-		"code":         {exchangeCode},
-	})
+	vals := url.Values{
+		"grant_type": {"authorization_code"},
+		"code":       {exchangeCode},
+	}
+	if len(c.opts.Scopes) != 0 {
+		vals.Set("scope", strings.Join(c.opts.Scopes, " "))
+	}
+	if c.opts.RedirectURL != "" {
+		vals.Set("redirect_uri", c.opts.RedirectURL)
+	}
+	err := c.updateToken(token, vals)
 	if err != nil {
 		return nil, err
 	}
