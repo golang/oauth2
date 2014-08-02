@@ -119,7 +119,19 @@ func Decode(payload string) (c *ClaimSet, err error) {
 	}
 	c = &ClaimSet{}
 	err = json.NewDecoder(bytes.NewBuffer(decoded)).Decode(c)
-	return c, err
+	if err != nil {
+		return nil, err
+	}
+	// decode private claims
+	err = json.NewDecoder(bytes.NewBuffer(decoded)).Decode(&c.PrivateClaims)
+	if err != nil {
+		return nil, err
+	}
+	// unset registered (and used) claims
+	for _, claim := range []string{"iss", "aud", "exp", "iat"} {
+		delete(c.PrivateClaims, claim)
+	}
+	return c, nil
 }
 
 // Encode encodes a signed JWS with provided header and claim set.
