@@ -49,17 +49,20 @@ type ClaimSet struct {
 }
 
 func (c *ClaimSet) encode() (string, error) {
-	if c.exp.IsZero() || c.iat.IsZero() {
-		// Reverting time back for machines whose time is not perfectly in sync.
-		// If client machine's time is in the future according
-		// to Google servers, an access token will not be issued.
-		now := time.Now().Add(-10 * time.Second)
+	// Reverting time back for machines whose time is not perfectly in sync.
+	// If client machine's time is in the future according
+	// to Google servers, an access token will not be issued.
+	now := time.Now().Add(-10 * time.Second)
+	if c.iat.IsZero() {
 		c.iat = now
-		c.exp = now.Add(time.Hour)
 	}
-
-	c.Exp = c.exp.Unix()
 	c.Iat = c.iat.Unix()
+
+	// Only set the expiry if it has not been manually set
+	if c.Exp == 0 {
+		c.exp = now.Add(time.Hour)
+		c.Exp = c.exp.Unix()
+	}
 
 	b, err := json.Marshal(c)
 	if err != nil {
@@ -95,6 +98,8 @@ type Header struct {
 
 	// Represents the token type.
 	Typ string `json:"typ"`
+
+	Kid string `json:"kid"`
 }
 
 func (h *Header) encode() (string, error) {
@@ -119,7 +124,85 @@ func Decode(payload string) (c *ClaimSet, err error) {
 	}
 	c = &ClaimSet{}
 	err = json.NewDecoder(bytes.NewBuffer(decoded)).Decode(c)
-	return c, err
+	if err != nil {
+		return nil, err
+	}
+	// decode private claims
+	err = json.NewDecoder(bytes.NewBuffer(decoded)).Decode(&c.PrivateClaims)
+	if err != nil {
+		return nil, err
+	}
+	// unset registered (and used) claims
+	for _, claim := range []string{"iss", "aud", "exp", "iat"} {
+		delete(c.PrivateClaims, claim)
+	}
+	return c, nil
+}
+
+func decodeHeader(payload string) (h *Header, err error) {
+	s := strings.Split(payload, ".")
+	if len(s) < 1 {
+		return nil, errors.New("invalid token received")
+	}
+	decoded, err := base64Decode(s[0])
+	if err != nil {
+		return nil, err
+	}
+	h = &Header{}
+	err = json.NewDecoder(bytes.NewBuffer(decoded)).Decode(h)
+	return
+}
+
+func Validate(payload string, public_key interface{}, audience string) error {
+	header, err := decodeHeader(payload)
+	if err != nil {
+		return err
+	}
+
+	// check signature
+	parts := strings.Split(payload, ".")
+	signed := strings.Join(parts[0:2], ".")
+	signature, err := base64Decode(parts[2])
+	if err != nil {
+		return err
+	}
+
+	var algo x509.SignatureAlgorithm
+
+	switch public_key.(type) {
+	case *rsa.PublicKey:
+		switch header.Algorithm {
+		case "RS256":
+			algo = x509.SHA256WithRSA
+		case "RS512":
+			algo = x509.SHA512WithRSA
+		default:
+			return errors.New("JWS algorithm does not match provided key")
+		}
+	default:
+		return errors.New("Unsupported algorithm")
+	}
+
+	cert := x509.Certificate{PublicKey: public_key}
+	err = cert.CheckSignature(algo, []byte(signed), signature)
+	if err != nil {
+		return err
+	}
+
+	claimSet, err := Decode(payload)
+	if err != nil {
+		return err
+	}
+
+	// check expiry
+	if time.Unix(claimSet.Exp, 0).Before(time.Now()) {
+		return errors.New("JWT has expired")
+	}
+
+	if claimSet.Aud != audience {
+		return errors.New("wrong recipient")
+	}
+	return nil
 }
 
 // Encode encodes a signed JWS with provided header and claim set.
