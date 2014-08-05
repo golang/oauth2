@@ -4,7 +4,6 @@ package google
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/golang/oauth2"
 	"google.golang.org/appengine"
@@ -31,7 +30,7 @@ func (c *AppEngineConfig) NewTransport() oauth2.Transport {
 
 // FetchToken fetches a new access token for the provided scopes.
 func (c *AppEngineConfig) FetchToken(existing *oauth2.Token) (*oauth2.Token, error) {
-	token, expiry, err := appengine.AccessToken(c.context, strings.Join(c.scopes, " "))
+	token, expiry, err := appengine.AccessToken(c.context, c.scopes...)
 	if err != nil {
 		return nil, err
 	}
