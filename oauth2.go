@@ -150,7 +150,7 @@ func (c *Config) NewTransport() Transport {
 // it succesffully retrieves a new token, creates a new transport
 // authorized with it.
 func (c *Config) NewTransportWithCode(exchangeCode string) (Transport, error) {
-	token, err := c.exchange(exchangeCode)
+	token, err := c.Exchange(exchangeCode)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (c *Config) validate() error {
 
 // Exchange exchanges the exchange code with the OAuth 2.0 provider
 // to retrieve a new access token.
-func (c *Config) exchange(exchangeCode string) (*Token, error) {
+func (c *Config) Exchange(exchangeCode string) (*Token, error) {
 	token := &Token{}
 	vals := url.Values{
 		"grant_type": {"authorization_code"},

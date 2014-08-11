@@ -62,7 +62,7 @@ func TestExchangePayload(t *testing.T) {
 			return nil, errors.New("no response")
 		},
 	}
-	conf.exchange("exchange-code")
+	conf.Exchange("exchange-code")
 }
 
 func TestExchangingTransport(t *testing.T) {
