@@ -12,10 +12,8 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"strings"
@@ -123,7 +121,7 @@ func Decode(payload string) (c *ClaimSet, err error) {
 }
 
 // Encode encodes a signed JWS with provided header and claim set.
-func Encode(header *Header, c *ClaimSet, signature []byte) (payload string, err error) {
+func Encode(header *Header, c *ClaimSet, signature *rsa.PrivateKey) (payload string, err error) {
 	var encodedHeader, encodedClaimSet string
 	encodedHeader, err = header.encode()
 	if err != nil {
@@ -135,14 +133,9 @@ func Encode(header *Header, c *ClaimSet, signature []byte) (payload string, err 
 	}
 
 	ss := fmt.Sprintf("%s.%s", encodedHeader, encodedClaimSet)
-	parsed, err := parsePrivateKey(signature)
-	if err != nil {
-		return
-	}
-
 	h := sha256.New()
 	h.Write([]byte(ss))
-	b, err := rsa.SignPKCS1v15(rand.Reader, parsed, crypto.SHA256, h.Sum(nil))
+	b, err := rsa.SignPKCS1v15(rand.Reader, signature, crypto.SHA256, h.Sum(nil))
 	if err != nil {
 		return
 	}
@@ -167,27 +160,4 @@ func base64Decode(s string) ([]byte, error) {
 		s += "="
 	}
 	return base64.URLEncoding.DecodeString(s)
-}
-
-// parsePrivateKey parses the key to extract the private key.
-// It returns an error if private key is not provided or the
-// provided key is invalid.
-func parsePrivateKey(key []byte) (*rsa.PrivateKey, error) {
-	invalidPrivateKeyErr := errors.New("Private key is invalid.")
-	block, _ := pem.Decode(key)
-	if block == nil {
-		return nil, invalidPrivateKeyErr
-	}
-	parsedKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-	if err != nil {
-		parsedKey, err = x509.ParsePKCS1PrivateKey(block.Bytes)
-		if err != nil {
-			return nil, err
-		}
-	}
-	parsed, ok := parsedKey.(*rsa.PrivateKey)
-	if !ok {
-		return nil, invalidPrivateKeyErr
-	}
-	return parsed, nil
 }
