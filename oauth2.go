@@ -175,6 +175,7 @@ func (c *Config) FetchToken(existing *Token) (*Token, error) {
 	}
 	err := c.updateToken(existing, url.Values{
 		"grant_type":    {"refresh_token"},
+		"client_secret": {c.opts.ClientSecret},
 		"refresh_token": {existing.RefreshToken},
 	})
 	return existing, err

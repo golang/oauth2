@@ -65,6 +65,28 @@ func TestExchangePayload(t *testing.T) {
 	conf.Exchange("exchange-code")
 }
 
+func TestRefreshPayload(t *testing.T) {
+	oldDefaultTransport := http.DefaultTransport
+	defer func() {
+		http.DefaultTransport = oldDefaultTransport
+	}()
+	conf := newTestConf()
+	http.DefaultTransport = &mockTransport{
+		rt: func(req *http.Request) (resp *http.Response, err error) {
+			headerContentType := req.Header.Get("Content-Type")
+			if headerContentType != "application/x-www-form-urlencoded" {
+				t.Fatalf("Content-Type header is expected to be application/x-www-form-urlencoded, %v found.", headerContentType)
+			}
+			body, _ := ioutil.ReadAll(req.Body)
+			if string(body) != "client_id=CLIENT_ID&client_secret=CLIENT_SECRET&grant_type=refresh_token&refresh_token=REFRESH_TOKEN" {
+				t.Fatalf("Exchange payload is found to be %v", string(body))
+			}
+			return nil, errors.New("no response")
+		},
+	}
+	conf.FetchToken(&Token{RefreshToken: "REFRESH_TOKEN"})
+}
+
 func TestExchangingTransport(t *testing.T) {
 	oldDefaultTransport := http.DefaultTransport
 	defer func() {
