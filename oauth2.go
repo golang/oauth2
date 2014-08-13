@@ -61,8 +61,8 @@ type Options struct {
 	// granting (or denying) access.
 	RedirectURL string `json:"redirect_url"`
 
-	// Optional, identifies the level of access being requested.
-	Scopes []string `json:"scopes"`
+	// Scopes optionally specifies a list of requested permission scopes.
+	Scopes []string `json:"scopes,omitempty"`
 
 	// AccessType is an OAuth extension that gets sent as the
 	// "access_type" field in the URL from AuthCodeURL.

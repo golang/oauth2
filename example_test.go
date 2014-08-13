@@ -56,7 +56,7 @@ func Example_jWTConfig() {
 		// The path to the pem file. If you have a p12 file instead, you
 		// can use `openssl` to export the private key into a pem file.
 		// $ openssl pkcs12 -in key.p12 -out key.pem -nodes
-		PemFilename: "/path/to/pem/file.pem",
+		PEMFilename: "/path/to/pem/file.pem",
 		Scopes:      []string{"SCOPE1", "SCOPE2"},
 	},
 		"https://provider.com/o/oauth2/token")

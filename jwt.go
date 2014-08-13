@@ -27,21 +27,21 @@ var (
 // JWTOptions represents a OAuth2 client's crendentials to retrieve a
 // Bearer JWT token.
 type JWTOptions struct {
-	// ClientID is the OAuth client identifier used when communicating with
+	// Email is the OAuth client identifier used when communicating with
 	// the configured OAuth provider.
 	Email string `json:"email"`
 
-	// Private key to sign JWS payloads.
+	// PrivateKey is an RSA private key to sign JWS payloads.
 	PrivateKey *rsa.PrivateKey `json:"-"`
 
-	// The path to a pem container that includes your private key.
+	// The path to a PEM container that includes your private key.
 	// If PrivateKey is set, this field is ignored.
 	//
 	// If you have a p12 file instead, you
-	// can use `openssl` to export the private key into a pem file.
+	// can use `openssl` to export the private key into a PEM file.
 	// $ openssl pkcs12 -in key.p12 -out key.pem -nodes
-	// Pem file should contain your private key.
-	PemFilename string `json:"pemfilename"`
+	// PEM file should contain your private key.
+	PEMFilename string `json:"pemfilename"`
 
 	// Scopes identify the level of access being requested.
 	Scopes []string `json:"scopes"`
@@ -57,7 +57,7 @@ func NewJWTConfig(opts *JWTOptions, aud string) (*JWTConfig, error) {
 	if opts.PrivateKey != nil {
 		return &JWTConfig{opts: opts, aud: audURL, key: opts.PrivateKey}, nil
 	}
-	contents, err := ioutil.ReadFile(opts.PemFilename)
+	contents, err := ioutil.ReadFile(opts.PEMFilename)
 	if err != nil {
 		return nil, err
 	}
