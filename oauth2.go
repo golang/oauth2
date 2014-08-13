@@ -73,7 +73,7 @@ type Options struct {
 	// will result in your application obtaining a refresh token
 	// the first time your application exchanges an authorization
 	// code for a user.
-	AccessType string `json:"omit"`
+	AccessType string `json:"access_type,omitempty"`
 
 	// ApprovalPrompt indicates whether the user should be
 	// re-prompted for consent. If set to "auto" (default) the
@@ -82,7 +82,7 @@ type Options struct {
 	// access token.
 	// If set to "force" the user will always be prompted, and the
 	// code can be exchanged for a refresh token.
-	ApprovalPrompt string `json:"omit"`
+	ApprovalPrompt string `json:"-"`
 }
 
 // NewConfig creates a generic OAuth 2.0 configuration that talks
