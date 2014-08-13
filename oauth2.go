@@ -14,16 +14,17 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
 
 type tokenRespBody struct {
-	AccessToken  string        `json:"access_token"`
-	TokenType    string        `json:"token_type"`
-	RefreshToken string        `json:"refresh_token"`
-	ExpiresIn    time.Duration `json:"expires_in"`
-	IdToken      string        `json:"id_token"`
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int64  `json:"expires_in"` // in seconds
+	IdToken      string `json:"id_token"`
 }
 
 // TokenFetcher refreshes or fetches a new access token from the
@@ -63,7 +64,15 @@ type Options struct {
 	// Optional, identifies the level of access being requested.
 	Scopes []string `json:"scopes"`
 
-	// Optional, "online" (default) or "offline", no refresh token if "online"
+	// AccessType is an OAuth extension that gets sent as the
+	// "access_type" field in the URL from AuthCodeURL.
+	// See https://developers.google.com/accounts/docs/OAuth2WebServer.
+	// It may be "online" (the default) or "offline".
+	// If your application needs to refresh access tokens when the
+	// user is not present at the browser, then use offline. This
+	// will result in your application obtaining a refresh token
+	// the first time your application exchanges an authorization
+	// code for a user.
 	AccessType string `json:"omit"`
 
 	// ApprovalPrompt indicates whether the user should be
@@ -187,8 +196,9 @@ func (c *Config) validate() error {
 func (c *Config) Exchange(exchangeCode string) (*Token, error) {
 	token := &Token{}
 	vals := url.Values{
-		"grant_type": {"authorization_code"},
-		"code":       {exchangeCode},
+		"grant_type":    {"authorization_code"},
+		"client_secret": {c.opts.ClientSecret},
+		"code":          {exchangeCode},
 	}
 	if len(c.opts.Scopes) != 0 {
 		vals.Set("scope", strings.Join(c.opts.Scopes, " "))
@@ -203,9 +213,15 @@ func (c *Config) Exchange(exchangeCode string) (*Token, error) {
 	return token, nil
 }
 
+// updateToken mutates both tok and v.
 func (c *Config) updateToken(tok *Token, v url.Values) error {
 	v.Set("client_id", c.opts.ClientID)
-	v.Set("client_secret", c.opts.ClientSecret)
+	// Note that we're not setting v's client_secret to t.ClientSecret, due
+	// to https://code.google.com/p/goauth2/issues/detail?id=31
+	// Reddit only accepts client_secret in Authorization header.
+	// Dropbox accepts either, but not both.
+	// The spec requires servers to always support the Authorization header,
+	// so that's all we use.
 	r, err := http.DefaultClient.PostForm(c.tokenURL.String(), v)
 	if err != nil {
 		return err
@@ -231,15 +247,12 @@ func (c *Config) updateToken(tok *Token, v url.Values) error {
 		resp.AccessToken = vals.Get("access_token")
 		resp.TokenType = vals.Get("token_type")
 		resp.RefreshToken = vals.Get("refresh_token")
-		resp.ExpiresIn, _ = time.ParseDuration(vals.Get("expires_in") + "s")
+		resp.ExpiresIn, _ = strconv.ParseInt(vals.Get("expires_in"), 10, 64)
 		resp.IdToken = vals.Get("id_token")
 	default:
 		if err = json.NewDecoder(r.Body).Decode(&resp); err != nil {
 			return err
 		}
-		// The JSON parser treats the unitless ExpiresIn like 'ns' instead of 's' as above,
-		// so compensate here.
-		resp.ExpiresIn *= time.Second
 	}
 	tok.AccessToken = resp.AccessToken
 	tok.TokenType = resp.TokenType
@@ -250,7 +263,7 @@ func (c *Config) updateToken(tok *Token, v url.Values) error {
 	if resp.ExpiresIn == 0 {
 		tok.Expiry = time.Time{}
 	} else {
-		tok.Expiry = time.Now().Add(resp.ExpiresIn)
+		tok.Expiry = time.Now().Add(time.Duration(resp.ExpiresIn) * time.Second)
 	}
 	if resp.IdToken != "" {
 		if tok.Extra == nil {

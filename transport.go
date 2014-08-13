@@ -30,6 +30,10 @@ type Token struct {
 	// The remaining lifetime of the access token.
 	Expiry time.Time `json:"expiry,omitempty"`
 
+	// Extra optionally contains extra metadata from the server
+	// when updating a token. The only current key that may be
+	// populated is "id_token". It may be nil and will be
+	// initialized as needed.
 	Extra map[string]string `json:"extra,omitempty"`
 
 	// JWT related fields
