@@ -33,7 +33,7 @@ type tokenRespBody struct {
 type TokenFetcher interface {
 	// FetchToken retrieves a new access token for the provider.
 	// If the implementation doesn't know how to retrieve a new token,
-	// it returns an error. Existing token could be nil.
+	// it returns an error. The existing token may be nil.
 	FetchToken(existing *Token) (*Token, error)
 }
 
@@ -150,20 +150,20 @@ func (c *Config) AuthCodeURL(state string) (authURL string) {
 //     t, _ := c.NewTransport()
 //     t.SetToken(validToken)
 //
-func (c *Config) NewTransport() Transport {
-	return NewAuthorizedTransport(http.DefaultTransport, c, nil)
+func (c *Config) NewTransport() *Transport {
+	return NewTransport(http.DefaultTransport, c, nil)
 }
 
 // NewTransportWithCode exchanges the OAuth 2.0 exchange code with
 // the provider to fetch a new access token (and refresh token). Once
 // it succesffully retrieves a new token, creates a new transport
 // authorized with it.
-func (c *Config) NewTransportWithCode(exchangeCode string) (Transport, error) {
+func (c *Config) NewTransportWithCode(exchangeCode string) (*Transport, error) {
 	token, err := c.Exchange(exchangeCode)
 	if err != nil {
 		return nil, err
 	}
-	return NewAuthorizedTransport(http.DefaultTransport, c, token), nil
+	return NewTransport(http.DefaultTransport, c, token), nil
 }
 
 // FetchToken retrieves a new access token and updates the existing token

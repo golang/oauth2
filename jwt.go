@@ -78,14 +78,14 @@ type JWTConfig struct {
 
 // NewTransport creates a transport that is authorize with the
 // parent JWT configuration.
-func (c *JWTConfig) NewTransport() Transport {
-	return NewAuthorizedTransport(http.DefaultTransport, c, &Token{})
+func (c *JWTConfig) NewTransport() *Transport {
+	return NewTransport(http.DefaultTransport, c, &Token{})
 }
 
 // NewTransportWithUser creates a transport that is authorized by
 // the client and impersonates the specified user.
-func (c *JWTConfig) NewTransportWithUser(user string) Transport {
-	return NewAuthorizedTransport(http.DefaultTransport, c, &Token{Subject: user})
+func (c *JWTConfig) NewTransportWithUser(user string) *Transport {
+	return NewTransport(http.DefaultTransport, c, &Token{Subject: user})
 }
 
 // fetchToken retrieves a new access token and updates the existing token

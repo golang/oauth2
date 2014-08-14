@@ -27,16 +27,16 @@ func NewAppEngineConfig(context appengine.Context, scopes []string) *AppEngineCo
 
 // NewTransport returns a transport that authorizes
 // the requests with the application's service account.
-func (c *AppEngineConfig) NewTransport() oauth2.Transport {
+func (c *AppEngineConfig) NewTransport() *oauth2.Transport {
 	if c.Transport != nil {
-		return oauth2.NewAuthorizedTransport(c.Transport, c, nil)
+		return oauth2.NewTransport(c.Transport, c, nil)
 	}
 	transport := &urlfetch.Transport{
 		Context:                       c.context,
 		Deadline:                      0,
 		AllowInvalidServerCertificate: false,
 	}
-	return oauth2.NewAuthorizedTransport(transport, c, nil)
+	return oauth2.NewTransport(transport, c, nil)
 }
 
 // FetchToken fetches a new access token for the provided scopes.

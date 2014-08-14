@@ -52,52 +52,26 @@ func (t *Token) Expired() bool {
 	return t.Expiry.Before(time.Now())
 }
 
-// Transport represents an authorized transport.
-// Provides currently in-use user token and allows to set a token to
-// be used. If token expires, it tries to fetch a new token,
-// if possible. Token fetching is thread-safe. If two or more
-// concurrent requests are being made with the same expired token,
-// one of the requests will wait for the other to refresh
-// the existing token.
-type Transport interface {
-	// Authenticates the request with the existing token. If token is
-	// expired, tries to refresh/fetch a new token.
-	// Makes the request by delegating it to the default transport.
-	RoundTrip(*http.Request) (*http.Response, error)
-
-	// Returns the token authenticates the transport.
-	// This operation is thread-safe.
-	Token() *Token
-
-	// Sets a new token to authenticate the transport.
-	// This operation is thread-safe.
-	SetToken(token *Token)
-
-	// Refreshes the token if refresh is possible (such as in the
-	// presense of a refresh token). Returns an error if refresh is
-	// not possible. Refresh is thread-safe.
-	RefreshToken() error
-}
-
-type authorizedTransport struct {
+// Transport is an http.RoundTripper that makes OAuth 2.0 HTTP requests.
+type Transport struct {
 	fetcher       TokenFetcher
-	token         *Token
 	origTransport http.RoundTripper
 
-	// Mutex to protect token during auto refreshments.
-	mu sync.RWMutex
+	mu    sync.RWMutex
+	token *Token
 }
 
-// NewAuthorizedTransport creates a transport that uses the provided
-// token fetcher to retrieve new tokens if there is no access token
-// provided or it is expired.
-func NewAuthorizedTransport(origTransport http.RoundTripper, fetcher TokenFetcher, token *Token) Transport {
-	return &authorizedTransport{origTransport: origTransport, fetcher: fetcher, token: token}
+// NewTransport creates a new Transport that uses the provided
+// token fetcher as token retrieving strategy. It authenticates
+// the requests and delegates origTransport to make the actual requests.
+func NewTransport(origTransport http.RoundTripper, fetcher TokenFetcher, token *Token) *Transport {
+	return &Transport{origTransport: origTransport, fetcher: fetcher, token: token}
 }
 
-// RoundTrip authorizes the request with the existing token.
-// If token is expired, tries to refresh/fetch a new token.
-func (t *authorizedTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+// RoundTrip authorizes and authenticates the request with an
+// access token. If no token exists or token is expired,
+// tries to refresh/fetch a new token.
+func (t *Transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	token := t.Token()
 
 	if token == nil || token.Expired() {
@@ -126,14 +100,15 @@ func (t *authorizedTransport) RoundTrip(req *http.Request) (resp *http.Response,
 	return t.origTransport.RoundTrip(req)
 }
 
-// Token returns the existing token that authorizes the Transport.
-func (t *authorizedTransport) Token() *Token {
+// Token returns the token that authorizes and
+// authenticates the transport.
+func (t *Transport) Token() *Token {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	if t.token == nil {
 		return nil
 	}
-	token := &Token{
+	return &Token{
 		AccessToken:  t.token.AccessToken,
 		TokenType:    t.token.TokenType,
 		RefreshToken: t.token.RefreshToken,
@@ -141,21 +116,20 @@ func (t *authorizedTransport) Token() *Token {
 		Extra:        t.token.Extra,
 		Subject:      t.token.Subject,
 	}
-	return token
 }
 
 // SetToken sets a token to the transport in a thread-safe way.
-func (t *authorizedTransport) SetToken(token *Token) {
+func (t *Transport) SetToken(v *Token) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	t.token = token
+	t.token = v
 }
 
 // RefreshToken retrieves a new token, if a refreshing/fetching
 // method is known and required credentials are presented
 // (such as a refresh token).
-func (t *authorizedTransport) RefreshToken() error {
+func (t *Transport) RefreshToken() error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
