@@ -49,10 +49,15 @@ func Example_serviceAccounts() {
 	// Developer Console (https://console.developers.google.com).
 	config, err := google.NewServiceAccountConfig(&oauth2.JWTOptions{
 		Email: "xxx@developer.gserviceaccount.com",
-		// PEMFilename. If you have a p12 file instead, you
-		// can use `openssl` to export the private key into a pem file.
-		// $ openssl pkcs12 -in key.p12 -out key.pem -nodes
-		PEMFilename: "/path/to/pem/file.pem",
+		// The contents of your RSA private key or your PEM file
+		// that contains a private key.
+		// If you have a p12 file instead, you
+		// can use `openssl` to export the private key into a PEM file.
+		//
+		//    $ openssl pkcs12 -in key.p12 -out key.pem -nodes
+		//
+		// Supports only PEM containers without a passphrase.
+		PrivateKey: []byte("PRIVATE KEY CONTENTS"),
 		Scopes: []string{
 			"https://www.googleapis.com/auth/bigquery",
 		},
