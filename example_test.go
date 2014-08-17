@@ -31,15 +31,15 @@ func Example_config() {
 	url := conf.AuthCodeURL("")
 	fmt.Printf("Visit the URL for the auth dialog: %v", url)
 
-	// Use the exchange code that is handled by the redirect URL.
+	// Use the authorization code that is pushed to the redirect URL.
 	// NewTransportWithCode will do the handshake to retrieve
-	// an access token and iniate a Transport that is
-	// authorized and authenticated the retrieved token.
-	var exchangeCode string
-	if _, err = fmt.Scan(&exchangeCode); err != nil {
+	// an access token and initiate a Transport that is
+	// authorized and authenticated by the retrieved token.
+	var authorizationCode string
+	if _, err = fmt.Scan(&authorizationCode); err != nil {
 		log.Fatal(err)
 	}
-	t, err := conf.NewTransportWithCode(exchangeCode)
+	t, err := conf.NewTransportWithCode(authorizationCode)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -154,12 +154,12 @@ func (c *Config) NewTransport() *Transport {
 	return NewTransport(http.DefaultTransport, c, nil)
 }
 
-// NewTransportWithCode exchanges the OAuth 2.0 exchange code with
+// NewTransportWithCode exchanges the OAuth 2.0 authorization code with
 // the provider to fetch a new access token (and refresh token). Once
 // it succesffully retrieves a new token, creates a new transport
 // authorized with it.
-func (c *Config) NewTransportWithCode(exchangeCode string) (*Transport, error) {
-	token, err := c.Exchange(exchangeCode)
+func (c *Config) NewTransportWithCode(code string) (*Transport, error) {
+	token, err := c.Exchange(code)
 	if err != nil {
 		return nil, err
 	}
@@ -191,13 +191,13 @@ func (c *Config) validate() error {
 	return nil
 }
 
-// Exchange exchanges the exchange code with the OAuth 2.0 provider
+// Exchange exchanges the authorization code with the OAuth 2.0 provider
 // to retrieve a new access token.
-func (c *Config) Exchange(exchangeCode string) (*Token, error) {
+func (c *Config) Exchange(code string) (*Token, error) {
 	vals := url.Values{
 		"grant_type":    {"authorization_code"},
 		"client_secret": {c.opts.ClientSecret},
-		"code":          {exchangeCode},
+		"code":          {code},
 	}
 	if len(c.opts.Scopes) != 0 {
 		vals.Set("scope", strings.Join(c.opts.Scopes, " "))
