@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -31,17 +30,15 @@ type JWTOptions struct {
 	// the configured OAuth provider.
 	Email string `json:"email"`
 
-	// PrivateKey is an RSA private key to sign JWS payloads.
-	PrivateKey *rsa.PrivateKey `json:"-"`
-
-	// The path to a PEM container that includes your private key.
-	// If PrivateKey is set, this field is ignored.
+	// PrivateKey contains the contents of an RSA private key or the
+	// contents of a PEM file that contains a private key. The provided
+	// private key is used to sign JWT payloads.
+	// PEM containers with a passphrase are not supported.
+	// Use the following command to convert a PKCS 12 file into a PEM.
 	//
-	// If you have a p12 file instead, you
-	// can use `openssl` to export the private key into a PEM file.
-	// $ openssl pkcs12 -in key.p12 -out key.pem -nodes
-	// PEM file should contain your private key.
-	PEMFilename string `json:"pemfilename"`
+	//    $ openssl pkcs12 -in key.p12 -out key.pem -nodes
+	//
+	PrivateKey []byte `json:"-"`
 
 	// Scopes identify the level of access being requested.
 	Scopes []string `json:"scopes"`
@@ -54,14 +51,7 @@ func NewJWTConfig(opts *JWTOptions, aud string) (*JWTConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	if opts.PrivateKey != nil {
-		return &JWTConfig{opts: opts, aud: audURL, key: opts.PrivateKey}, nil
-	}
-	contents, err := ioutil.ReadFile(opts.PEMFilename)
-	if err != nil {
-		return nil, err
-	}
-	parsedKey, err := parsePemKey(contents)
+	parsedKey, err := parseKey(opts.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -155,25 +145,26 @@ func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
 	return
 }
 
-// parsePemKey parses the pem file to extract the private key.
-// It returns an error if private key is not provided or the
-// provided key is invalid.
-func parsePemKey(key []byte) (*rsa.PrivateKey, error) {
-	invalidPrivateKeyErr := errors.New("oauth2: private key is invalid")
+// parseKey converts the binary contents of a private key file
+// to an *rsa.PrivateKey. It detects whether the private key is in a
+// PEM container or not. If so, it extracts the the private key
+// from PEM container before conversion. It only supports PEM
+// containers with no passphrase.
+func parseKey(key []byte) (*rsa.PrivateKey, error) {
 	block, _ := pem.Decode(key)
-	if block == nil {
-		return nil, invalidPrivateKeyErr
+	if block != nil {
+		key = block.Bytes
 	}
-	parsedKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	parsedKey, err := x509.ParsePKCS8PrivateKey(key)
 	if err != nil {
-		parsedKey, err = x509.ParsePKCS1PrivateKey(block.Bytes)
+		parsedKey, err = x509.ParsePKCS1PrivateKey(key)
 		if err != nil {
 			return nil, err
 		}
 	}
 	parsed, ok := parsedKey.(*rsa.PrivateKey)
 	if !ok {
-		return nil, invalidPrivateKeyErr
+		return nil, errors.New("oauth2: private key is invalid")
 	}
 	return parsed, nil
 }

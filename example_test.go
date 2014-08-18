@@ -53,11 +53,16 @@ func Example_config() {
 func Example_jWTConfig() {
 	conf, err := oauth2.NewJWTConfig(&oauth2.JWTOptions{
 		Email: "xxx@developer.gserviceaccount.com",
-		// The path to the pem file. If you have a p12 file instead, you
+		// The contents of your RSA private key or your PEM file
+		// that contains a private key.
+		// If you have a p12 file instead, you
 		// can use `openssl` to export the private key into a pem file.
-		// $ openssl pkcs12 -in key.p12 -out key.pem -nodes
-		PEMFilename: "/path/to/pem/file.pem",
-		Scopes:      []string{"SCOPE1", "SCOPE2"},
+		//
+		//    $ openssl pkcs12 -in key.p12 -out key.pem -nodes
+		//
+		// It only supports PEM containers with no passphrase.
+		PrivateKey: []byte("PRIVATE KEY CONTENTS"),
+		Scopes:     []string{"SCOPE1", "SCOPE2"},
 	},
 		"https://provider.com/o/oauth2/token")
 	if err != nil {
