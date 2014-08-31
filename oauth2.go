@@ -19,6 +19,13 @@ import (
 	"time"
 )
 
+var httpClient = http.DefaultClient
+
+// SetHttpClient assigns the client used for making token requests.
+func SetHttpClient(c *http.Client) {
+	httpClient = c
+}
+
 type tokenRespBody struct {
 	AccessToken  string `json:"access_token"`
 	TokenType    string `json:"token_type"`
@@ -121,7 +128,9 @@ func (c *Config) AuthCodeURL(state string) (authURL string) {
 		"response_type": {"code"},
 		"client_id":     {c.opts.ClientID},
 		"scope":         {strings.Join(c.opts.Scopes, " ")},
-		"state":         {state},
+	}
+	if state != "" {
+		vals.Set("state", state)
 	}
 	if c.opts.AccessType != "" {
 		vals.Set("access_type", c.opts.AccessType)
@@ -216,7 +225,7 @@ func (c *Config) retrieveToken(v url.Values) (*Token, error) {
 	// Dropbox accepts either, but not both.
 	// The spec requires servers to always support the Authorization header,
 	// so that's all we use.
-	r, err := http.DefaultClient.PostForm(c.tokenURL.String(), v)
+	r, err := httpClient.PostForm(c.tokenURL.String(), v)
 	if err != nil {
 		return nil, err
 	}
