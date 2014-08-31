@@ -111,12 +111,12 @@ func NewConfig(opts *Options, authURL, tokenURL string) (*Config, error) {
 
 // Config represents the configuration of an OAuth 2.0 consumer client.
 type Config struct {
-	// Client is the default HTTP client to be used while retrieving
+	// Client is the HTTP client to be used to retrieve
 	// tokens from the OAuth 2.0 provider.
 	Client *http.Client
 
-	// Transport represents the default round tripper to be used
-	// while constructing new oauth2.Transport instances from
+	// Transport is the round tripper to be used
+	// to construct new oauth2.Transport instances from
 	// this configuration.
 	Transport http.RoundTripper
 

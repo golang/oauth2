@@ -12,8 +12,9 @@ import (
 // AppEngineConfig represents a configuration for an
 // App Engine application's Google service account.
 type AppEngineConfig struct {
-	// Transport represents the default transport to be used while constructing
-	// oauth2.Transport instances from this configuration.
+	// Transport is the transport to be used
+	// to construct new oauth2.Transport instances from
+	// this configuration.
 	Transport *urlfetch.Transport
 
 	context appengine.Context

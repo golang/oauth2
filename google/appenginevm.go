@@ -3,33 +3,31 @@
 package google
 
 import (
+	"net/http"
+
 	"github.com/golang/oauth2"
 	"google.golang.org/appengine"
-	"google.golang.org/appengine/urlfetch"
 )
 
 // AppEngineConfig represents a configuration for an
 // App Engine application's Google service account.
 type AppEngineConfig struct {
-	// Transport represents the default transport to be used while constructing
-	// oauth2.Transport instances from this configuration.
-	Transport *urlfetch.Transport
-	context   appengine.Context
+	// Transport is the round tripper to be used
+	// to construct new oauth2.Transport instances from
+	// this configuration.
+	Transport http.RoundTripper
 
-	scopes []string
+	context appengine.Context
+	scopes  []string
 }
 
 // NewAppEngineConfig creates a new AppEngineConfig for the
 // provided auth scopes.
 func NewAppEngineConfig(context appengine.Context, scopes []string) *AppEngineConfig {
 	return &AppEngineConfig{
-		Transport: &urlfetch.Transport{
-			Context:                       context,
-			Deadline:                      0,
-			AllowInvalidServerCertificate: false,
-		},
-		context: context,
-		scopes:  scopes,
+		Transport: http.DefaultTransport,
+		context:   context,
+		scopes:    scopes,
 	}
 }
 

@@ -67,12 +67,12 @@ func NewJWTConfig(opts *JWTOptions, aud string) (*JWTConfig, error) {
 // JWTConfig represents an OAuth 2.0 provider and client options to
 // provide authorized transports with a Bearer JWT token.
 type JWTConfig struct {
-	// Client is the default HTTP client to be used while retrieving
+	// Client is the HTTP client to be used to retrieve
 	// tokens from the OAuth 2.0 provider.
 	Client *http.Client
 
-	// Transport represents the default round tripper to be used
-	// while constructing new oauth2.Transport instances from
+	// Transport is the round tripper to be used
+	// to construct new oauth2.Transport instances from
 	// this configuration.
 	Transport http.RoundTripper
 
