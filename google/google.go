@@ -37,6 +37,15 @@ type metaTokenRespBody struct {
 // ComputeEngineConfig represents a OAuth 2.0 consumer client
 // running on Google Compute Engine.
 type ComputeEngineConfig struct {
+	// Client is the default HTTP client to be used while retrieving
+	// tokens from the OAuth 2.0 provider.
+	Client *http.Client
+
+	// Transport represents the default round tripper to be used
+	// while constructing new oauth2.Transport instances from
+	// this configuration.
+	Transport http.RoundTripper
+
 	account string
 }
 
@@ -56,12 +65,16 @@ func NewServiceAccountConfig(opts *oauth2.JWTOptions) (*oauth2.JWTConfig, error)
 // from Google Compute Engine instance's metaserver. If no account is
 // provided, default is used.
 func NewComputeEngineConfig(account string) *ComputeEngineConfig {
-	return &ComputeEngineConfig{account: account}
+	return &ComputeEngineConfig{
+		Client:    http.DefaultClient,
+		Transport: http.DefaultTransport,
+		account:   account,
+	}
 }
 
 // NewTransport creates an authorized transport.
 func (c *ComputeEngineConfig) NewTransport() *oauth2.Transport {
-	return oauth2.NewTransport(http.DefaultTransport, c, nil)
+	return oauth2.NewTransport(c.Transport, c, nil)
 }
 
 // FetchToken retrieves a new access token via metadata server.
@@ -76,7 +89,7 @@ func (c *ComputeEngineConfig) FetchToken(existing *oauth2.Token) (token *oauth2.
 		return
 	}
 	req.Header.Add("X-Google-Metadata-Request", "True")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.Client.Do(req)
 	if err != nil {
 		return
 	}

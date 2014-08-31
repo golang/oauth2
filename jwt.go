@@ -55,12 +55,27 @@ func NewJWTConfig(opts *JWTOptions, aud string) (*JWTConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &JWTConfig{opts: opts, aud: audURL, key: parsedKey}, nil
+	return &JWTConfig{
+		Client:    http.DefaultClient,
+		Transport: http.DefaultTransport,
+		opts:      opts,
+		aud:       audURL,
+		key:       parsedKey,
+	}, nil
 }
 
 // JWTConfig represents an OAuth 2.0 provider and client options to
 // provide authorized transports with a Bearer JWT token.
 type JWTConfig struct {
+	// Client is the default HTTP client to be used while retrieving
+	// tokens from the OAuth 2.0 provider.
+	Client *http.Client
+
+	// Transport represents the default round tripper to be used
+	// while constructing new oauth2.Transport instances from
+	// this configuration.
+	Transport http.RoundTripper
+
 	opts *JWTOptions
 	aud  *url.URL
 	key  *rsa.PrivateKey
@@ -69,13 +84,13 @@ type JWTConfig struct {
 // NewTransport creates a transport that is authorize with the
 // parent JWT configuration.
 func (c *JWTConfig) NewTransport() *Transport {
-	return NewTransport(http.DefaultTransport, c, &Token{})
+	return NewTransport(c.Transport, c, &Token{})
 }
 
 // NewTransportWithUser creates a transport that is authorized by
 // the client and impersonates the specified user.
 func (c *JWTConfig) NewTransportWithUser(user string) *Transport {
-	return NewTransport(http.DefaultTransport, c, &Token{Subject: user})
+	return NewTransport(c.Transport, c, &Token{Subject: user})
 }
 
 // fetchToken retrieves a new access token and updates the existing token
@@ -107,7 +122,7 @@ func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
 	v.Set("assertion", payload)
 
 	//  Make a request with assertion to get a new token.
-	resp, err := http.DefaultClient.PostForm(c.aud.String(), v)
+	resp, err := c.Client.PostForm(c.aud.String(), v)
 	if err != nil {
 		return nil, err
 	}

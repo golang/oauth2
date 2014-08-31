@@ -96,7 +96,13 @@ func NewConfig(opts *Options, authURL, tokenURL string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	conf := &Config{opts: opts, authURL: aURL, tokenURL: tURL}
+	conf := &Config{
+		Client:    http.DefaultClient,
+		Transport: http.DefaultTransport,
+		opts:      opts,
+		authURL:   aURL,
+		tokenURL:  tURL,
+	}
 	if err = conf.validate(); err != nil {
 		return nil, err
 	}
@@ -105,6 +111,15 @@ func NewConfig(opts *Options, authURL, tokenURL string) (*Config, error) {
 
 // Config represents the configuration of an OAuth 2.0 consumer client.
 type Config struct {
+	// Client is the default HTTP client to be used while retrieving
+	// tokens from the OAuth 2.0 provider.
+	Client *http.Client
+
+	// Transport represents the default round tripper to be used
+	// while constructing new oauth2.Transport instances from
+	// this configuration.
+	Transport http.RoundTripper
+
 	opts *Options
 	// AuthURL is the URL the user will be directed to
 	// in order to grant access.
@@ -151,7 +166,7 @@ func (c *Config) AuthCodeURL(state string) (authURL string) {
 //     t.SetToken(validToken)
 //
 func (c *Config) NewTransport() *Transport {
-	return NewTransport(http.DefaultTransport, c, nil)
+	return NewTransport(c.Transport, c, nil)
 }
 
 // NewTransportWithCode exchanges the OAuth 2.0 authorization code with
@@ -163,7 +178,7 @@ func (c *Config) NewTransportWithCode(code string) (*Transport, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewTransport(http.DefaultTransport, c, token), nil
+	return NewTransport(c.Transport, c, token), nil
 }
 
 // FetchToken retrieves a new access token and updates the existing token
@@ -183,10 +198,10 @@ func (c *Config) FetchToken(existing *Token) (*Token, error) {
 // Checks if all required configuration fields have non-zero values.
 func (c *Config) validate() error {
 	if c.opts.ClientID == "" {
-		return errors.New("A client ID should be provided.")
+		return errors.New("oauth2: missing client ID")
 	}
 	if c.opts.ClientSecret == "" {
-		return errors.New("A client secret should be provided.")
+		return errors.New("oauth2: missing client secret")
 	}
 	return nil
 }
@@ -216,7 +231,7 @@ func (c *Config) retrieveToken(v url.Values) (*Token, error) {
 	// Dropbox accepts either, but not both.
 	// The spec requires servers to always support the Authorization header,
 	// so that's all we use.
-	r, err := http.DefaultClient.PostForm(c.tokenURL.String(), v)
+	r, err := c.Client.PostForm(c.tokenURL.String(), v)
 	if err != nil {
 		return nil, err
 	}
