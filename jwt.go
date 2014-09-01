@@ -10,6 +10,8 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -95,7 +97,7 @@ func (c *JWTConfig) NewTransportWithUser(user string) *Transport {
 
 // fetchToken retrieves a new access token and updates the existing token
 // with the newly fetched credentials.
-func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
+func (c *JWTConfig) FetchToken(existing *Token) (*Token, error) {
 	if existing == nil {
 		existing = &Token{}
 	}
@@ -115,7 +117,7 @@ func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
 
 	payload, err := jws.Encode(defaultHeader, claimSet, c.key)
 	if err != nil {
-		return
+		return nil, err
 	}
 	v := url.Values{}
 	v.Set("grant_type", defaultGrantType)
@@ -124,22 +126,23 @@ func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
 	//  Make a request with assertion to get a new token.
 	resp, err := c.Client.PostForm(c.aud.String(), v)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 	}
-
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		// TODO(jbd): Provide more context about the response.
-		return nil, errors.New("Cannot fetch token, response: " + resp.Status)
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
+	}
+	if c := resp.StatusCode; c < 200 || c > 299 {
+		return nil, fmt.Errorf("oauth2: cannot fetch token: %v\nResponse: %s", resp.Status, body)
 	}
 
 	b := &tokenRespBody{}
-	err = json.NewDecoder(resp.Body).Decode(b)
-	if err != nil {
-		return nil, err
+	if err := json.Unmarshal(body, b); err != nil {
+		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 	}
 
-	token = &Token{
+	token := &Token{
 		AccessToken: b.AccessToken,
 		TokenType:   b.TokenType,
 		Subject:     existing.Subject,
@@ -150,14 +153,14 @@ func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
 		claimSet := &jws.ClaimSet{}
 		claimSet, err = jws.Decode(b.IdToken)
 		if err != nil {
-			return
+			return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 		}
 		token.Expiry = time.Unix(claimSet.Exp, 0)
-		return
+		return token, nil
 	}
 
 	token.Expiry = time.Now().Add(time.Duration(b.ExpiresIn) * time.Second)
-	return
+	return token, nil
 }
 
 // parseKey converts the binary contents of a private key file
