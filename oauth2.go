@@ -162,7 +162,7 @@ func (c *Config) AuthCodeURL(state string) (authURL string) {
 // refresh token) in order to be able to do authorized requests.
 //
 // Example:
-//     t, _ := c.NewTransport()
+//     t := c.NewTransport()
 //     t.SetToken(validToken)
 //
 func (c *Config) NewTransport() *Transport {
