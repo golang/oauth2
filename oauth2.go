@@ -115,7 +115,7 @@ type Config struct {
 	// tokens from the OAuth 2.0 provider.
 	Client *http.Client
 
-	// Transport is the round tripper to be used
+	// Transport is the http.RoundTripper to be used
 	// to construct new oauth2.Transport instances from
 	// this configuration.
 	Transport http.RoundTripper
@@ -166,7 +166,7 @@ func (c *Config) AuthCodeURL(state string) (authURL string) {
 //     t.SetToken(validToken)
 //
 func (c *Config) NewTransport() *Transport {
-	return NewTransport(c.Transport, c, nil)
+	return NewTransport(c.transport(), c, nil)
 }
 
 // NewTransportWithCode exchanges the OAuth 2.0 authorization code with
@@ -178,7 +178,7 @@ func (c *Config) NewTransportWithCode(code string) (*Transport, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewTransport(c.Transport, c, token), nil
+	return NewTransport(c.transport(), c, token), nil
 }
 
 // FetchToken retrieves a new access token and updates the existing token
@@ -231,7 +231,7 @@ func (c *Config) retrieveToken(v url.Values) (*Token, error) {
 	// Dropbox accepts either, but not both.
 	// The spec requires servers to always support the Authorization header,
 	// so that's all we use.
-	r, err := c.Client.PostForm(c.tokenURL.String(), v)
+	r, err := c.client().PostForm(c.tokenURL.String(), v)
 	if err != nil {
 		return nil, err
 	}
@@ -285,4 +285,18 @@ func (c *Config) retrieveToken(v url.Values) (*Token, error) {
 		token.Extra["id_token"] = resp.IdToken
 	}
 	return token, nil
+}
+
+func (c *Config) transport() http.RoundTripper {
+	if c.Transport != nil {
+		return c.Transport
+	}
+	return http.DefaultTransport
+}
+
+func (c *Config) client() *http.Client {
+	if c.Client != nil {
+		return c.Client
+	}
+	return http.DefaultClient
 }

@@ -56,11 +56,9 @@ func NewJWTConfig(opts *JWTOptions, aud string) (*JWTConfig, error) {
 		return nil, err
 	}
 	return &JWTConfig{
-		Client:    http.DefaultClient,
-		Transport: http.DefaultTransport,
-		opts:      opts,
-		aud:       audURL,
-		key:       parsedKey,
+		opts: opts,
+		aud:  audURL,
+		key:  parsedKey,
 	}, nil
 }
 
@@ -71,7 +69,7 @@ type JWTConfig struct {
 	// tokens from the OAuth 2.0 provider.
 	Client *http.Client
 
-	// Transport is the round tripper to be used
+	// Transport is the http.RoundTripper to be used
 	// to construct new oauth2.Transport instances from
 	// this configuration.
 	Transport http.RoundTripper
@@ -84,13 +82,13 @@ type JWTConfig struct {
 // NewTransport creates a transport that is authorize with the
 // parent JWT configuration.
 func (c *JWTConfig) NewTransport() *Transport {
-	return NewTransport(c.Transport, c, &Token{})
+	return NewTransport(c.transport(), c, &Token{})
 }
 
 // NewTransportWithUser creates a transport that is authorized by
 // the client and impersonates the specified user.
 func (c *JWTConfig) NewTransportWithUser(user string) *Transport {
-	return NewTransport(c.Transport, c, &Token{Subject: user})
+	return NewTransport(c.transport(), c, &Token{Subject: user})
 }
 
 // fetchToken retrieves a new access token and updates the existing token
@@ -122,7 +120,7 @@ func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
 	v.Set("assertion", payload)
 
 	//  Make a request with assertion to get a new token.
-	resp, err := c.Client.PostForm(c.aud.String(), v)
+	resp, err := c.client().PostForm(c.aud.String(), v)
 	if err != nil {
 		return nil, err
 	}
@@ -158,6 +156,20 @@ func (c *JWTConfig) FetchToken(existing *Token) (token *Token, err error) {
 
 	token.Expiry = time.Now().Add(time.Duration(b.ExpiresIn) * time.Second)
 	return
+}
+
+func (c *JWTConfig) transport() http.RoundTripper {
+	if c.Transport != nil {
+		return c.Transport
+	}
+	return http.DefaultTransport
+}
+
+func (c *JWTConfig) client() *http.Client {
+	if c.Client != nil {
+		return c.Client
+	}
+	return http.DefaultClient
 }
 
 // parseKey converts the binary contents of a private key file

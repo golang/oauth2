@@ -65,16 +65,12 @@ func NewServiceAccountConfig(opts *oauth2.JWTOptions) (*oauth2.JWTConfig, error)
 // from Google Compute Engine instance's metaserver. If no account is
 // provided, default is used.
 func NewComputeEngineConfig(account string) *ComputeEngineConfig {
-	return &ComputeEngineConfig{
-		Client:    http.DefaultClient,
-		Transport: http.DefaultTransport,
-		account:   account,
-	}
+	return &ComputeEngineConfig{account: account}
 }
 
 // NewTransport creates an authorized transport.
 func (c *ComputeEngineConfig) NewTransport() *oauth2.Transport {
-	return oauth2.NewTransport(c.Transport, c, nil)
+	return oauth2.NewTransport(c.transport(), c, nil)
 }
 
 // FetchToken retrieves a new access token via metadata server.
@@ -89,7 +85,7 @@ func (c *ComputeEngineConfig) FetchToken(existing *oauth2.Token) (token *oauth2.
 		return
 	}
 	req.Header.Add("X-Google-Metadata-Request", "True")
-	resp, err := c.Client.Do(req)
+	resp, err := c.client().Do(req)
 	if err != nil {
 		return
 	}
@@ -105,4 +101,18 @@ func (c *ComputeEngineConfig) FetchToken(existing *oauth2.Token) (token *oauth2.
 		Expiry:      time.Now().Add(tokenResp.ExpiresIn * time.Second),
 	}
 	return
+}
+
+func (c *ComputeEngineConfig) transport() http.RoundTripper {
+	if c.Transport != nil {
+		return c.Transport
+	}
+	return http.DefaultTransport
+}
+
+func (c *ComputeEngineConfig) client() *http.Client {
+	if c.Client != nil {
+		return c.Client
+	}
+	return http.DefaultClient
 }
