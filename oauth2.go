@@ -160,11 +160,6 @@ func (c *Config) AuthCodeURL(state string) (authURL string) {
 // initialize the new transport with a token, so after creation,
 // you need to set a valid token (or an expired token with a valid
 // refresh token) in order to be able to do authorized requests.
-//
-// Example:
-//     t := c.NewTransport()
-//     t.SetToken(validToken)
-//
 func (c *Config) NewTransport() *Transport {
 	return NewTransport(c.Transport, c, nil)
 }
