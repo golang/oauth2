@@ -97,11 +97,9 @@ func NewConfig(opts *Options, authURL, tokenURL string) (*Config, error) {
 		return nil, err
 	}
 	conf := &Config{
-		Client:    http.DefaultClient,
-		Transport: http.DefaultTransport,
-		opts:      opts,
-		authURL:   aURL,
-		tokenURL:  tURL,
+		opts:     opts,
+		authURL:  aURL,
+		tokenURL: tURL,
 	}
 	if err = conf.validate(); err != nil {
 		return nil, err
