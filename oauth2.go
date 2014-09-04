@@ -129,22 +129,16 @@ type Config struct {
 // that asks for permissions for the required scopes explicitly.
 func (c *Config) AuthCodeURL(state string) (authURL string) {
 	u := *c.authURL
-	vals := url.Values{
-		"response_type": {"code"},
-		"client_id":     {c.opts.ClientID},
-		"scope":         {strings.Join(c.opts.Scopes, " ")},
-		"state":         {state},
+	v := url.Values{
+		"response_type":   {"code"},
+		"client_id":       {c.opts.ClientID},
+		"redirect_uri":    condVal(c.opts.RedirectURL),
+		"scope":           condVal(strings.Join(c.opts.Scopes, " ")),
+		"state":           condVal(state),
+		"access_type":     condVal(c.opts.AccessType),
+		"approval_prompt": condVal(c.opts.ApprovalPrompt),
 	}
-	if c.opts.AccessType != "" {
-		vals.Set("access_type", c.opts.AccessType)
-	}
-	if c.opts.ApprovalPrompt != "" {
-		vals.Set("approval_prompt", c.opts.ApprovalPrompt)
-	}
-	if c.opts.RedirectURL != "" {
-		vals.Set("redirect_uri", c.opts.RedirectURL)
-	}
-	q := vals.Encode()
+	q := v.Encode()
 	if u.RawQuery == "" {
 		u.RawQuery = q
 	} else {
@@ -178,11 +172,10 @@ func (c *Config) NewTransportWithCode(code string) (*Transport, error) {
 // contain a refresh token, it returns an error.
 func (c *Config) FetchToken(existing *Token) (*Token, error) {
 	if existing == nil || existing.RefreshToken == "" {
-		return nil, errors.New("cannot fetch access token without refresh token.")
+		return nil, errors.New("auth2: cannot fetch access token without refresh token")
 	}
 	return c.retrieveToken(url.Values{
 		"grant_type":    {"refresh_token"},
-		"client_secret": {c.opts.ClientSecret},
 		"refresh_token": {existing.RefreshToken},
 	})
 }
@@ -190,36 +183,36 @@ func (c *Config) FetchToken(existing *Token) (*Token, error) {
 // Exchange exchanges the authorization code with the OAuth 2.0 provider
 // to retrieve a new access token.
 func (c *Config) Exchange(code string) (*Token, error) {
-	vals := url.Values{
-		"grant_type":    {"authorization_code"},
-		"client_secret": {c.opts.ClientSecret},
-		"code":          {code},
-	}
-	if len(c.opts.Scopes) != 0 {
-		vals.Set("scope", strings.Join(c.opts.Scopes, " "))
-	}
-	if c.opts.RedirectURL != "" {
-		vals.Set("redirect_uri", c.opts.RedirectURL)
-	}
-	return c.retrieveToken(vals)
+	return c.retrieveToken(url.Values{
+		"grant_type":   {"authorization_code"},
+		"code":         {code},
+		"redirect_uri": condVal(c.opts.RedirectURL),
+		"scope":        condVal(strings.Join(c.opts.Scopes, " ")),
+	})
 }
 
 func (c *Config) retrieveToken(v url.Values) (*Token, error) {
 	v.Set("client_id", c.opts.ClientID)
-	// Note that we're not setting v's client_secret to t.ClientSecret, due
-	// to https://code.google.com/p/goauth2/issues/detail?id=31
-	// Reddit only accepts client_secret in Authorization header.
-	// Dropbox accepts either, but not both.
-	// The spec requires servers to always support the Authorization header,
-	// so that's all we use.
-	r, err := c.client().PostForm(c.tokenURL.String(), v)
+	bustedAuth := !providerAuthHeaderWorks(c.tokenURL.String())
+	if bustedAuth && c.opts.ClientSecret != "" {
+		v.Set("client_secret", c.opts.ClientSecret)
+	}
+	req, err := http.NewRequest("POST", c.tokenURL.String(), strings.NewReader(v.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if !bustedAuth && c.opts.ClientSecret != "" {
+		req.SetBasicAuth(c.opts.ClientID, c.opts.ClientSecret)
+	}
+	r, err := c.client().Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer r.Body.Close()
 	if r.StatusCode != 200 {
 		// TODO(jbd): Add status code or error message
-		return nil, errors.New("error during updating token")
+		return nil, errors.New("oauth2: can't retrieve a new token")
 	}
 
 	resp := &tokenRespBody{}
@@ -280,4 +273,34 @@ func (c *Config) client() *http.Client {
 		return c.Client
 	}
 	return http.DefaultClient
+}
+
+func condVal(v string) []string {
+	if v == "" {
+		return nil
+	}
+	return []string{v}
+}
+
+// providerAuthHeaderWorks reports whether the OAuth2 server identified by the tokenURL
+// implements the OAuth2 spec correctly
+// See https://code.google.com/p/goauth2/issues/detail?id=31 for background.
+// In summary:
+// - Reddit only accepts client secret in the Authorization header
+// - Dropbox accepts either it in URL param or Auth header, but not both.
+// - Google only accepts URL param (not spec compliant?), not Auth header
+func providerAuthHeaderWorks(tokenURL string) bool {
+	if strings.HasPrefix(tokenURL, "https://accounts.google.com/") ||
+		strings.HasPrefix(tokenURL, "https://github.com/") ||
+		strings.HasPrefix(tokenURL, "https://api.instagram.com/") ||
+		strings.HasPrefix(tokenURL, "https://www.douban.com/") {
+		// Some sites fail to implement the OAuth2 spec fully.
+		return false
+	}
+
+	// Assume the provider implements the spec properly
+	// otherwise. We can add more exceptions as they're
+	// discovered. We will _not_ be adding configurable hooks
+	// to this package to let users select server bugs.
+	return true
 }

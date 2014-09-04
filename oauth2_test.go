@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -19,7 +20,7 @@ func (t *mockTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 	return t.rt(req)
 }
 
-func newTestConf() *Config {
+func newTestConf(url string) *Config {
 	conf, _ := NewConfig(&Options{
 		ClientID:     "CLIENT_ID",
 		ClientSecret: "CLIENT_SECRET",
@@ -30,83 +31,105 @@ func newTestConf() *Config {
 		},
 		AccessType:     "offline",
 		ApprovalPrompt: "force",
-	}, "auth-url", "token-url")
+	}, url+"/auth", url+"/token")
 	return conf
 }
 
 func TestAuthCodeURL(t *testing.T) {
-	conf := newTestConf()
+	conf := newTestConf("server")
 	url := conf.AuthCodeURL("foo")
-	if url != "auth-url?access_type=offline&approval_prompt=force&client_id=CLIENT_ID&redirect_uri=REDIRECT_URL&response_type=code&scope=scope1+scope2&state=foo" {
-		t.Fatalf("Generated auth URL is not the expected. Found %v.", url)
+	if url != "server/auth?access_type=offline&approval_prompt=force&client_id=CLIENT_ID&redirect_uri=REDIRECT_URL&response_type=code&scope=scope1+scope2&state=foo" {
+		t.Fatalf("Auth code URL doesn't match the expected, found: %v", url)
 	}
 }
 
-func TestExchangePayload(t *testing.T) {
-	oldDefaultTransport := http.DefaultTransport
-	defer func() {
-		http.DefaultTransport = oldDefaultTransport
-	}()
-
-	conf := newTestConf()
-	http.DefaultTransport = &mockTransport{
-		rt: func(req *http.Request) (resp *http.Response, err error) {
-			headerContentType := req.Header.Get("Content-Type")
-			if headerContentType != "application/x-www-form-urlencoded" {
-				t.Fatalf("Content-Type header is expected to be application/x-www-form-urlencoded, %v found.", headerContentType)
-			}
-			body, _ := ioutil.ReadAll(req.Body)
-			if string(body) != "client_id=CLIENT_ID&client_secret=CLIENT_SECRET&code=exchange-code&grant_type=authorization_code&redirect_uri=REDIRECT_URL&scope=scope1+scope2" {
-				t.Fatalf("Exchange payload is found to be %v", string(body))
-			}
-			return nil, errors.New("no response")
-		},
+func TestAuthCodeURL_Optional(t *testing.T) {
+	conf, _ := NewConfig(&Options{
+		ClientID: "CLIENT_ID",
+	}, "auth-url", "token-url")
+	url := conf.AuthCodeURL("")
+	if url != "auth-url?client_id=CLIENT_ID&response_type=code" {
+		t.Fatalf("Auth code URL doesn't match the expected, found: %v", url)
 	}
+}
+
+func TestExchangeRequest(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.String() != "/token" {
+			t.Errorf("Unexpected exchange request URL, %v is found.", r.URL)
+		}
+		headerAuth := r.Header.Get("Authorization")
+		if headerAuth != "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=" {
+			t.Errorf("Unexpected authorization header, %v is found.", headerAuth)
+		}
+		headerContentType := r.Header.Get("Content-Type")
+		if headerContentType != "application/x-www-form-urlencoded" {
+			t.Errorf("Unexpected Content-Type header, %v is found.", headerContentType)
+		}
+		body, _ := ioutil.ReadAll(r.Body)
+		if string(body) != "client_id=CLIENT_ID&code=exchange-code&grant_type=authorization_code&redirect_uri=REDIRECT_URL&scope=scope1+scope2" {
+			t.Errorf("Unexpected exchange payload, %v is found.", string(body))
+		}
+	}))
+	defer ts.Close()
+	conf := newTestConf(ts.URL)
 	conf.Exchange("exchange-code")
 }
 
-func TestRefreshPayload(t *testing.T) {
-	oldDefaultTransport := http.DefaultTransport
-	defer func() {
-		http.DefaultTransport = oldDefaultTransport
-	}()
-	conf := newTestConf()
-	http.DefaultTransport = &mockTransport{
-		rt: func(req *http.Request) (resp *http.Response, err error) {
-			headerContentType := req.Header.Get("Content-Type")
-			if headerContentType != "application/x-www-form-urlencoded" {
-				t.Fatalf("Content-Type header is expected to be application/x-www-form-urlencoded, %v found.", headerContentType)
-			}
-			body, _ := ioutil.ReadAll(req.Body)
-			if string(body) != "client_id=CLIENT_ID&client_secret=CLIENT_SECRET&grant_type=refresh_token&refresh_token=REFRESH_TOKEN" {
-				t.Fatalf("Exchange payload is found to be %v", string(body))
+func TestExchangeRequest_NonBasicAuth(t *testing.T) {
+	conf, _ := NewConfig(&Options{
+		ClientID: "CLIENT_ID",
+	}, "https://accounts.google.com/auth",
+		"https://accounts.google.com/token")
+	tr := &mockTransport{
+		rt: func(r *http.Request) (w *http.Response, err error) {
+			headerAuth := r.Header.Get("Authorization")
+			if headerAuth != "" {
+				t.Errorf("Unexpected authorization header, %v is found.", headerAuth)
 			}
 			return nil, errors.New("no response")
 		},
 	}
+	conf.Client = &http.Client{Transport: tr}
+	conf.Exchange("code")
+}
+
+func TestTokenRefreshRequest(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.String() != "/token" {
+			t.Errorf("Unexpected token refresh request URL, %v is found.", r.URL)
+		}
+		headerContentType := r.Header.Get("Content-Type")
+		if headerContentType != "application/x-www-form-urlencoded" {
+			t.Errorf("Unexpected Content-Type header, %v is found.", headerContentType)
+		}
+		body, _ := ioutil.ReadAll(r.Body)
+		if string(body) != "client_id=CLIENT_ID&grant_type=refresh_token&refresh_token=REFRESH_TOKEN" {
+			t.Errorf("Unexpected refresh token payload, %v is found.", string(body))
+		}
+	}))
+	defer ts.Close()
+	conf := newTestConf(ts.URL)
 	conf.FetchToken(&Token{RefreshToken: "REFRESH_TOKEN"})
 }
 
-func TestExchangingTransport(t *testing.T) {
-	oldDefaultTransport := http.DefaultTransport
-	defer func() {
-		http.DefaultTransport = oldDefaultTransport
-	}()
-
-	conf := newTestConf()
-	http.DefaultTransport = &mockTransport{
-		rt: func(req *http.Request) (resp *http.Response, err error) {
-			if req.URL.RequestURI() != "token-url" {
-				t.Fatalf("NewTransportWithCode should have exchanged the code, but it didn't.")
-			}
-			return nil, errors.New("no response")
-		},
-	}
+func TestNewTransportWithCode(t *testing.T) {
+	exchanged := false
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.RequestURI() == "/token" {
+			exchanged = true
+		}
+	}))
+	defer ts.Close()
+	conf := newTestConf(ts.URL)
 	conf.NewTransportWithCode("exchange-code")
+	if !exchanged {
+		t.Errorf("NewTransportWithCode should have exchanged the code, but it didn't.")
+	}
 }
 
-func TestFetchWithNoRedirect(t *testing.T) {
-	fetcher := newTestConf()
+func TestFetchWithNoRefreshToken(t *testing.T) {
+	fetcher := newTestConf("")
 	_, err := fetcher.FetchToken(&Token{})
 	if err == nil {
 		t.Fatalf("Fetch should return an error if no refresh token is set")
