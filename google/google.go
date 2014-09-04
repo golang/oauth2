@@ -15,6 +15,7 @@ package google
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"path"
 	"time"
@@ -59,6 +60,30 @@ func NewConfig(opts *oauth2.Options) (*oauth2.Config, error) {
 // fetch Bearer JWT tokens from Google endpoints.
 func NewServiceAccountConfig(opts *oauth2.JWTOptions) (*oauth2.JWTConfig, error) {
 	return oauth2.NewJWTConfig(opts, uriGoogleToken)
+}
+
+// NewServiceAccountJSONConfig creates a new JWT config from a
+// JSON key file downloaded from the Google Developers Console.
+// See the "Credentials" page under "APIs & Auth" for your project
+// at https://console.developers.google.com.
+func NewServiceAccountJSONConfig(filename string, scopes ...string) (*oauth2.JWTConfig, error) {
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	var key struct {
+		Email      string `json:"client_email"`
+		PrivateKey string `json:"private_key"`
+	}
+	if err := json.Unmarshal(b, &key); err != nil {
+		return nil, err
+	}
+	opts := &oauth2.JWTOptions{
+		Email:      key.Email,
+		PrivateKey: []byte(key.PrivateKey),
+		Scopes:     scopes,
+	}
+	return NewServiceAccountConfig(opts)
 }
 
 // NewComputeEngineConfig creates a new config that can fetch tokens

@@ -48,6 +48,34 @@ func Example_webServer() {
 	client.Get("...")
 }
 
+func Example_serviceAccountsJSON() {
+	// Your credentials should be obtained from the Google
+	// Developer Console (https://console.developers.google.com).
+	// Navigate to your project, then see the "Credentials" page
+	// under "APIs & Auth".
+	// To create a service account client, click "Create new Client ID",
+	// select "Service Account", and click "Create Client ID". A JSON
+	// key file will then be downloaded to your computer.
+	config, err := google.NewServiceAccountJSONConfig(
+		"/path/to/your-project-key.json",
+		"https://www.googleapis.com/auth/bigquery",
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Initiate an http.Client. The following GET request will be
+	// authorized and authenticated on the behalf of
+	// your service account.
+	client := http.Client{Transport: config.NewTransport()}
+	client.Get("...")
+
+	// If you would like to impersonate a user, you can
+	// create a transport with a subject. The following GET
+	// request will be made on the behalf of user@example.com.
+	client = http.Client{Transport: config.NewTransportWithUser("user@example.com")}
+	client.Get("...")
+}
+
 func Example_serviceAccounts() {
 	// Your credentials should be obtained from the Google
 	// Developer Console (https://console.developers.google.com).
