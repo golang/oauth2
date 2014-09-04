@@ -172,7 +172,7 @@ func (c *Config) NewTransportWithCode(code string) (*Transport, error) {
 // contain a refresh token, it returns an error.
 func (c *Config) FetchToken(existing *Token) (*Token, error) {
 	if existing == nil || existing.RefreshToken == "" {
-		return nil, errors.New("auth2: cannot fetch access token without refresh token")
+		return nil, errors.New("oauth2: cannot fetch access token without refresh token")
 	}
 	return c.retrieveToken(url.Values{
 		"grant_type":    {"refresh_token"},
