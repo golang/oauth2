@@ -96,15 +96,14 @@ func NewConfig(opts *Options, authURL, tokenURL string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	conf := &Config{
+	if opts.ClientID == "" {
+		return nil, errors.New("oauth2: missing client ID")
+	}
+	return &Config{
 		opts:     opts,
 		authURL:  aURL,
 		tokenURL: tURL,
-	}
-	if err = conf.validate(); err != nil {
-		return nil, err
-	}
-	return conf, nil
+	}, nil
 }
 
 // Config represents the configuration of an OAuth 2.0 consumer client.
@@ -186,17 +185,6 @@ func (c *Config) FetchToken(existing *Token) (*Token, error) {
 		"client_secret": {c.opts.ClientSecret},
 		"refresh_token": {existing.RefreshToken},
 	})
-}
-
-// Checks if all required configuration fields have non-zero values.
-func (c *Config) validate() error {
-	if c.opts.ClientID == "" {
-		return errors.New("oauth2: missing client ID")
-	}
-	if c.opts.ClientSecret == "" {
-		return errors.New("oauth2: missing client secret")
-	}
-	return nil
 }
 
 // Exchange exchanges the authorization code with the OAuth 2.0 provider
