@@ -7,6 +7,8 @@
 package google
 
 import (
+	"net/http"
+
 	"github.com/golang/oauth2"
 
 	"appengine"
@@ -16,10 +18,10 @@ import (
 // AppEngineConfig represents a configuration for an
 // App Engine application's Google service account.
 type AppEngineConfig struct {
-	// Transport is the transport to be used
+	// Transport is the http.RoundTripper to be used
 	// to construct new oauth2.Transport instances from
 	// this configuration.
-	Transport *urlfetch.Transport
+	Transport http.RoundTripper
 
 	context appengine.Context
 	scopes  []string
@@ -29,11 +31,6 @@ type AppEngineConfig struct {
 // provided auth scopes.
 func NewAppEngineConfig(context appengine.Context, scopes []string) *AppEngineConfig {
 	return &AppEngineConfig{
-		Transport: &urlfetch.Transport{
-			Context:                       context,
-			Deadline:                      0,
-			AllowInvalidServerCertificate: false,
-		},
 		context: context,
 		scopes:  scopes,
 	}
@@ -42,7 +39,7 @@ func NewAppEngineConfig(context appengine.Context, scopes []string) *AppEngineCo
 // NewTransport returns a transport that authorizes
 // the requests with the application's service account.
 func (c *AppEngineConfig) NewTransport() *oauth2.Transport {
-	return oauth2.NewTransport(c.Transport, c, nil)
+	return oauth2.NewTransport(c.transport(), c, nil)
 }
 
 // FetchToken fetches a new access token for the provided scopes.
@@ -55,4 +52,11 @@ func (c *AppEngineConfig) FetchToken(existing *oauth2.Token) (*oauth2.Token, err
 		AccessToken: token,
 		Expiry:      expiry,
 	}, nil
+}
+
+func (c *AppEngineConfig) transport() http.RoundTripper {
+	if c.Transport != nil {
+		return c.Transport
+	}
+	return &urlfetch.Transport{Context: c.context}
 }
