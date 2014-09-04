@@ -14,10 +14,10 @@ import (
 // AppEngineConfig represents a configuration for an
 // App Engine application's Google service account.
 type AppEngineConfig struct {
-	// Transport is the transport to be used
+	// Transport is the http.RoundTripper to be used
 	// to construct new oauth2.Transport instances from
 	// this configuration.
-	Transport *urlfetch.Transport
+	Transport http.RoundTripper
 
 	context appengine.Context
 	scopes  []string
