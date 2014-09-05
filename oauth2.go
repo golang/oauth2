@@ -10,6 +10,7 @@ package oauth2
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"mime"
 	"net/http"
@@ -39,15 +40,6 @@ type TokenFetcher interface {
 
 // Options represents options to provide OAuth 2.0 client credentials
 // and access level. A sample configuration:
-//
-//    opts := &oauth2.Options{
-//        ClientID: "<clientID>",
-//        ClientSecret: "ad4364309eff",
-//        RedirectURL: "https://homepage/oauth2callback",
-//        Scopes: []string{"scope1", "scope2"},
-//        AccessType: "offline", // retrieves a refresh token
-//    }
-//
 type Options struct {
 	// ClientID is the OAuth client identifier used when communicating with
 	// the configured OAuth provider.
@@ -63,26 +55,6 @@ type Options struct {
 
 	// Scopes optionally specifies a list of requested permission scopes.
 	Scopes []string `json:"scopes,omitempty"`
-
-	// AccessType is an OAuth extension that gets sent as the
-	// "access_type" field in the URL from AuthCodeURL.
-	// See https://developers.google.com/accounts/docs/OAuth2WebServer.
-	// It may be "online" (the default) or "offline".
-	// If your application needs to refresh access tokens when the
-	// user is not present at the browser, then use offline. This
-	// will result in your application obtaining a refresh token
-	// the first time your application exchanges an authorization
-	// code for a user.
-	AccessType string `json:"access_type,omitempty"`
-
-	// ApprovalPrompt indicates whether the user should be
-	// re-prompted for consent. If set to "auto" (default) the
-	// user will be prompted only if they haven't previously
-	// granted consent and the code can only be exchanged for an
-	// access token.
-	// If set to "force" the user will always be prompted, and the
-	// code can be exchanged for a refresh token.
-	ApprovalPrompt string `json:"-"`
 }
 
 // NewConfig creates a generic OAuth 2.0 configuration that talks
@@ -127,7 +99,28 @@ type Config struct {
 
 // AuthCodeURL returns a URL to OAuth 2.0 provider's consent page
 // that asks for permissions for the required scopes explicitly.
-func (c *Config) AuthCodeURL(state string) (authURL string) {
+//
+// State is a token to protect the user from CSRF attacks. You must
+// always provide a non-zero string and validate that it matches the
+// the state query parameter on your redirect callback.
+// See http://tools.ietf.org/html/rfc6749#section-10.12 for more info.
+//
+// Access type is an OAuth extension that gets sent as the
+// "access_type" field in the URL from AuthCodeURL.
+// It may be "online" (default) or "offline".
+// If your application needs to refresh access tokens when the
+// user is not present at the browser, then use offline. This
+// will result in your application obtaining a refresh token
+// the first time your application exchanges an authorization
+// code for a user.
+//
+// Approval prompt indicates whether the user should be
+// re-prompted for consent. If set to "auto" (default) the
+// user will be prompted only if they haven't previously
+// granted consent and the code can only be exchanged for an
+// access token. If set to "force" the user will always be prompted,
+// and the code can be exchanged for a refresh token.
+func (c *Config) AuthCodeURL(state, accessType, prompt string) (authURL string) {
 	u := *c.authURL
 	v := url.Values{
 		"response_type":   {"code"},
@@ -135,8 +128,8 @@ func (c *Config) AuthCodeURL(state string) (authURL string) {
 		"redirect_uri":    condVal(c.opts.RedirectURL),
 		"scope":           condVal(strings.Join(c.opts.Scopes, " ")),
 		"state":           condVal(state),
-		"access_type":     condVal(c.opts.AccessType),
-		"approval_prompt": condVal(c.opts.ApprovalPrompt),
+		"access_type":     condVal(accessType),
+		"approval_prompt": condVal(prompt),
 	}
 	q := v.Encode()
 	if u.RawQuery == "" {
@@ -210,9 +203,12 @@ func (c *Config) retrieveToken(v url.Values) (*Token, error) {
 		return nil, err
 	}
 	defer r.Body.Close()
-	if r.StatusCode != 200 {
-		// TODO(jbd): Add status code or error message
-		return nil, errors.New("oauth2: can't retrieve a new token")
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
+	}
+	if c := r.StatusCode; c < 200 || c > 299 {
+		return nil, fmt.Errorf("oauth2: cannot fetch token: %v\nResponse: %s", r.Status, body)
 	}
 
 	resp := &tokenRespBody{}

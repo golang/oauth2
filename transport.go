@@ -36,7 +36,7 @@ type Token struct {
 	// initialized as needed.
 	Extra map[string]string `json:"extra,omitempty"`
 
-	// JWT related fields
+	// Subject is the user to impersonate.
 	Subject string `json:"subject,omitempty"`
 }
 

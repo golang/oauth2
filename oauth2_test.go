@@ -29,15 +29,13 @@ func newTestConf(url string) *Config {
 			"scope1",
 			"scope2",
 		},
-		AccessType:     "offline",
-		ApprovalPrompt: "force",
 	}, url+"/auth", url+"/token")
 	return conf
 }
 
 func TestAuthCodeURL(t *testing.T) {
 	conf := newTestConf("server")
-	url := conf.AuthCodeURL("foo")
+	url := conf.AuthCodeURL("foo", "offline", "force")
 	if url != "server/auth?access_type=offline&approval_prompt=force&client_id=CLIENT_ID&redirect_uri=REDIRECT_URL&response_type=code&scope=scope1+scope2&state=foo" {
 		t.Fatalf("Auth code URL doesn't match the expected, found: %v", url)
 	}
@@ -47,7 +45,7 @@ func TestAuthCodeURL_Optional(t *testing.T) {
 	conf, _ := NewConfig(&Options{
 		ClientID: "CLIENT_ID",
 	}, "auth-url", "token-url")
-	url := conf.AuthCodeURL("")
+	url := conf.AuthCodeURL("", "", "")
 	if url != "auth-url?client_id=CLIENT_ID&response_type=code" {
 		t.Fatalf("Auth code URL doesn't match the expected, found: %v", url)
 	}
