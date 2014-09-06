@@ -68,10 +68,61 @@ func TestExchangeRequest(t *testing.T) {
 		if string(body) != "client_id=CLIENT_ID&code=exchange-code&grant_type=authorization_code&redirect_uri=REDIRECT_URL&scope=scope1+scope2" {
 			t.Errorf("Unexpected exchange payload, %v is found.", string(body))
 		}
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte("access_token=90d64460d14870c08c81352a05dedd3465940a7c&scope=user&token_type=bearer"))
 	}))
 	defer ts.Close()
 	conf := newTestConf(ts.URL)
-	conf.Exchange("exchange-code")
+	tok, err := conf.Exchange("exchange-code")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tok.Expired() {
+		t.Fatal("token shouldn't be expired")
+	}
+	if tok.AccessToken != "90d64460d14870c08c81352a05dedd3465940a7c" {
+		t.Fatalf("wrong access token, %#v", tok.AccessToken)
+	}
+	if tok.TokenType != "bearer" {
+		t.Fatal("wrong token type, %#v", tok.TokenType)
+	}
+}
+
+func TestExchangeRequest_JsonResponse(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.String() != "/token" {
+			t.Errorf("Unexpected exchange request URL, %v is found.", r.URL)
+		}
+		headerAuth := r.Header.Get("Authorization")
+		if headerAuth != "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=" {
+			t.Errorf("Unexpected authorization header, %v is found.", headerAuth)
+		}
+		headerContentType := r.Header.Get("Content-Type")
+		if headerContentType != "application/x-www-form-urlencoded" {
+			t.Errorf("Unexpected Content-Type header, %v is found.", headerContentType)
+		}
+		body, _ := ioutil.ReadAll(r.Body)
+		if string(body) != "client_id=CLIENT_ID&code=exchange-code&grant_type=authorization_code&redirect_uri=REDIRECT_URL&scope=scope1+scope2" {
+			t.Errorf("Unexpected exchange payload, %v is found.", string(body))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"access_token": "90d64460d14870c08c81352a05dedd3465940a7c", "scope": "user", "token_type": "bearer"}`))
+	}))
+	defer ts.Close()
+	conf := newTestConf(ts.URL)
+	tok, err := conf.Exchange("exchange-code")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tok.Expired() {
+		t.Fatal("token shouldn't be expired")
+	}
+	if tok.AccessToken != "90d64460d14870c08c81352a05dedd3465940a7c" {
+		t.Fatalf("wrong access token, %#v", tok.AccessToken)
+	}
+	if tok.TokenType != "bearer" {
+		t.Fatal("wrong token type, %#v", tok.TokenType)
+	}
 }
 
 func TestExchangeRequest_NonBasicAuth(t *testing.T) {
