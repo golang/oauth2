@@ -215,10 +215,6 @@ func (c *Config) retrieveToken(v url.Values) (*Token, error) {
 	content, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	switch content {
 	case "application/x-www-form-urlencoded", "text/plain":
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			return nil, err
-		}
 		vals, err := url.ParseQuery(string(body))
 		if err != nil {
 			return nil, err
@@ -229,7 +225,7 @@ func (c *Config) retrieveToken(v url.Values) (*Token, error) {
 		resp.ExpiresIn, _ = strconv.ParseInt(vals.Get("expires_in"), 10, 64)
 		resp.IdToken = vals.Get("id_token")
 	default:
-		if err = json.NewDecoder(r.Body).Decode(&resp); err != nil {
+		if err = json.Unmarshal(body, &resp); err != nil {
 			return nil, err
 		}
 	}
