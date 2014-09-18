@@ -12,8 +12,8 @@ go get github.com/golang/oauth2
 
 See godoc for further documentation and examples.
 
-* [github.com/golang/oauth2](http://godoc.org/github.com/golang/oauth2)
-* [github.com/golang/oauth2/google](http://godoc.org/github.com/golang/oauth2/google)
+* [godoc.org/github.com/golang/oauth2](http://godoc.org/github.com/golang/oauth2)
+* [godoc.org/github.com/golang/oauth2/google](http://godoc.org/github.com/golang/oauth2/google)
 
 ## Contributing
 
