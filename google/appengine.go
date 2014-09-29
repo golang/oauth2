@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build appengine
-// +build !appenginevm
+// +build appengine,!appenginevm
 
 package google
 
@@ -30,7 +29,7 @@ type AppEngineConfig struct {
 
 // NewAppEngineConfig creates a new AppEngineConfig for the
 // provided auth scopes.
-func NewAppEngineConfig(context appengine.Context, scopes []string) *AppEngineConfig {
+func NewAppEngineConfig(context appengine.Context, scopes ...string) *AppEngineConfig {
 	return &AppEngineConfig{
 		context: context,
 		scopes:  scopes,

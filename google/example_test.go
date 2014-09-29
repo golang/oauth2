@@ -112,10 +112,8 @@ func Example_serviceAccounts() {
 }
 
 func Example_appEngine() {
-	context := appengine.NewContext(nil)
-	config := google.NewAppEngineConfig(context, []string{
-		"https://www.googleapis.com/auth/bigquery",
-	})
+	c := appengine.NewContext(nil)
+	config := google.NewAppEngineConfig(c, "https://www.googleapis.com/auth/bigquery")
 	// The following client will be authorized by the App Engine
 	// app's service account for the provided scopes.
 	client := http.Client{Transport: config.NewTransport()}
