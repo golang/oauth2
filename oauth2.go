@@ -150,7 +150,7 @@ func (c *Config) NewTransport() *Transport {
 
 // NewTransportWithCode exchanges the OAuth 2.0 authorization code with
 // the provider to fetch a new access token (and refresh token). Once
-// it succesffully retrieves a new token, creates a new transport
+// it successfully retrieves a new token, creates a new transport
 // authorized with it.
 func (c *Config) NewTransportWithCode(code string) (*Transport, error) {
 	token, err := c.Exchange(code)
