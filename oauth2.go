@@ -150,7 +150,7 @@ func (c *Config) NewTransport() *Transport {
 
 // NewTransportWithCode exchanges the OAuth 2.0 authorization code with
 // the provider to fetch a new access token (and refresh token). Once
-// it succesffully retrieves a new token, creates a new transport
+// it successfully retrieves a new token, creates a new transport
 // authorized with it.
 func (c *Config) NewTransportWithCode(code string) (*Transport, error) {
 	token, err := c.Exchange(code)
@@ -287,6 +287,7 @@ func providerAuthHeaderWorks(tokenURL string) bool {
 		strings.HasPrefix(tokenURL, "https://api.instagram.com/") ||
 		strings.HasPrefix(tokenURL, "https://www.douban.com/") ||
 		strings.HasPrefix(tokenURL, "https://api.dropbox.com/") ||
+		strings.HasPrefix(tokenURL, "https://api.soundcloud.com/") ||
 		strings.HasPrefix(tokenURL, "https://www.linkedin.com/") {
 		// Some sites fail to implement the OAuth2 spec fully.
 		return false
