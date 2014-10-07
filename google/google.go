@@ -103,7 +103,7 @@ func (c *ComputeEngineConfig) FetchToken(existing *oauth2.Token) (token *oauth2.
 	if c.account != "" {
 		account = c.account
 	}
-	u := "http://metadata/computeMetadata/v1/instance/service-accounts/" + account + "/token"
+	u := "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/" + account + "/token"
 	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return
