@@ -25,6 +25,7 @@ type tokenRespBody struct {
 	TokenType    string `json:"token_type"`
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int64  `json:"expires_in"` // in seconds
+	Expires      int64  `json:"expires"`    // in seconds. Facebook returns expires_in as expires.
 	IdToken      string `json:"id_token"`
 }
 
@@ -223,6 +224,7 @@ func (c *Config) retrieveToken(v url.Values) (*Token, error) {
 		resp.TokenType = vals.Get("token_type")
 		resp.RefreshToken = vals.Get("refresh_token")
 		resp.ExpiresIn, _ = strconv.ParseInt(vals.Get("expires_in"), 10, 64)
+		resp.Expires, _ = strconv.ParseInt(vals.Get("expires"), 10, 64)
 		resp.IdToken = vals.Get("id_token")
 	default:
 		if err = json.Unmarshal(body, &resp); err != nil {
@@ -239,10 +241,17 @@ func (c *Config) retrieveToken(v url.Values) (*Token, error) {
 	if resp.RefreshToken == "" {
 		token.RefreshToken = v.Get("refresh_token")
 	}
-	if resp.ExpiresIn == 0 {
+	if resp.ExpiresIn == 0 || resp.Expires == 0 {
 		token.Expiry = time.Time{}
-	} else {
+	}
+	if resp.ExpiresIn > 0 {
 		token.Expiry = time.Now().Add(time.Duration(resp.ExpiresIn) * time.Second)
+	}
+	if resp.Expires > 0 {
+		// TODO(jbd): Facebook's OAuth2 implementation is broken and
+		// returns expires_in field in expires. Remove the fallback to expires,
+		// when Facebook fixes their implementation.
+		token.Expiry = time.Now().Add(time.Duration(resp.Expires) * time.Second)
 	}
 	if resp.IdToken != "" {
 		if token.Extra == nil {
