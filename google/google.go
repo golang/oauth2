@@ -15,6 +15,7 @@ package google
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -114,6 +115,9 @@ func (c *ComputeEngineConfig) FetchToken(existing *oauth2.Token) (token *oauth2.
 		return
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return nil, fmt.Errorf("oauth2: can't retrieve a token from metadata server, status code: %d", resp.StatusCode)
+	}
 	var tokenResp metaTokenRespBody
 	err = json.NewDecoder(resp.Body).Decode(&tokenResp)
 	if err != nil {
