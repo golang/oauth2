@@ -6,6 +6,7 @@ package oauth2
 
 import (
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 )
@@ -30,14 +31,28 @@ type Token struct {
 	// The remaining lifetime of the access token.
 	Expiry time.Time `json:"expiry,omitempty"`
 
-	// Extra optionally contains extra metadata from the server
-	// when updating a token. The only current key that may be
-	// populated is "id_token". It may be nil and will be
-	// initialized as needed.
-	Extra map[string]string `json:"extra,omitempty"`
-
 	// Subject is the user to impersonate.
 	Subject string `json:"subject,omitempty"`
+
+	// raw optionally contains extra metadata from the server
+	// when updating a token.
+	raw interface{}
+}
+
+// Extra returns an extra field returned from the server during token retrieval.
+// E.g.
+//     idToken := token.Extra("id_token")
+//
+func (t *Token) Extra(key string) string {
+	if vals, ok := t.raw.(url.Values); ok {
+		return vals.Get(key)
+	}
+	if raw, ok := t.raw.(map[string]interface{}); ok {
+		if val, ok := raw[key].(string); ok {
+			return val
+		}
+	}
+	return ""
 }
 
 // Expired returns true if there is no access token or the
@@ -105,17 +120,7 @@ func (t *Transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 func (t *Transport) Token() *Token {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	if t.token == nil {
-		return nil
-	}
-	return &Token{
-		AccessToken:  t.token.AccessToken,
-		TokenType:    t.token.TokenType,
-		RefreshToken: t.token.RefreshToken,
-		Expiry:       t.token.Expiry,
-		Extra:        t.token.Extra,
-		Subject:      t.token.Subject,
-	}
+	return t.token
 }
 
 // SetToken sets a token to the transport in a thread-safe way.

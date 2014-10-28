@@ -84,14 +84,18 @@ func TestExchangeRequest(t *testing.T) {
 		t.Errorf("Token shouldn't be expired.")
 	}
 	if tok.AccessToken != "90d64460d14870c08c81352a05dedd3465940a7c" {
-		t.Errorf("Wrong access token, %#v.", tok.AccessToken)
+		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
 	}
 	if tok.TokenType != "bearer" {
-		t.Errorf("Wrong token type, %#v.", tok.TokenType)
+		t.Errorf("Unexpected token type, %#v.", tok.TokenType)
+	}
+	scope := tok.Extra("scope")
+	if scope != "user" {
+		t.Errorf("Unexpected value for scope: %v", scope)
 	}
 }
 
-func TestExchangeRequest_JsonResponse(t *testing.T) {
+func TestExchangeRequest_JSONResponse(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() != "/token" {
 			t.Errorf("Unexpected exchange request URL, %v is found.", r.URL)
@@ -124,10 +128,46 @@ func TestExchangeRequest_JsonResponse(t *testing.T) {
 		t.Errorf("Token shouldn't be expired.")
 	}
 	if tok.AccessToken != "90d64460d14870c08c81352a05dedd3465940a7c" {
-		t.Errorf("Wrong access token, %#v.", tok.AccessToken)
+		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
 	}
 	if tok.TokenType != "bearer" {
-		t.Errorf("Wrong token type, %#v.", tok.TokenType)
+		t.Errorf("Unexpected token type, %#v.", tok.TokenType)
+	}
+	scope := tok.Extra("scope")
+	if scope != "user" {
+		t.Errorf("Unexpected value for scope: %v", scope)
+	}
+}
+
+func TestExchangeRequest_BadResponse(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"scope": "user", "token_type": "bearer"}`))
+	}))
+	defer ts.Close()
+	conf := newTestConf(ts.URL)
+	tok, err := conf.Exchange("exchange-code")
+	if err != nil {
+		t.Errorf("Failed retrieving token: %s.", err)
+	}
+	if tok.AccessToken != "" {
+		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
+	}
+}
+
+func TestExchangeRequest_BadResponseType(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"access_token":123,  "scope": "user", "token_type": "bearer"}`))
+	}))
+	defer ts.Close()
+	conf := newTestConf(ts.URL)
+	tok, err := conf.Exchange("exchange-code")
+	if err != nil {
+		t.Errorf("Failed retrieving token: %s.", err)
+	}
+	if tok.AccessToken != "" {
+		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
 	}
 }
 

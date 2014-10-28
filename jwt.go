@@ -135,29 +135,28 @@ func (c *JWTConfig) FetchToken(existing *Token) (*Token, error) {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v\nResponse: %s", resp.Status, body)
 	}
 
-	b := &tokenRespBody{}
-	if err := json.Unmarshal(body, b); err != nil {
+	b := make(map[string]interface{})
+	if err := json.Unmarshal(body, &b); err != nil {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 	}
-
-	token := &Token{
-		AccessToken: b.AccessToken,
-		TokenType:   b.TokenType,
-		Subject:     existing.Subject,
+	token := &Token{}
+	token.AccessToken, _ = b["access_token"].(string)
+	token.TokenType, _ = b["token_type"].(string)
+	token.Subject = existing.Subject
+	token.raw = b
+	if e, ok := b["expires_in"].(int); ok {
+		token.Expiry = time.Now().Add(time.Duration(e) * time.Second)
 	}
-
-	if b.IdToken != "" {
+	if idtoken, ok := b["id_token"].(string); ok {
 		// decode returned id token to get expiry
 		claimSet := &jws.ClaimSet{}
-		claimSet, err = jws.Decode(b.IdToken)
+		claimSet, err = jws.Decode(idtoken)
 		if err != nil {
 			return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 		}
 		token.Expiry = time.Unix(claimSet.Exp, 0)
 		return token, nil
 	}
-
-	token.Expiry = time.Now().Add(time.Duration(b.ExpiresIn) * time.Second)
 	return token, nil
 }
 
