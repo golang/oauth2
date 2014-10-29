@@ -68,7 +68,8 @@ func (c *AppEngineConfig) NewTransport() *oauth2.Transport {
 func (c *AppEngineConfig) FetchToken(existing *oauth2.Token) (*oauth2.Token, error) {
 	mu.Lock()
 	defer mu.Unlock()
-	if t, ok := tokens[c.key]; ok && !t.Expiry.Before(time.Now()) {
+	now := time.Now().Add(safetyMargin)
+	if t, ok := tokens[c.key]; ok && !t.Expiry.Before(now) {
 		return t, nil
 	}
 	delete(tokens, c.key)
@@ -76,7 +77,7 @@ func (c *AppEngineConfig) FetchToken(existing *oauth2.Token) (*oauth2.Token, err
 	// Attempt to get token from Memcache
 	tok := new(oauth2.Token)
 	_, err := memcache.Gob.Get(c.context, c.key, tok)
-	if err == nil && !tok.Expiry.Before(time.Now()) {
+	if err == nil && !tok.Expiry.Before(now) {
 		tokens[c.key] = tok // Save token locally
 		return tok, nil
 	}
@@ -87,14 +88,14 @@ func (c *AppEngineConfig) FetchToken(existing *oauth2.Token) (*oauth2.Token, err
 	}
 	t := &oauth2.Token{
 		AccessToken: token,
-		Expiry:      expiry.Add(-safetyMargin),
+		Expiry:      expiry,
 	}
 	tokens[c.key] = t
 	// Also back up token in Memcache
 	memcache.Gob.Set(c.context, &memcache.Item{
 		Key:        c.key,
 		Object:     *t,
-		Expiration: t.Expiry.Sub(time.Now()),
+		Expiration: expiry.Sub(now),
 	})
 	return t, nil
 }
