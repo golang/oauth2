@@ -17,6 +17,10 @@ import (
 	"google.golang.org/appengine/memcache"
 )
 
+// safetyMargin is used to avoid clock-skew problems.
+// 5 minutes is conservative because tokens are valid for 60 minutes.
+const safetyMargin = 5 * time.Minute
+
 // mu protects multiple threads from attempting to fetch a token at the same time.
 var mu sync.Mutex
 
@@ -83,14 +87,14 @@ func (c *AppEngineConfig) FetchToken(existing *oauth2.Token) (*oauth2.Token, err
 	}
 	t := &oauth2.Token{
 		AccessToken: token,
-		Expiry:      expiry,
+		Expiry:      expiry.Add(-safetyMargin),
 	}
 	tokens[c.key] = t
 	// Also back up token in Memcache
 	memcache.Gob.Set(c.context, &memcache.Item{
 		Key:        c.key,
 		Object:     *t,
-		Expiration: expiry.Sub(time.Now()),
+		Expiration: t.Expiry.Sub(time.Now()),
 	})
 	return t, nil
 }
