@@ -15,6 +15,7 @@ import (
 	"github.com/golang/oauth2"
 
 	"appengine"
+	"appengine/memcache"
 	"appengine/urlfetch"
 )
 
@@ -60,8 +61,8 @@ func (c *AppEngineConfig) NewTransport() *oauth2.Transport {
 }
 
 // FetchToken fetches a new access token for the provided scopes.
-// Tokens are cached locally so that the app can scale without hitting quota limits
-// by calling appengine.AccessToken too frequently.
+// Tokens are cached locally and also with Memcache so that the app can scale
+// without hitting quota limits by calling appengine.AccessToken too frequently.
 func (c *AppEngineConfig) FetchToken(existing *oauth2.Token) (*oauth2.Token, error) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -69,6 +70,14 @@ func (c *AppEngineConfig) FetchToken(existing *oauth2.Token) (*oauth2.Token, err
 		return t, nil
 	}
 	delete(tokens, c.key)
+
+	// Attempt to get token from Memcache
+	tok := new(oauth2.Token)
+	_, err := memcache.Gob.Get(c.context, c.key, tok)
+	if err == nil && !tok.Expiry.Before(time.Now()) {
+		tokens[c.key] = tok // Save token locally
+		return tok, nil
+	}
 
 	token, expiry, err := appengine.AccessToken(c.context, c.scopes...)
 	if err != nil {
@@ -79,6 +88,12 @@ func (c *AppEngineConfig) FetchToken(existing *oauth2.Token) (*oauth2.Token, err
 		Expiry:      expiry,
 	}
 	tokens[c.key] = t
+	// Also back up token in Memcache
+	memcache.Gob.Set(c.context, &memcache.Item{
+		Key:        c.key,
+		Object:     *t,
+		Expiration: expiry.Sub(time.Now()),
+	})
 	return t, nil
 }
 
