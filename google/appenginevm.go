@@ -27,9 +27,6 @@ var mu sync.Mutex
 // tokens implements a local cache of tokens to prevent hitting quota limits for appengine.AccessToken calls.
 var tokens map[string]*oauth2.Token
 
-// accessToken stubs appengine.AccessToken to enable unit testing with a mock.
-var accessToken = appengine.AccessToken
-
 func init() {
 	tokens = make(map[string]*oauth2.Token)
 }
@@ -85,7 +82,7 @@ func (c *AppEngineConfig) FetchToken(existing *oauth2.Token) (*oauth2.Token, err
 		return tok, nil
 	}
 
-	token, expiry, err := accessToken(c.context, c.scopes...)
+	token, expiry, err := appengine.AccessToken(c.context, c.scopes...)
 	if err != nil {
 		return nil, err
 	}
