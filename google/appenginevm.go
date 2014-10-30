@@ -8,10 +8,28 @@ package google
 
 import (
 	"net/http"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/golang/oauth2"
 	"google.golang.org/appengine"
+	"google.golang.org/appengine/memcache"
 )
+
+// safetyMargin is used to avoid clock-skew problems.
+// 5 minutes is conservative because tokens are valid for 60 minutes.
+const safetyMargin = 5 * time.Minute
+
+// mu protects multiple threads from attempting to fetch a token at the same time.
+var mu sync.Mutex
+
+// tokens implements a local cache of tokens to prevent hitting quota limits for appengine.AccessToken calls.
+var tokens map[string]*oauth2.Token
+
+func init() {
+	tokens = make(map[string]*oauth2.Token)
+}
 
 // AppEngineConfig represents a configuration for an
 // App Engine application's Google service account.
@@ -23,6 +41,9 @@ type AppEngineConfig struct {
 
 	context appengine.Context
 	scopes  []string
+
+	// key is the map key used to look up the cached tokens for this set of scopes.
+	key string
 }
 
 // NewAppEngineConfig creates a new AppEngineConfig for the
@@ -31,6 +52,7 @@ func NewAppEngineConfig(context appengine.Context, scopes ...string) *AppEngineC
 	return &AppEngineConfig{
 		context: context,
 		scopes:  scopes,
+		key:     strings.Join(scopes, "_"),
 	}
 }
 
@@ -41,15 +63,41 @@ func (c *AppEngineConfig) NewTransport() *oauth2.Transport {
 }
 
 // FetchToken fetches a new access token for the provided scopes.
+// Tokens are cached locally and also with Memcache so that the app can scale
+// without hitting quota limits by calling appengine.AccessToken too frequently.
 func (c *AppEngineConfig) FetchToken(existing *oauth2.Token) (*oauth2.Token, error) {
+	mu.Lock()
+	defer mu.Unlock()
+	now := time.Now().Add(safetyMargin)
+	if t, ok := tokens[c.key]; ok && !t.Expiry.Before(now) {
+		return t, nil
+	}
+	delete(tokens, c.key)
+
+	// Attempt to get token from Memcache
+	tok := new(oauth2.Token)
+	_, err := memcache.Gob.Get(c.context, c.key, tok)
+	if err == nil && !tok.Expiry.Before(now) {
+		tokens[c.key] = tok // Save token locally
+		return tok, nil
+	}
+
 	token, expiry, err := appengine.AccessToken(c.context, c.scopes...)
 	if err != nil {
 		return nil, err
 	}
-	return &oauth2.Token{
+	t := &oauth2.Token{
 		AccessToken: token,
 		Expiry:      expiry,
-	}, nil
+	}
+	tokens[c.key] = t
+	// Also back up token in Memcache
+	memcache.Gob.Set(c.context, &memcache.Item{
+		Key:        c.key,
+		Object:     *t,
+		Expiration: expiry.Sub(now),
+	})
+	return t, nil
 }
 
 func (c *AppEngineConfig) transport() http.RoundTripper {
