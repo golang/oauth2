@@ -15,18 +15,20 @@ package google
 
 import (
 	"encoding/json"
+
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/golang/oauth2"
+	"github.com/golang/oauth2/internal"
 )
 
-const (
-	// Google endpoints.
-	uriGoogleAuth  = "https://accounts.google.com/o/oauth2/auth"
-	uriGoogleToken = "https://accounts.google.com/o/oauth2/token"
+var (
+	uriGoogleAuth, _  = url.Parse("https://accounts.google.com/o/oauth2/auth")
+	uriGoogleToken, _ = url.Parse("https://accounts.google.com/o/oauth2/token")
 )
 
 type metaTokenRespBody struct {
@@ -35,112 +37,93 @@ type metaTokenRespBody struct {
 	TokenType   string        `json:"token_type"`
 }
 
-// ComputeEngineConfig represents a OAuth 2.0 consumer client
-// running on Google Compute Engine.
-type ComputeEngineConfig struct {
-	// Client is the HTTP client to be used to retrieve
-	// tokens from the OAuth 2.0 provider.
-	Client *http.Client
-
-	// Transport is the round tripper to be used
-	// to construct new oauth2.Transport instances from
-	// this configuration.
-	Transport http.RoundTripper
-
-	account string
+// JWTEndpoint adds the endpoints required to complete the 2-legged service account flow.
+func JWTEndpoint() oauth2.Option {
+	return func(opts *oauth2.Options) error {
+		opts.AUD = uriGoogleToken
+		return nil
+	}
 }
 
-// NewConfig creates a new OAuth2 config that uses Google
-// endpoints.
-func NewConfig(opts *oauth2.Options) (*oauth2.Config, error) {
-	return oauth2.NewConfig(opts, uriGoogleAuth, uriGoogleToken)
+// Endpoint adds the endpoints required to do the 3-legged Web server flow.
+func Endpoint() oauth2.Option {
+	return func(opts *oauth2.Options) error {
+		opts.AuthURL = uriGoogleAuth
+		opts.TokenURL = uriGoogleToken
+		return nil
+	}
 }
 
-// NewServiceAccountConfig creates a new JWT config that can
-// fetch Bearer JWT tokens from Google endpoints.
-func NewServiceAccountConfig(opts *oauth2.JWTOptions) (*oauth2.JWTConfig, error) {
-	return oauth2.NewJWTConfig(opts, uriGoogleToken)
+// ComputeEngineAccount uses the specified account to retrieve an access
+// token from the Google Compute Engine's metadata server. If no user is
+// provided, "default" is being used.
+func ComputeEngineAccount(account string) oauth2.Option {
+	return func(opts *oauth2.Options) error {
+		if account == "" {
+			account = "default"
+		}
+		opts.TokenFetcherFunc = makeComputeFetcher(opts, account)
+		return nil
+	}
 }
 
-// NewServiceAccountJSONConfig creates a new JWT config from a
-// JSON key file downloaded from the Google Developers Console.
-// See the "Credentials" page under "APIs & Auth" for your project
-// at https://console.developers.google.com.
-func NewServiceAccountJSONConfig(filename string, scopes ...string) (*oauth2.JWTConfig, error) {
-	b, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
+// ServiceAccountJSONKey uses the provided Google Developers
+// JSON key file to authorize the user. See the "Credentials" page under
+// "APIs & Auth" for your project at https://console.developers.google.com
+// to download a JSON key file.
+func ServiceAccountJSONKey(filename string) oauth2.Option {
+	return func(opts *oauth2.Options) error {
+		b, err := ioutil.ReadFile(filename)
+		if err != nil {
+			return err
+		}
+		var key struct {
+			Email      string `json:"client_email"`
+			PrivateKey string `json:"private_key"`
+		}
+		if err := json.Unmarshal(b, &key); err != nil {
+			return err
+		}
+		pk, err := internal.ParseKey([]byte(key.PrivateKey))
+		if err != nil {
+			return err
+		}
+		opts.Email = key.Email
+		opts.PrivateKey = pk
+		opts.AUD = uriGoogleToken
+		return nil
 	}
-	var key struct {
-		Email      string `json:"client_email"`
-		PrivateKey string `json:"private_key"`
-	}
-	if err := json.Unmarshal(b, &key); err != nil {
-		return nil, err
-	}
-	opts := &oauth2.JWTOptions{
-		Email:      key.Email,
-		PrivateKey: []byte(key.PrivateKey),
-		Scopes:     scopes,
-	}
-	return NewServiceAccountConfig(opts)
 }
 
-// NewComputeEngineConfig creates a new config that can fetch tokens
-// from Google Compute Engine instance's metaserver. If no account is
-// provided, default is used.
-func NewComputeEngineConfig(account string) *ComputeEngineConfig {
-	return &ComputeEngineConfig{account: account}
-}
-
-// NewTransport creates an authorized transport.
-func (c *ComputeEngineConfig) NewTransport() *oauth2.Transport {
-	return oauth2.NewTransport(c.transport(), c, nil)
-}
-
-// FetchToken retrieves a new access token via metadata server.
-func (c *ComputeEngineConfig) FetchToken(existing *oauth2.Token) (token *oauth2.Token, err error) {
-	account := "default"
-	if c.account != "" {
-		account = c.account
+func makeComputeFetcher(opts *oauth2.Options, account string) func(*oauth2.Token) (*oauth2.Token, error) {
+	return func(t *oauth2.Token) (*oauth2.Token, error) {
+		u := "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/" + account + "/token"
+		req, err := http.NewRequest("GET", u, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Add("X-Google-Metadata-Request", "True")
+		c := &http.Client{}
+		if opts.Client != nil {
+			c = opts.Client
+		}
+		resp, err := c.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode < 200 || resp.StatusCode > 299 {
+			return nil, fmt.Errorf("oauth2: can't retrieve a token from metadata server, status code: %d", resp.StatusCode)
+		}
+		var tokenResp metaTokenRespBody
+		err = json.NewDecoder(resp.Body).Decode(&tokenResp)
+		if err != nil {
+			return nil, err
+		}
+		return &oauth2.Token{
+			AccessToken: tokenResp.AccessToken,
+			TokenType:   tokenResp.TokenType,
+			Expiry:      time.Now().Add(tokenResp.ExpiresIn * time.Second),
+		}, nil
 	}
-	u := "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/" + account + "/token"
-	req, err := http.NewRequest("GET", u, nil)
-	if err != nil {
-		return
-	}
-	req.Header.Add("X-Google-Metadata-Request", "True")
-	resp, err := c.client().Do(req)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return nil, fmt.Errorf("oauth2: can't retrieve a token from metadata server, status code: %d", resp.StatusCode)
-	}
-	var tokenResp metaTokenRespBody
-	err = json.NewDecoder(resp.Body).Decode(&tokenResp)
-	if err != nil {
-		return
-	}
-	token = &oauth2.Token{
-		AccessToken: tokenResp.AccessToken,
-		TokenType:   tokenResp.TokenType,
-		Expiry:      time.Now().Add(tokenResp.ExpiresIn * time.Second),
-	}
-	return
-}
-
-func (c *ComputeEngineConfig) transport() http.RoundTripper {
-	if c.Transport != nil {
-		return c.Transport
-	}
-	return http.DefaultTransport
-}
-
-func (c *ComputeEngineConfig) client() *http.Client {
-	if c.Client != nil {
-		return c.Client
-	}
-	return http.DefaultClient
 }

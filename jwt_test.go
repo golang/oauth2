@@ -41,17 +41,25 @@ mJAYH8WU+UAy9pecUnDZj14LAGNVmYcse8HFX71MoshnvCTFEPVo4rZxIAGwMpeJ
 func TestJWTFetch_JSONResponse(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"access_token": "90d64460d14870c08c81352a05dedd3465940a7c", "scope": "user", "token_type": "bearer"}`))
+		w.Write([]byte(`{
+			"access_token": "90d64460d14870c08c81352a05dedd3465940a7c",
+			"scope": "user",
+			"token_type": "bearer"
+		}`))
 	}))
 	defer ts.Close()
-	conf, err := NewJWTConfig(&JWTOptions{
-		Email:      "aaa@xxx.com",
-		PrivateKey: dummyPrivateKey,
-	}, ts.URL)
-	tok, err := conf.FetchToken(nil)
+	f, err := New(
+		JWTClient("aaa@xxx.com", dummyPrivateKey),
+		JWTEndpoint(ts.URL),
+	)
 	if err != nil {
-		t.Errorf("Failed retrieving token: %s.", err)
+		t.Error(err)
 	}
+	tr := f.NewTransport()
+	c := http.Client{Transport: tr}
+
+	c.Get(ts.URL)
+	tok := tr.Token()
 	if tok.Expired() {
 		t.Errorf("Token shouldn't be expired.")
 	}
@@ -73,11 +81,17 @@ func TestJWTFetch_BadResponse(t *testing.T) {
 		w.Write([]byte(`{"scope": "user", "token_type": "bearer"}`))
 	}))
 	defer ts.Close()
-	conf, err := NewJWTConfig(&JWTOptions{
-		Email:      "aaa@xxx.com",
-		PrivateKey: dummyPrivateKey,
-	}, ts.URL)
-	tok, err := conf.FetchToken(nil)
+	f, err := New(
+		JWTClient("aaa@xxx.com", dummyPrivateKey),
+		JWTEndpoint(ts.URL),
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	tr := f.NewTransport()
+	c := http.Client{Transport: tr}
+	c.Get(ts.URL)
+	tok := tr.Token()
 	if err != nil {
 		t.Errorf("Failed retrieving token: %s.", err)
 	}
@@ -99,11 +113,17 @@ func TestJWTFetch_BadResponseType(t *testing.T) {
 		w.Write([]byte(`{"access_token":123, "scope": "user", "token_type": "bearer"}`))
 	}))
 	defer ts.Close()
-	conf, err := NewJWTConfig(&JWTOptions{
-		Email:      "aaa@xxx.com",
-		PrivateKey: dummyPrivateKey,
-	}, ts.URL)
-	tok, err := conf.FetchToken(nil)
+	f, err := New(
+		JWTClient("aaa@xxx.com", dummyPrivateKey),
+		JWTEndpoint(ts.URL),
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	tr := f.NewTransport()
+	c := http.Client{Transport: tr}
+	c.Get(ts.URL)
+	tok := tr.Token()
 	if err != nil {
 		t.Errorf("Failed retrieving token: %s.", err)
 	}

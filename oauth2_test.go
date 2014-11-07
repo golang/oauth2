@@ -20,32 +20,30 @@ func (t *mockTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 	return t.rt(req)
 }
 
-func newTestConf(url string) *Config {
-	conf, _ := NewConfig(&Options{
-		ClientID:     "CLIENT_ID",
-		ClientSecret: "CLIENT_SECRET",
-		RedirectURL:  "REDIRECT_URL",
-		Scopes: []string{
-			"scope1",
-			"scope2",
-		},
-	}, url+"/auth", url+"/token")
-	return conf
+func newTestFlow(url string) *Flow {
+	f, _ := New(
+		Client("CLIENT_ID", "CLIENT_SECRET"),
+		RedirectURL("REDIRECT_URL"),
+		Scope("scope1", "scope2"),
+		Endpoint(url+"/auth", url+"/token"),
+	)
+	return f
 }
 
 func TestAuthCodeURL(t *testing.T) {
-	conf := newTestConf("server")
-	url := conf.AuthCodeURL("foo", "offline", "force")
+	f := newTestFlow("server")
+	url := f.AuthCodeURL("foo", "offline", "force")
 	if url != "server/auth?access_type=offline&approval_prompt=force&client_id=CLIENT_ID&redirect_uri=REDIRECT_URL&response_type=code&scope=scope1+scope2&state=foo" {
-		t.Fatalf("Auth code URL doesn't match the expected, found: %v", url)
+		t.Errorf("Auth code URL doesn't match the expected, found: %v", url)
 	}
 }
 
 func TestAuthCodeURL_Optional(t *testing.T) {
-	conf, _ := NewConfig(&Options{
-		ClientID: "CLIENT_ID",
-	}, "auth-url", "token-url")
-	url := conf.AuthCodeURL("", "", "")
+	f, _ := New(
+		Client("CLIENT_ID", ""),
+		Endpoint("auth-url", "token-token"),
+	)
+	url := f.AuthCodeURL("", "", "")
 	if url != "auth-url?client_id=CLIENT_ID&response_type=code" {
 		t.Fatalf("Auth code URL doesn't match the expected, found: %v", url)
 	}
@@ -75,11 +73,12 @@ func TestExchangeRequest(t *testing.T) {
 		w.Write([]byte("access_token=90d64460d14870c08c81352a05dedd3465940a7c&scope=user&token_type=bearer"))
 	}))
 	defer ts.Close()
-	conf := newTestConf(ts.URL)
-	tok, err := conf.Exchange("exchange-code")
+	f := newTestFlow(ts.URL)
+	tr, err := f.NewTransportFromCode("exchange-code")
 	if err != nil {
-		t.Errorf("Failed retrieving token: %s.", err)
+		t.Error(err)
 	}
+	tok := tr.Token()
 	if tok.Expired() {
 		t.Errorf("Token shouldn't be expired.")
 	}
@@ -119,11 +118,12 @@ func TestExchangeRequest_JSONResponse(t *testing.T) {
 		w.Write([]byte(`{"access_token": "90d64460d14870c08c81352a05dedd3465940a7c", "scope": "user", "token_type": "bearer"}`))
 	}))
 	defer ts.Close()
-	conf := newTestConf(ts.URL)
-	tok, err := conf.Exchange("exchange-code")
+	f := newTestFlow(ts.URL)
+	tr, err := f.NewTransportFromCode("exchange-code")
 	if err != nil {
-		t.Errorf("Failed retrieving token: %s.", err)
+		t.Error(err)
 	}
+	tok := tr.Token()
 	if tok.Expired() {
 		t.Errorf("Token shouldn't be expired.")
 	}
@@ -145,11 +145,12 @@ func TestExchangeRequest_BadResponse(t *testing.T) {
 		w.Write([]byte(`{"scope": "user", "token_type": "bearer"}`))
 	}))
 	defer ts.Close()
-	conf := newTestConf(ts.URL)
-	tok, err := conf.Exchange("exchange-code")
+	f := newTestFlow(ts.URL)
+	tr, err := f.NewTransportFromCode("exchange-code")
 	if err != nil {
-		t.Errorf("Failed retrieving token: %s.", err)
+		t.Error(err)
 	}
+	tok := tr.Token()
 	if tok.AccessToken != "" {
 		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
 	}
@@ -161,21 +162,18 @@ func TestExchangeRequest_BadResponseType(t *testing.T) {
 		w.Write([]byte(`{"access_token":123,  "scope": "user", "token_type": "bearer"}`))
 	}))
 	defer ts.Close()
-	conf := newTestConf(ts.URL)
-	tok, err := conf.Exchange("exchange-code")
+	f := newTestFlow(ts.URL)
+	tr, err := f.NewTransportFromCode("exchange-code")
 	if err != nil {
-		t.Errorf("Failed retrieving token: %s.", err)
+		t.Error(err)
 	}
+	tok := tr.Token()
 	if tok.AccessToken != "" {
 		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
 	}
 }
 
 func TestExchangeRequest_NonBasicAuth(t *testing.T) {
-	conf, _ := NewConfig(&Options{
-		ClientID: "CLIENT_ID",
-	}, "https://accounts.google.com/auth",
-		"https://accounts.google.com/token")
 	tr := &mockTransport{
 		rt: func(r *http.Request) (w *http.Response, err error) {
 			headerAuth := r.Header.Get("Authorization")
@@ -185,12 +183,20 @@ func TestExchangeRequest_NonBasicAuth(t *testing.T) {
 			return nil, errors.New("no response")
 		},
 	}
-	conf.Client = &http.Client{Transport: tr}
-	conf.Exchange("code")
+	c := &http.Client{Transport: tr}
+	f, _ := New(
+		Client("CLIENT_ID", ""),
+		Endpoint("https://accounts.google.com/auth", "https://accounts.google.com/token"),
+		HTTPClient(c),
+	)
+	f.NewTransportFromCode("code")
 }
 
 func TestTokenRefreshRequest(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.String() == "/somethingelse" {
+			return
+		}
 		if r.URL.String() != "/token" {
 			t.Errorf("Unexpected token refresh request URL, %v is found.", r.URL)
 		}
@@ -204,29 +210,35 @@ func TestTokenRefreshRequest(t *testing.T) {
 		}
 	}))
 	defer ts.Close()
-	conf := newTestConf(ts.URL)
-	conf.FetchToken(&Token{RefreshToken: "REFRESH_TOKEN"})
-}
-
-func TestNewTransportWithCode(t *testing.T) {
-	exchanged := false
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.RequestURI() == "/token" {
-			exchanged = true
-		}
-	}))
-	defer ts.Close()
-	conf := newTestConf(ts.URL)
-	conf.NewTransportWithCode("exchange-code")
-	if !exchanged {
-		t.Errorf("NewTransportWithCode should have exchanged the code, but it didn't.")
-	}
+	f := newTestFlow(ts.URL)
+	tr := f.NewTransportFromToken(&Token{RefreshToken: "REFRESH_TOKEN"})
+	c := http.Client{Transport: tr}
+	c.Get(ts.URL + "/somethingelse")
 }
 
 func TestFetchWithNoRefreshToken(t *testing.T) {
-	fetcher := newTestConf("")
-	_, err := fetcher.FetchToken(&Token{})
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.String() == "/somethingelse" {
+			return
+		}
+		if r.URL.String() != "/token" {
+			t.Errorf("Unexpected token refresh request URL, %v is found.", r.URL)
+		}
+		headerContentType := r.Header.Get("Content-Type")
+		if headerContentType != "application/x-www-form-urlencoded" {
+			t.Errorf("Unexpected Content-Type header, %v is found.", headerContentType)
+		}
+		body, _ := ioutil.ReadAll(r.Body)
+		if string(body) != "client_id=CLIENT_ID&grant_type=refresh_token&refresh_token=REFRESH_TOKEN" {
+			t.Errorf("Unexpected refresh token payload, %v is found.", string(body))
+		}
+	}))
+	defer ts.Close()
+	f := newTestFlow(ts.URL)
+	tr := f.NewTransportFromToken(&Token{})
+	c := http.Client{Transport: tr}
+	_, err := c.Get(ts.URL + "/somethingelse")
 	if err == nil {
-		t.Fatalf("Fetch should return an error if no refresh token is set")
+		t.Errorf("Fetch should return an error if no refresh token is set")
 	}
 }

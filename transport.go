@@ -31,9 +31,6 @@ type Token struct {
 	// The remaining lifetime of the access token.
 	Expiry time.Time `json:"expiry,omitempty"`
 
-	// Subject is the user to impersonate.
-	Subject string `json:"subject,omitempty"`
-
 	// raw optionally contains extra metadata from the server
 	// when updating a token.
 	raw interface{}
@@ -69,8 +66,8 @@ func (t *Token) Expired() bool {
 
 // Transport is an http.RoundTripper that makes OAuth 2.0 HTTP requests.
 type Transport struct {
-	fetcher       TokenFetcher
-	origTransport http.RoundTripper
+	fetcher func(t *Token) (*Token, error)
+	base    http.RoundTripper
 
 	mu    sync.RWMutex
 	token *Token
@@ -79,8 +76,8 @@ type Transport struct {
 // NewTransport creates a new Transport that uses the provided
 // token fetcher as token retrieving strategy. It authenticates
 // the requests and delegates origTransport to make the actual requests.
-func NewTransport(origTransport http.RoundTripper, fetcher TokenFetcher, token *Token) *Transport {
-	return &Transport{origTransport: origTransport, fetcher: fetcher, token: token}
+func newTransport(base http.RoundTripper, fn func(t *Token) (*Token, error), token *Token) *Transport {
+	return &Transport{base: base, fetcher: fn, token: token}
 }
 
 // RoundTrip authorizes and authenticates the request with an
@@ -93,7 +90,6 @@ func (t *Transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 		// Check if the token is refreshable.
 		// If token is refreshable, don't return an error,
 		// rather refresh.
-
 		if err := t.RefreshToken(); err != nil {
 			return nil, err
 		}
@@ -108,11 +104,8 @@ func (t *Transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 	if typ == "" {
 		typ = defaultTokenType
 	}
-
 	req.Header.Set("Authorization", typ+" "+token.AccessToken)
-
-	// Make the HTTP request.
-	return t.origTransport.RoundTrip(req)
+	return t.base.RoundTrip(req)
 }
 
 // Token returns the token that authorizes and
@@ -127,7 +120,6 @@ func (t *Transport) Token() *Token {
 func (t *Transport) SetToken(v *Token) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-
 	t.token = v
 }
 
@@ -137,14 +129,11 @@ func (t *Transport) SetToken(v *Token) {
 func (t *Transport) RefreshToken() error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-
-	token, err := t.fetcher.FetchToken(t.token)
+	token, err := t.fetcher(t.token)
 	if err != nil {
 		return err
 	}
-
 	t.token = token
-
 	return nil
 }
 

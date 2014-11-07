@@ -71,15 +71,15 @@ func (c *ClaimSet) encode() (string, error) {
 	// Marshal private claim set and then append it to b.
 	prv, err := json.Marshal(c.PrivateClaims)
 	if err != nil {
-		return "", fmt.Errorf("Invalid map of private claims %v", c.PrivateClaims)
+		return "", fmt.Errorf("jws: invalid map of private claims %v", c.PrivateClaims)
 	}
 
 	// Concatenate public and private claim JSON objects.
 	if !bytes.HasSuffix(b, []byte{'}'}) {
-		return "", fmt.Errorf("Invalid JSON %s", b)
+		return "", fmt.Errorf("jws: invalid JSON %s", b)
 	}
 	if !bytes.HasPrefix(prv, []byte{'{'}) {
-		return "", fmt.Errorf("Invalid JSON %s", prv)
+		return "", fmt.Errorf("jws: invalid JSON %s", prv)
 	}
 	b[len(b)-1] = ','         // Replace closing curly brace with a comma.
 	b = append(b, prv[1:]...) // Append private claims.
@@ -109,7 +109,7 @@ func Decode(payload string) (c *ClaimSet, err error) {
 	s := strings.Split(payload, ".")
 	if len(s) < 2 {
 		// TODO(jbd): Provide more context about the error.
-		return nil, errors.New("invalid token received")
+		return nil, errors.New("jws: invalid token received")
 	}
 	decoded, err := base64Decode(s[1])
 	if err != nil {

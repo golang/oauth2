@@ -9,6 +9,7 @@ package google
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"sync"
 	"testing"
 	"time"
@@ -72,11 +73,16 @@ func TestFetchTokenLocalCacheMiss(t *testing.T) {
 	memcacheGob = m
 	accessTokenCount = 0
 	delete(tokens, testScopeKey) // clear local cache
-	config := NewAppEngineConfig(nil, testScope)
-	_, err := config.FetchToken(nil)
+	f, err := oauth2.New(
+		AppEngineContext(nil),
+		oauth2.Scope(testScope),
+	)
 	if err != nil {
-		t.Errorf("unable to FetchToken: %v", err)
+		t.Error(err)
 	}
+	tr := f.NewTransport()
+	c := http.Client{Transport: tr}
+	c.Get("server")
 	if w := 1; m.getCount != w {
 		t.Errorf("bad memcache.Get count: got %v, want %v", m.getCount, w)
 	}
@@ -102,8 +108,16 @@ func TestFetchTokenLocalCacheHit(t *testing.T) {
 		AccessToken: "mytoken",
 		Expiry:      time.Now().Add(1 * time.Hour),
 	}
-	config := NewAppEngineConfig(nil, testScope)
-	_, err := config.FetchToken(nil)
+	f, err := oauth2.New(
+		AppEngineContext(nil),
+		oauth2.Scope(testScope),
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	tr := f.NewTransport()
+	c := http.Client{Transport: tr}
+	c.Get("server")
 	if err != nil {
 		t.Errorf("unable to FetchToken: %v", err)
 	}
@@ -139,11 +153,16 @@ func TestFetchTokenMemcacheHit(t *testing.T) {
 		Expiration: 1 * time.Hour,
 	})
 	m.setCount = 0
-	config := NewAppEngineConfig(nil, testScope)
-	_, err := config.FetchToken(nil)
+
+	f, err := oauth2.New(
+		AppEngineContext(nil),
+		oauth2.Scope(testScope),
+	)
 	if err != nil {
-		t.Errorf("unable to FetchToken: %v", err)
+		t.Error(err)
 	}
+	c := http.Client{Transport: f.NewTransport()}
+	c.Get("server")
 	if w := 1; m.getCount != w {
 		t.Errorf("bad memcache.Get count: got %v, want %v", m.getCount, w)
 	}
@@ -180,11 +199,15 @@ func TestFetchTokenLocalCacheExpired(t *testing.T) {
 		Expiration: 1 * time.Hour,
 	})
 	m.setCount = 0
-	config := NewAppEngineConfig(nil, testScope)
-	_, err := config.FetchToken(nil)
+	f, err := oauth2.New(
+		AppEngineContext(nil),
+		oauth2.Scope(testScope),
+	)
 	if err != nil {
-		t.Errorf("unable to FetchToken: %v", err)
+		t.Error(err)
 	}
+	c := http.Client{Transport: f.NewTransport()}
+	c.Get("server")
 	if w := 1; m.getCount != w {
 		t.Errorf("bad memcache.Get count: got %v, want %v", m.getCount, w)
 	}
@@ -217,11 +240,15 @@ func TestFetchTokenMemcacheExpired(t *testing.T) {
 		Expiration: -1 * time.Hour,
 	})
 	m.setCount = 0
-	config := NewAppEngineConfig(nil, testScope)
-	_, err := config.FetchToken(nil)
+	f, err := oauth2.New(
+		AppEngineContext(nil),
+		oauth2.Scope(testScope),
+	)
 	if err != nil {
-		t.Errorf("unable to FetchToken: %v", err)
+		t.Error(err)
 	}
+	c := http.Client{Transport: f.NewTransport()}
+	c.Get("server")
 	if w := 1; m.getCount != w {
 		t.Errorf("bad memcache.Get count: got %v, want %v", m.getCount, w)
 	}

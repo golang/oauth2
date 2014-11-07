@@ -24,25 +24,25 @@ func TestA(t *testing.T) {}
 func Example_webServer() {
 	// Your credentials should be obtained from the Google
 	// Developer Console (https://console.developers.google.com).
-	config, err := google.NewConfig(&oauth2.Options{
-		ClientID:     "YOUR_CLIENT_ID",
-		ClientSecret: "YOUR_CLIENT_SECRET",
-		RedirectURL:  "YOUR_REDIRECT_URL",
-		Scopes: []string{
+	f, err := oauth2.New(
+		oauth2.Client("YOUR_CLIENT_ID", "YOUR_CLIENT_SECRET"),
+		oauth2.RedirectURL("YOUR_REDIRECT_URL"),
+		oauth2.Scope(
 			"https://www.googleapis.com/auth/bigquery",
-			"https://www.googleapis.com/auth/blogger"},
-	})
+			"https://www.googleapis.com/auth/blogger",
+		),
+		google.Endpoint(),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	// Redirect user to Google's consent page to ask for permission
 	// for the scopes specified above.
-	url := config.AuthCodeURL("state", "online", "auto")
+	url := f.AuthCodeURL("state", "online", "auto")
 	fmt.Printf("Visit the URL for the auth dialog: %v", url)
 
 	// Handle the exchange code to initiate a transport
-	t, err := config.NewTransportWithCode("exchange-code")
+	t, err := f.NewTransportFromCode("exchange-code")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,9 +58,12 @@ func Example_serviceAccountsJSON() {
 	// To create a service account client, click "Create new Client ID",
 	// select "Service Account", and click "Create Client ID". A JSON
 	// key file will then be downloaded to your computer.
-	config, err := google.NewServiceAccountJSONConfig(
-		"/path/to/your-project-key.json",
-		"https://www.googleapis.com/auth/bigquery",
+	f, err := oauth2.New(
+		google.ServiceAccountJSONKey("/path/to/your-project-key.json"),
+		oauth2.Scope(
+			"https://www.googleapis.com/auth/bigquery",
+			"https://www.googleapis.com/auth/blogger",
+		),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -68,63 +71,74 @@ func Example_serviceAccountsJSON() {
 	// Initiate an http.Client. The following GET request will be
 	// authorized and authenticated on the behalf of
 	// your service account.
-	client := http.Client{Transport: config.NewTransport()}
-	client.Get("...")
-
-	// If you would like to impersonate a user, you can
-	// create a transport with a subject. The following GET
-	// request will be made on the behalf of user@example.com.
-	client = http.Client{Transport: config.NewTransportWithUser("user@example.com")}
+	client := http.Client{Transport: f.NewTransport()}
 	client.Get("...")
 }
 
 func Example_serviceAccounts() {
 	// Your credentials should be obtained from the Google
 	// Developer Console (https://console.developers.google.com).
-	config, err := google.NewServiceAccountConfig(&oauth2.JWTOptions{
-		Email: "xxx@developer.gserviceaccount.com",
+	f, err := oauth2.New(
 		// The contents of your RSA private key or your PEM file
 		// that contains a private key.
 		// If you have a p12 file instead, you
-		// can use `openssl` to export the private key into a PEM file.
+		// can use `openssl` to export the private key into a pem file.
 		//
 		//    $ openssl pkcs12 -in key.p12 -out key.pem -nodes
 		//
-		// Supports only PEM containers without a passphrase.
-		PrivateKey: []byte("PRIVATE KEY CONTENTS"),
-		Scopes: []string{
+		// It only supports PEM containers with no passphrase.
+		oauth2.JWTClient(
+			"xxx@developer.gserviceaccount.com",
+			[]byte("-----BEGIN RSA PRIVATE KEY-----...")),
+		oauth2.Scope(
 			"https://www.googleapis.com/auth/bigquery",
-		},
-	})
+			"https://www.googleapis.com/auth/blogger",
+		),
+		google.JWTEndpoint(),
+		// If you would like to impersonate a user, you can
+		// create a transport with a subject. The following GET
+		// request will be made on the behalf of user@example.com.
+		// Subject is optional.
+		oauth2.Subject("user@example.com"),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Initiate an http.Client, the following GET request will be
-	// authorized and authenticated on the behalf of
-	// xxx@developer.gserviceaccount.com.
-	client := http.Client{Transport: config.NewTransport()}
-	client.Get("...")
-
-	// If you would like to impersonate a user, you can
-	// create a transport with a subject. The following GET
-	// request will be made on the behalf of user@example.com.
-	client = http.Client{Transport: config.NewTransportWithUser("user@example.com")}
+	// authorized and authenticated on the behalf of user@example.com.
+	client := http.Client{Transport: f.NewTransport()}
 	client.Get("...")
 }
 
-func Example_appEngine() {
-	c := appengine.NewContext(nil)
-	config := google.NewAppEngineConfig(c, "https://www.googleapis.com/auth/bigquery")
+func Example_appEngineVMs() {
+	ctx := appengine.NewContext(nil)
+	f, err := oauth2.New(
+		google.AppEngineContext(ctx),
+		oauth2.Scope(
+			"https://www.googleapis.com/auth/bigquery",
+			"https://www.googleapis.com/auth/blogger",
+		),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
 	// The following client will be authorized by the App Engine
 	// app's service account for the provided scopes.
-	client := http.Client{Transport: config.NewTransport()}
+	client := http.Client{Transport: f.NewTransport()}
 	client.Get("...")
 }
 
 func Example_computeEngine() {
-	// If no other account is specified, "default" is used.
-	config := google.NewComputeEngineConfig("")
-	client := http.Client{Transport: config.NewTransport()}
+	f, err := oauth2.New(
+		// Query Google Compute Engine's metadata server to retrieve
+		// an access token for the provided account.
+		// If no account is specified, "default" is used.
+		google.ComputeEngineAccount(""),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	client := http.Client{Transport: f.NewTransport()}
 	client.Get("...")
 }
