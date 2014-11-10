@@ -2,7 +2,7 @@ language: go
 go: 1.3
 
 install:
-  go get -v -tags='appengine appenginevm' ./... && hg clone https://code.google.com/p/appengine-go/ $GOPATH/appengine
+  - go get -v -tags='appengine appenginevm' ./...
 
 script:
-  go test -v -tags='appengine appenginevm' ./... && go build -v -tags='appengine'
+  - go test -v -tags='appengine appenginevm' ./...
