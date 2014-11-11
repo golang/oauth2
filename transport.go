@@ -60,9 +60,10 @@ func (t *Token) Extra(key string) string {
 func (t *Token) ExtraInt(key string) int {
 	if vals, ok := t.raw.(url.Values); ok {
 		val, err := strconv.Atoi(vals.Get(key))
-		if err == nil {
-			return val
+		if err != nil {
+			return 0
 		}
+		return val
 	}
 
 	raw, ok := t.raw.(map[string]interface{})

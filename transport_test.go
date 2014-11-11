@@ -95,7 +95,7 @@ func TestExtraIntWithFloat64(t *testing.T) {
 	}
 }
 
-func TestExtraIntWithURLValues(t *testing.T) {
+func TestExtraIntWithValidURLValues(t *testing.T) {
 	token := &Token{
 		raw: url.Values{
 			"expires": []string{"1234567"},
@@ -104,6 +104,17 @@ func TestExtraIntWithURLValues(t *testing.T) {
 
 	val := token.ExtraInt("expires")
 	if val != int(1234567) {
+		t.Errorf("ExtraInt should return int value 1234567, got %T %d instead", val, val)
+	}
+}
+
+func TestExtraIntWithInvalidURLValues(t *testing.T) {
+	token := &Token{
+		raw: url.Values{},
+	}
+
+	val := token.ExtraInt("expires")
+	if val != int(0) {
 		t.Errorf("ExtraInt should return int value 1234567, got %T %d instead", val, val)
 	}
 }
