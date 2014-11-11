@@ -7,6 +7,7 @@ package oauth2
 import (
 	"net/http"
 	"net/url"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -50,6 +51,38 @@ func (t *Token) Extra(key string) string {
 		}
 	}
 	return ""
+}
+
+// ExtraInt returns an extra field returned from the server during token retrieval.
+// E.g.
+//     expires := token.Extra("expires")
+//
+func (t *Token) ExtraInt(key string) int {
+	if vals, ok := t.raw.(url.Values); ok {
+		val, err := strconv.Atoi(vals.Get(key))
+		if err == nil {
+			return val
+		}
+	}
+
+	raw, ok := t.raw.(map[string]interface{})
+	if !ok {
+		return 0
+	}
+
+	val, ok := raw[key]
+	if !ok {
+		return 0
+	}
+
+	switch val.(type) {
+	case int:
+		return val.(int)
+	case float64:
+		return int(val.(float64))
+	default:
+		return 0
+	}
 }
 
 // Expired returns true if there is no access token or the

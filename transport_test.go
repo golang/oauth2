@@ -3,6 +3,7 @@ package oauth2
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -65,6 +66,58 @@ func TestExpiredWithExpiry(t *testing.T) {
 	}
 	if !token.Expired() {
 		t.Errorf("Token should be expired if no access token is provided")
+	}
+}
+
+func TestExtraIntWithInt(t *testing.T) {
+	token := &Token{
+		raw: map[string]interface{}{
+			"expires": int(1234567),
+		},
+	}
+
+	val := token.ExtraInt("expires")
+	if val != int(1234567) {
+		t.Errorf("ExtraInt should return int value 1234567, got %T %d instead", val, val)
+	}
+}
+
+func TestExtraIntWithFloat64(t *testing.T) {
+	token := &Token{
+		raw: map[string]interface{}{
+			"expires": float64(1234567),
+		},
+	}
+
+	val := token.ExtraInt("expires")
+	if val != int(1234567) {
+		t.Errorf("ExtraInt should return int value 1234567, got %T %d instead", val, val)
+	}
+}
+
+func TestExtraIntWithURLValues(t *testing.T) {
+	token := &Token{
+		raw: url.Values{
+			"expires": []string{"1234567"},
+		},
+	}
+
+	val := token.ExtraInt("expires")
+	if val != int(1234567) {
+		t.Errorf("ExtraInt should return int value 1234567, got %T %d instead", val, val)
+	}
+}
+
+func TestExtraIntWithString(t *testing.T) {
+	token := &Token{
+		raw: map[string]interface{}{
+			"expires": "1234567",
+		},
+	}
+
+	val := token.ExtraInt("expires")
+	if val != int(0) {
+		t.Errorf("ExtraInt should return int value 0, got %T %d instead", val, val)
 	}
 }
 
