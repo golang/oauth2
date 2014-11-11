@@ -145,7 +145,7 @@ func New(options ...Option) (*Flow, error) {
 // access token. If set to "force" the user will always be prompted,
 // and the code can be exchanged for a refresh token.
 func (f *Flow) AuthCodeURL(state, accessType, prompt string) string {
-	u := f.opts.AuthURL
+	u := *f.opts.AuthURL
 	v := url.Values{
 		"response_type":   {"code"},
 		"client_id":       {f.opts.ClientID},
