@@ -66,7 +66,6 @@ func Endpoint(authURL, tokenURL string) Option {
 		if err != nil {
 			return err
 		}
-		o.TokenFetcherFunc = makeThreeLeggedFetcher(o)
 		o.AuthURL = au
 		o.TokenURL = tu
 		return nil
