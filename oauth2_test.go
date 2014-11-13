@@ -20,6 +20,19 @@ func (t *mockTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 	return t.rt(req)
 }
 
+type mockCache struct {
+	token   *Token
+	readErr error
+}
+
+func (c *mockCache) Read() (*Token, error) {
+	return c.token, c.readErr
+}
+
+func (c *mockCache) Write(*Token) {
+	// do nothing
+}
+
 func newTestFlow(url string) *Flow {
 	f, _ := New(
 		Client("CLIENT_ID", "CLIENT_SECRET"),
@@ -211,7 +224,8 @@ func TestTokenRefreshRequest(t *testing.T) {
 	}))
 	defer ts.Close()
 	f := newTestFlow(ts.URL)
-	tr := f.NewTransportFromToken(&Token{RefreshToken: "REFRESH_TOKEN"})
+	tr := f.NewTransport()
+	tr.SetToken(&Token{RefreshToken: "REFRESH_TOKEN"})
 	c := http.Client{Transport: tr}
 	c.Get(ts.URL + "/somethingelse")
 }
@@ -235,10 +249,25 @@ func TestFetchWithNoRefreshToken(t *testing.T) {
 	}))
 	defer ts.Close()
 	f := newTestFlow(ts.URL)
-	tr := f.NewTransportFromToken(&Token{})
+	tr := f.NewTransport()
 	c := http.Client{Transport: tr}
 	_, err := c.Get(ts.URL + "/somethingelse")
 	if err == nil {
 		t.Errorf("Fetch should return an error if no refresh token is set")
+	}
+}
+
+func TestCacheNoToken(t *testing.T) {
+	f, _ := New(
+		Client("CLIENT_ID", "CLIENT_SECRET"),
+		Endpoint("/auth", "/token"),
+		Cache(&mockCache{token: nil, readErr: nil}),
+	)
+	tr, err := f.NewTransportFromCache()
+	if err != nil {
+		t.Errorf("No error expected, %v is found", err)
+	}
+	if tr != nil {
+		t.Errorf("No transport should have been initiated, tr is found to be %v", tr)
 	}
 }

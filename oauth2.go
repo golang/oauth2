@@ -22,6 +22,18 @@ import (
 	"strings"
 )
 
+// Cacher implementations read and write OAuth 2.0 tokens from a cache.
+type Cacher interface {
+	// Read reads the token from the cache.
+	// If the read is successful, it should return the token and a nil error.
+	// The returned tokens may be expired tokens.
+	// If there is no token in the cache, it should return a nil token and a nil error.
+	// It should return a non-nil error when an unrecoverable failure occurs.
+	Read() (*Token, error)
+	// Write writes the token to the cache.
+	Write(*Token)
+}
+
 // Option represents a function that applies some state to
 // an Options object.
 type Option func(*Options) error
@@ -91,6 +103,16 @@ func RoundTripper(tr http.RoundTripper) Option {
 	}
 }
 
+// Cache requires a Cacher implementation. It will initially read
+// the token if the transport is initialized with NewTransportFromCache
+// and will write the refreshed tokens back to the cache.
+func Cache(c Cacher) Option {
+	return func(o *Options) error {
+		o.Cache = c
+		return nil
+	}
+}
+
 type Flow struct {
 	opts Options
 }
@@ -109,11 +131,11 @@ func New(options ...Option) (*Flow, error) {
 	case f.opts.TokenFetcherFunc != nil:
 		return f, nil
 	case f.opts.AUD != nil:
-		// TODO(jbd): Assert required JWT params.
+		// TODO(jbd): Assert the required JWT params.
 		f.opts.TokenFetcherFunc = makeTwoLeggedFetcher(&f.opts)
 		return f, nil
 	case f.opts.AuthURL != nil && f.opts.TokenURL != nil:
-		// TODO(jbd): Assert required OAuth2 params.
+		// TODO(jbd): Assert the required OAuth2 params.
 		f.opts.TokenFetcherFunc = makeThreeLeggedFetcher(&f.opts)
 		return f, nil
 	default:
@@ -175,6 +197,23 @@ func (f *Flow) exchange(code string) (*Token, error) {
 	})
 }
 
+// NewTransportFromCache reads the token from the cache and returns
+// a Transport that is authorized and the authenticated
+// by the returned token.
+func (f *Flow) NewTransportFromCache() (*Transport, error) {
+	if f.opts.Cache == nil {
+		return nil, errors.New("oauth2: no cache is set")
+	}
+	tok, err := f.opts.Cache.Read()
+	if err != nil {
+		return nil, err
+	}
+	if tok == nil {
+		return nil, nil
+	}
+	return f.newTransportFromToken(tok), nil
+}
+
 // NewTransportFromCode exchanges the code to retrieve a new access token
 // and returns an authorized and authenticated Transport.
 func (f *Flow) NewTransportFromCode(code string) (*Transport, error) {
@@ -182,22 +221,22 @@ func (f *Flow) NewTransportFromCode(code string) (*Transport, error) {
 	if err != nil {
 		return nil, err
 	}
-	return f.NewTransportFromToken(token), nil
-}
-
-// NewTransportFromToken returns a new Transport that is authorized
-// and authenticated with the provided token.
-func (f *Flow) NewTransportFromToken(t *Token) *Transport {
-	tr := f.opts.Transport
-	if tr == nil {
-		tr = http.DefaultTransport
-	}
-	return newTransport(tr, f.opts.TokenFetcherFunc, t)
+	return f.newTransportFromToken(token), nil
 }
 
 // NewTransport returns a Transport.
 func (f *Flow) NewTransport() *Transport {
-	return f.NewTransportFromToken(nil)
+	return f.newTransportFromToken(nil)
+}
+
+// newTransportFromToken returns a new Transport that is authorized
+// and authenticated with the provided token.
+func (f *Flow) newTransportFromToken(t *Token) *Transport {
+	tr := f.opts.Transport
+	if tr == nil {
+		tr = http.DefaultTransport
+	}
+	return newTransport(tr, &f.opts, t)
 }
 
 func makeThreeLeggedFetcher(o *Options) func(t *Token) (*Token, error) {
@@ -254,6 +293,8 @@ type Options struct {
 
 	// AUD represents the token endpoint required to complete the 2-legged JWT flow.
 	AUD *url.URL
+
+	Cache Cacher
 
 	TokenFetcherFunc func(t *Token) (*Token, error)
 

@@ -66,8 +66,8 @@ func (t *Token) Expired() bool {
 
 // Transport is an http.RoundTripper that makes OAuth 2.0 HTTP requests.
 type Transport struct {
-	fetcher func(t *Token) (*Token, error)
-	base    http.RoundTripper
+	opts *Options
+	base http.RoundTripper
 
 	mu    sync.RWMutex
 	token *Token
@@ -76,8 +76,12 @@ type Transport struct {
 // NewTransport creates a new Transport that uses the provided
 // token fetcher as token retrieving strategy. It authenticates
 // the requests and delegates origTransport to make the actual requests.
-func newTransport(base http.RoundTripper, fn func(t *Token) (*Token, error), token *Token) *Transport {
-	return &Transport{base: base, fetcher: fn, token: token}
+func newTransport(base http.RoundTripper, opts *Options, token *Token) *Transport {
+	return &Transport{
+		base:  base,
+		opts:  opts,
+		token: token,
+	}
 }
 
 // RoundTrip authorizes and authenticates the request with an
@@ -94,6 +98,9 @@ func (t *Transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 			return nil, err
 		}
 		token = t.Token()
+		if t.opts.Cache != nil {
+			t.opts.Cache.Write(token)
+		}
 	}
 
 	// To set the Authorization header, we must make a copy of the Request
@@ -129,7 +136,7 @@ func (t *Transport) SetToken(v *Token) {
 func (t *Transport) RefreshToken() error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	token, err := t.fetcher(t.token)
+	token, err := t.opts.TokenFetcherFunc(t.token)
 	if err != nil {
 		return err
 	}
