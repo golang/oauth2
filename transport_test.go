@@ -69,66 +69,66 @@ func TestExpiredWithExpiry(t *testing.T) {
 	}
 }
 
-func TestExtraIntWithInt(t *testing.T) {
+func TestExtraFloat64WithInt(t *testing.T) {
 	token := &Token{
 		raw: map[string]interface{}{
 			"expires": int(1234567),
 		},
 	}
 
-	val := token.ExtraInt("expires")
-	if val != int(1234567) {
-		t.Errorf("ExtraInt should return int value 1234567, got %T %d instead", val, val)
+	val := token.ExtraFloat64("expires")
+	if val != float64(1234567) {
+		t.Errorf("ExtraFloat64 should return int value 1234567, got %T %d instead", val, val)
 	}
 }
 
-func TestExtraIntWithFloat64(t *testing.T) {
+func TestExtraFloat64WithFloat64(t *testing.T) {
 	token := &Token{
 		raw: map[string]interface{}{
 			"expires": float64(1234567),
 		},
 	}
 
-	val := token.ExtraInt("expires")
-	if val != int(1234567) {
-		t.Errorf("ExtraInt should return int value 1234567, got %T %d instead", val, val)
+	val := token.ExtraFloat64("expires")
+	if val != float64(1234567) {
+		t.Errorf("ExtraFloat64 should return int value 1234567, got %T %d instead", val, val)
 	}
 }
 
-func TestExtraIntWithValidURLValues(t *testing.T) {
+func TestExtraFloat64WithValidURLValues(t *testing.T) {
 	token := &Token{
 		raw: url.Values{
 			"expires": []string{"1234567"},
 		},
 	}
 
-	val := token.ExtraInt("expires")
-	if val != int(1234567) {
-		t.Errorf("ExtraInt should return int value 1234567, got %T %d instead", val, val)
+	val := token.ExtraFloat64("expires")
+	if val != float64(1234567) {
+		t.Errorf("ExtraFloat64 should return int value 1234567, got %T %d instead", val, val)
 	}
 }
 
-func TestExtraIntWithInvalidURLValues(t *testing.T) {
+func TestExtraFloat64WithInvalidURLValues(t *testing.T) {
 	token := &Token{
 		raw: url.Values{},
 	}
 
-	val := token.ExtraInt("expires")
-	if val != int(0) {
-		t.Errorf("ExtraInt should return int value 1234567, got %T %d instead", val, val)
+	val := token.ExtraFloat64("expires")
+	if val != float64(0) {
+		t.Errorf("ExtraFloat64 should return int value 1234567, got %T %d instead", val, val)
 	}
 }
 
-func TestExtraIntWithString(t *testing.T) {
+func TestExtraFloat64WithString(t *testing.T) {
 	token := &Token{
 		raw: map[string]interface{}{
 			"expires": "1234567",
 		},
 	}
 
-	val := token.ExtraInt("expires")
-	if val != int(0) {
-		t.Errorf("ExtraInt should return int value 0, got %T %d instead", val, val)
+	val := token.ExtraFloat64("expires")
+	if val != float64(0) {
+		t.Errorf("ExtraFloat64 should return int value 0, got %T %d instead", val, val)
 	}
 }
 

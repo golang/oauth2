@@ -53,13 +53,13 @@ func (t *Token) Extra(key string) string {
 	return ""
 }
 
-// ExtraInt returns an extra field returned from the server during token retrieval.
+// ExtraFloat64 returns an extra field returned from the server during token retrieval.
 // E.g.
-//     expires := token.Extra("expires")
+//     expires := token.ExtraFloat64("expires")
 //
-func (t *Token) ExtraInt(key string) int {
+func (t *Token) ExtraFloat64(key string) float64 {
 	if vals, ok := t.raw.(url.Values); ok {
-		val, err := strconv.Atoi(vals.Get(key))
+		val, err := strconv.ParseFloat(vals.Get(key), 64)
 		if err != nil {
 			return 0
 		}
@@ -78,9 +78,9 @@ func (t *Token) ExtraInt(key string) int {
 
 	switch val.(type) {
 	case int:
-		return val.(int)
+		return float64(val.(int))
 	case float64:
-		return int(val.(float64))
+		return val.(float64)
 	default:
 		return 0
 	}
