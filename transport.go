@@ -59,10 +59,7 @@ func (t *Token) Extra(key string) string {
 //
 func (t *Token) ExtraFloat64(key string) float64 {
 	if vals, ok := t.raw.(url.Values); ok {
-		val, err := strconv.ParseFloat(vals.Get(key), 64)
-		if err != nil {
-			return 0
-		}
+		val, _ := strconv.ParseFloat(vals.Get(key), 64)
 		return val
 	}
 	raw, ok := t.raw.(map[string]interface{})
