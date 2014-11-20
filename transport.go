@@ -65,17 +65,14 @@ func (t *Token) ExtraFloat64(key string) float64 {
 		}
 		return val
 	}
-
 	raw, ok := t.raw.(map[string]interface{})
 	if !ok {
 		return 0
 	}
-
 	val, ok := raw[key]
 	if !ok {
 		return 0
 	}
-
 	switch val.(type) {
 	case int:
 		return float64(val.(int))
