@@ -25,38 +25,38 @@ type mockCache struct {
 	readErr error
 }
 
-func (c *mockCache) Read() (*Token, error) {
+func (c *mockCache) ReadToken() (*Token, error) {
 	return c.token, c.readErr
 }
 
-func (c *mockCache) Write(*Token) {
+func (c *mockCache) WriteToken(*Token) {
 	// do nothing
 }
 
-func newTestFlow(url string) *Flow {
-	f, _ := New(
+func newOpts(url string) *Options {
+	opts, _ := New(
 		Client("CLIENT_ID", "CLIENT_SECRET"),
 		RedirectURL("REDIRECT_URL"),
 		Scope("scope1", "scope2"),
 		Endpoint(url+"/auth", url+"/token"),
 	)
-	return f
+	return opts
 }
 
 func TestAuthCodeURL(t *testing.T) {
-	f := newTestFlow("server")
-	url := f.AuthCodeURL("foo", "offline", "force")
+	opts := newOpts("server")
+	url := opts.AuthCodeURL("foo", "offline", "force")
 	if url != "server/auth?access_type=offline&approval_prompt=force&client_id=CLIENT_ID&redirect_uri=REDIRECT_URL&response_type=code&scope=scope1+scope2&state=foo" {
 		t.Errorf("Auth code URL doesn't match the expected, found: %v", url)
 	}
 }
 
 func TestAuthCodeURL_Optional(t *testing.T) {
-	f, _ := New(
+	opts, _ := New(
 		Client("CLIENT_ID", ""),
 		Endpoint("auth-url", "token-token"),
 	)
-	url := f.AuthCodeURL("", "", "")
+	url := opts.AuthCodeURL("", "", "")
 	if url != "auth-url?client_id=CLIENT_ID&response_type=code" {
 		t.Fatalf("Auth code URL doesn't match the expected, found: %v", url)
 	}
@@ -86,8 +86,8 @@ func TestExchangeRequest(t *testing.T) {
 		w.Write([]byte("access_token=90d64460d14870c08c81352a05dedd3465940a7c&scope=user&token_type=bearer"))
 	}))
 	defer ts.Close()
-	f := newTestFlow(ts.URL)
-	tr, err := f.NewTransportFromCode("exchange-code")
+	opts := newOpts(ts.URL)
+	tr, err := opts.NewTransportFromCode("exchange-code")
 	if err != nil {
 		t.Error(err)
 	}
@@ -131,8 +131,8 @@ func TestExchangeRequest_JSONResponse(t *testing.T) {
 		w.Write([]byte(`{"access_token": "90d64460d14870c08c81352a05dedd3465940a7c", "scope": "user", "token_type": "bearer"}`))
 	}))
 	defer ts.Close()
-	f := newTestFlow(ts.URL)
-	tr, err := f.NewTransportFromCode("exchange-code")
+	opts := newOpts(ts.URL)
+	tr, err := opts.NewTransportFromCode("exchange-code")
 	if err != nil {
 		t.Error(err)
 	}
@@ -158,8 +158,8 @@ func TestExchangeRequest_BadResponse(t *testing.T) {
 		w.Write([]byte(`{"scope": "user", "token_type": "bearer"}`))
 	}))
 	defer ts.Close()
-	f := newTestFlow(ts.URL)
-	tr, err := f.NewTransportFromCode("exchange-code")
+	opts := newOpts(ts.URL)
+	tr, err := opts.NewTransportFromCode("exchange-code")
 	if err != nil {
 		t.Error(err)
 	}
@@ -175,8 +175,8 @@ func TestExchangeRequest_BadResponseType(t *testing.T) {
 		w.Write([]byte(`{"access_token":123,  "scope": "user", "token_type": "bearer"}`))
 	}))
 	defer ts.Close()
-	f := newTestFlow(ts.URL)
-	tr, err := f.NewTransportFromCode("exchange-code")
+	opts := newOpts(ts.URL)
+	tr, err := opts.NewTransportFromCode("exchange-code")
 	if err != nil {
 		t.Error(err)
 	}
@@ -197,12 +197,15 @@ func TestExchangeRequest_NonBasicAuth(t *testing.T) {
 		},
 	}
 	c := &http.Client{Transport: tr}
-	f, _ := New(
+	opts, err := New(
 		Client("CLIENT_ID", ""),
 		Endpoint("https://accounts.google.com/auth", "https://accounts.google.com/token"),
 		HTTPClient(c),
 	)
-	f.NewTransportFromCode("code")
+	if err != nil {
+		t.Error(err)
+	}
+	opts.NewTransportFromCode("code")
 }
 
 func TestTokenRefreshRequest(t *testing.T) {
@@ -223,9 +226,9 @@ func TestTokenRefreshRequest(t *testing.T) {
 		}
 	}))
 	defer ts.Close()
-	f := newTestFlow(ts.URL)
-	tr := f.NewTransport()
-	tr.SetToken(&Token{RefreshToken: "REFRESH_TOKEN"})
+	opts := newOpts(ts.URL)
+	tr := opts.NewTransport()
+	tr.token = &Token{RefreshToken: "REFRESH_TOKEN"}
 	c := http.Client{Transport: tr}
 	c.Get(ts.URL + "/somethingelse")
 }
@@ -248,8 +251,8 @@ func TestFetchWithNoRefreshToken(t *testing.T) {
 		}
 	}))
 	defer ts.Close()
-	f := newTestFlow(ts.URL)
-	tr := f.NewTransport()
+	opts := newOpts(ts.URL)
+	tr := opts.NewTransport()
 	c := http.Client{Transport: tr}
 	_, err := c.Get(ts.URL + "/somethingelse")
 	if err == nil {
@@ -258,12 +261,14 @@ func TestFetchWithNoRefreshToken(t *testing.T) {
 }
 
 func TestCacheNoToken(t *testing.T) {
-	f, _ := New(
+	opts, err := New(
 		Client("CLIENT_ID", "CLIENT_SECRET"),
 		Endpoint("/auth", "/token"),
-		Cache(&mockCache{token: nil, readErr: nil}),
 	)
-	tr, err := f.NewTransportFromCache()
+	if err != nil {
+		t.Error(err)
+	}
+	tr, err := opts.NewTransportFromTokenStore(&mockCache{token: nil, readErr: nil})
 	if err != nil {
 		t.Errorf("No error expected, %v is found", err)
 	}

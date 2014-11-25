@@ -24,7 +24,7 @@ func TestA(t *testing.T) {}
 func Example_webServer() {
 	// Your credentials should be obtained from the Google
 	// Developer Console (https://console.developers.google.com).
-	f, err := oauth2.New(
+	opts, err := oauth2.New(
 		oauth2.Client("YOUR_CLIENT_ID", "YOUR_CLIENT_SECRET"),
 		oauth2.RedirectURL("YOUR_REDIRECT_URL"),
 		oauth2.Scope(
@@ -38,11 +38,11 @@ func Example_webServer() {
 	}
 	// Redirect user to Google's consent page to ask for permission
 	// for the scopes specified above.
-	url := f.AuthCodeURL("state", "online", "auto")
+	url := opts.AuthCodeURL("state", "online", "auto")
 	fmt.Printf("Visit the URL for the auth dialog: %v", url)
 
 	// Handle the exchange code to initiate a transport
-	t, err := f.NewTransportFromCode("exchange-code")
+	t, err := opts.NewTransportFromCode("exchange-code")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func Example_serviceAccountsJSON() {
 	// To create a service account client, click "Create new Client ID",
 	// select "Service Account", and click "Create Client ID". A JSON
 	// key file will then be downloaded to your computer.
-	f, err := oauth2.New(
+	opts, err := oauth2.New(
 		google.ServiceAccountJSONKey("/path/to/your-project-key.json"),
 		oauth2.Scope(
 			"https://www.googleapis.com/auth/bigquery",
@@ -71,14 +71,14 @@ func Example_serviceAccountsJSON() {
 	// Initiate an http.Client. The following GET request will be
 	// authorized and authenticated on the behalf of
 	// your service account.
-	client := http.Client{Transport: f.NewTransport()}
+	client := http.Client{Transport: opts.NewTransport()}
 	client.Get("...")
 }
 
 func Example_serviceAccounts() {
 	// Your credentials should be obtained from the Google
 	// Developer Console (https://console.developers.google.com).
-	f, err := oauth2.New(
+	opts, err := oauth2.New(
 		// The contents of your RSA private key or your PEM file
 		// that contains a private key.
 		// If you have a p12 file instead, you
@@ -107,13 +107,13 @@ func Example_serviceAccounts() {
 
 	// Initiate an http.Client, the following GET request will be
 	// authorized and authenticated on the behalf of user@example.com.
-	client := http.Client{Transport: f.NewTransport()}
+	client := http.Client{Transport: opts.NewTransport()}
 	client.Get("...")
 }
 
-func Example_appEngineVMs() {
+func Example_appEngine() {
 	ctx := appengine.NewContext(nil)
-	f, err := oauth2.New(
+	opts, err := oauth2.New(
 		google.AppEngineContext(ctx),
 		oauth2.Scope(
 			"https://www.googleapis.com/auth/bigquery",
@@ -125,12 +125,12 @@ func Example_appEngineVMs() {
 	}
 	// The following client will be authorized by the App Engine
 	// app's service account for the provided scopes.
-	client := http.Client{Transport: f.NewTransport()}
+	client := http.Client{Transport: opts.NewTransport()}
 	client.Get("...")
 }
 
 func Example_computeEngine() {
-	f, err := oauth2.New(
+	opts, err := oauth2.New(
 		// Query Google Compute Engine's metadata server to retrieve
 		// an access token for the provided account.
 		// If no account is specified, "default" is used.
@@ -139,6 +139,6 @@ func Example_computeEngine() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	client := http.Client{Transport: f.NewTransport()}
+	client := http.Client{Transport: opts.NewTransport()}
 	client.Get("...")
 }

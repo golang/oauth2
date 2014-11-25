@@ -22,16 +22,16 @@ import (
 	"strings"
 )
 
-// Cacher implementations read and write OAuth 2.0 tokens from a cache.
-type Cacher interface {
-	// Read reads the token from the cache.
+// TokenStore implementations read and write OAuth 2.0 tokens from a persistence layer.
+type TokenStore interface {
+	// ReadToken reads the token from the store.
 	// If the read is successful, it should return the token and a nil error.
 	// The returned tokens may be expired tokens.
-	// If there is no token in the cache, it should return a nil token and a nil error.
+	// If there is no token in the store, it should return a nil token and a nil error.
 	// It should return a non-nil error when an unrecoverable failure occurs.
-	Read() (*Token, error)
-	// Write writes the token to the cache.
-	Write(*Token)
+	ReadToken() (*Token, error)
+	// WriteToken writes the token to the cache.
+	WriteToken(*Token)
 }
 
 // Option represents a function that applies some state to
@@ -93,51 +93,27 @@ func HTTPClient(c *http.Client) Option {
 	}
 }
 
-// RoundTripper allows you to provide a custom http.RoundTripper
-// to be used to construct new oauth2.Transport instances.
-// If none is provided a default RoundTripper will be used.
-func RoundTripper(tr http.RoundTripper) Option {
-	return func(o *Options) error {
-		o.Transport = tr
-		return nil
-	}
-}
-
-// Cache requires a Cacher implementation. It will initially read
-// the token if the transport is initialized with NewTransportFromCache
-// and will write the refreshed tokens back to the cache.
-func Cache(c Cacher) Option {
-	return func(o *Options) error {
-		o.Cache = c
-		return nil
-	}
-}
-
-type Flow struct {
-	opts Options
-}
-
-// New initiates a new flow. It determines the type of the OAuth 2.0
+// New builds a new options object and determines the type of the OAuth 2.0
 // (2-legged, 3-legged or custom) by looking at the provided options.
 // If the flow type cannot determined automatically, an error is returned.
-func New(options ...Option) (*Flow, error) {
-	f := &Flow{}
-	for _, opt := range options {
-		if err := opt(&f.opts); err != nil {
+func New(option ...Option) (*Options, error) {
+	opts := &Options{}
+	for _, fn := range option {
+		if err := fn(opts); err != nil {
 			return nil, err
 		}
 	}
 	switch {
-	case f.opts.TokenFetcherFunc != nil:
-		return f, nil
-	case f.opts.AUD != nil:
+	case opts.TokenFetcherFunc != nil:
+		return opts, nil
+	case opts.AUD != nil:
 		// TODO(jbd): Assert the required JWT params.
-		f.opts.TokenFetcherFunc = makeTwoLeggedFetcher(&f.opts)
-		return f, nil
-	case f.opts.AuthURL != nil && f.opts.TokenURL != nil:
+		opts.TokenFetcherFunc = makeTwoLeggedFetcher(opts)
+		return opts, nil
+	case opts.AuthURL != nil && opts.TokenURL != nil:
 		// TODO(jbd): Assert the required OAuth2 params.
-		f.opts.TokenFetcherFunc = makeThreeLeggedFetcher(&f.opts)
-		return f, nil
+		opts.TokenFetcherFunc = makeThreeLeggedFetcher(opts)
+		return opts, nil
 	default:
 		return nil, errors.New("oauth2: missing endpoints, can't determine how to fetch tokens")
 	}
@@ -166,13 +142,13 @@ func New(options ...Option) (*Flow, error) {
 // granted consent and the code can only be exchanged for an
 // access token. If set to "force" the user will always be prompted,
 // and the code can be exchanged for a refresh token.
-func (f *Flow) AuthCodeURL(state, accessType, prompt string) string {
-	u := *f.opts.AuthURL
+func (o *Options) AuthCodeURL(state, accessType, prompt string) string {
+	u := *o.AuthURL
 	v := url.Values{
 		"response_type":   {"code"},
-		"client_id":       {f.opts.ClientID},
-		"redirect_uri":    condVal(f.opts.RedirectURL),
-		"scope":           condVal(strings.Join(f.opts.Scopes, " ")),
+		"client_id":       {o.ClientID},
+		"redirect_uri":    condVal(o.RedirectURL),
+		"scope":           condVal(strings.Join(o.Scopes, " ")),
 		"state":           condVal(state),
 		"access_type":     condVal(accessType),
 		"approval_prompt": condVal(prompt),
@@ -188,55 +164,57 @@ func (f *Flow) AuthCodeURL(state, accessType, prompt string) string {
 
 // exchange exchanges the authorization code with the OAuth 2.0 provider
 // to retrieve a new access token.
-func (f *Flow) exchange(code string) (*Token, error) {
-	return retrieveToken(&f.opts, url.Values{
+func (o *Options) exchange(code string) (*Token, error) {
+	return retrieveToken(o, url.Values{
 		"grant_type":   {"authorization_code"},
 		"code":         {code},
-		"redirect_uri": condVal(f.opts.RedirectURL),
-		"scope":        condVal(strings.Join(f.opts.Scopes, " ")),
+		"redirect_uri": condVal(o.RedirectURL),
+		"scope":        condVal(strings.Join(o.Scopes, " ")),
 	})
 }
 
-// NewTransportFromCache reads the token from the cache and returns
+// NewTransportFromTokenStore reads the token from the store and returns
 // a Transport that is authorized and the authenticated
 // by the returned token.
-func (f *Flow) NewTransportFromCache() (*Transport, error) {
-	if f.opts.Cache == nil {
-		return nil, errors.New("oauth2: no cache is set")
-	}
-	tok, err := f.opts.Cache.Read()
+func (o *Options) NewTransportFromTokenStore(store TokenStore) (*Transport, error) {
+	tok, err := store.ReadToken()
 	if err != nil {
 		return nil, err
 	}
+	o.TokenStore = store
 	if tok == nil {
 		return nil, nil
 	}
-	return f.newTransportFromToken(tok), nil
+	return o.newTransportFromToken(tok), nil
 }
 
 // NewTransportFromCode exchanges the code to retrieve a new access token
 // and returns an authorized and authenticated Transport.
-func (f *Flow) NewTransportFromCode(code string) (*Transport, error) {
-	token, err := f.exchange(code)
+func (o *Options) NewTransportFromCode(code string) (*Transport, error) {
+	token, err := o.exchange(code)
 	if err != nil {
 		return nil, err
 	}
-	return f.newTransportFromToken(token), nil
+	return o.newTransportFromToken(token), nil
 }
 
 // NewTransport returns a Transport.
-func (f *Flow) NewTransport() *Transport {
-	return f.newTransportFromToken(nil)
+func (o *Options) NewTransport() *Transport {
+	return o.newTransportFromToken(nil)
 }
 
 // newTransportFromToken returns a new Transport that is authorized
 // and authenticated with the provided token.
-func (f *Flow) newTransportFromToken(t *Token) *Transport {
-	tr := f.opts.Transport
-	if tr == nil {
-		tr = http.DefaultTransport
+func (o *Options) newTransportFromToken(t *Token) *Transport {
+	// TODO(jbd): App Engine options initiate an http.Client that
+	// depends on the urlfetcher, but it breaks the promise we made
+	// that the options object should be working finely with nil-values
+	// for the http.Client.
+	tr := http.DefaultTransport
+	if o.Client != nil && o.Client.Transport != nil {
+		tr = o.Client.Transport
 	}
-	return newTransport(tr, &f.opts, t)
+	return newTransport(tr, o, t)
 }
 
 func makeThreeLeggedFetcher(o *Options) func(t *Token) (*Token, error) {
@@ -294,12 +272,14 @@ type Options struct {
 	// AUD represents the token endpoint required to complete the 2-legged JWT flow.
 	AUD *url.URL
 
-	Cache Cacher
+	// TokenStore reads a token from the store and writes it back to the store
+	// if a token refresh occurs.
+	// Optional.
+	TokenStore TokenStore
 
 	TokenFetcherFunc func(t *Token) (*Token, error)
 
-	Transport http.RoundTripper
-	Client    *http.Client
+	Client *http.Client
 }
 
 func retrieveToken(o *Options, v url.Values) (*Token, error) {

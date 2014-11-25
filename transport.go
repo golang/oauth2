@@ -87,19 +87,19 @@ func newTransport(base http.RoundTripper, opts *Options, token *Token) *Transpor
 // RoundTrip authorizes and authenticates the request with an
 // access token. If no token exists or token is expired,
 // tries to refresh/fetch a new token.
-func (t *Transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
-	token := t.Token()
+func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
+	token := t.token
 
 	if token == nil || token.Expired() {
 		// Check if the token is refreshable.
 		// If token is refreshable, don't return an error,
 		// rather refresh.
-		if err := t.RefreshToken(); err != nil {
+		if err := t.refreshToken(); err != nil {
 			return nil, err
 		}
-		token = t.Token()
-		if t.opts.Cache != nil {
-			t.opts.Cache.Write(token)
+		token = t.token
+		if t.opts.TokenStore != nil {
+			t.opts.TokenStore.WriteToken(token)
 		}
 	}
 
@@ -123,17 +123,10 @@ func (t *Transport) Token() *Token {
 	return t.token
 }
 
-// SetToken sets a token to the transport in a thread-safe way.
-func (t *Transport) SetToken(v *Token) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	t.token = v
-}
-
-// RefreshToken retrieves a new token, if a refreshing/fetching
+// refreshToken retrieves a new token, if a refreshing/fetching
 // method is known and required credentials are presented
 // (such as a refresh token).
-func (t *Transport) RefreshToken() error {
+func (t *Transport) refreshToken() error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	token, err := t.opts.TokenFetcherFunc(t.token)

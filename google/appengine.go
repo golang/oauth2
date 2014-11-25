@@ -7,6 +7,7 @@
 package google
 
 import (
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -44,7 +45,9 @@ func init() {
 func AppEngineContext(ctx appengine.Context) oauth2.Option {
 	return func(opts *oauth2.Options) error {
 		opts.TokenFetcherFunc = makeAppEngineTokenFetcher(ctx, opts)
-		opts.Transport = &urlfetch.Transport{Context: ctx}
+		opts.Client = &http.Client{
+			Transport: &urlfetch.Transport{Context: ctx},
+		}
 		return nil
 	}
 }

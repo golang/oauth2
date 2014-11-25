@@ -18,7 +18,7 @@ import (
 func TestA(t *testing.T) {}
 
 func Example_regular() {
-	f, err := oauth2.New(
+	opts, err := oauth2.New(
 		oauth2.Client("YOUR_CLIENT_ID", "YOUR_CLIENT_SECRET"),
 		oauth2.RedirectURL("YOUR_REDIRECT_URL"),
 		oauth2.Scope("SCOPE1", "SCOPE2"),
@@ -33,7 +33,7 @@ func Example_regular() {
 
 	// Redirect user to consent page to ask for permission
 	// for the scopes specified above.
-	url := f.AuthCodeURL("state", "online", "auto")
+	url := opts.AuthCodeURL("state", "online", "auto")
 	fmt.Printf("Visit the URL for the auth dialog: %v", url)
 
 	// Use the authorization code that is pushed to the redirect URL.
@@ -44,7 +44,7 @@ func Example_regular() {
 	if _, err = fmt.Scan(&code); err != nil {
 		log.Fatal(err)
 	}
-	t, err := f.NewTransportFromCode(code)
+	t, err := opts.NewTransportFromCode(code)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func Example_regular() {
 }
 
 func Example_jWT() {
-	f, err := oauth2.New(
+	opts, err := oauth2.New(
 		// The contents of your RSA private key or your PEM file
 		// that contains a private key.
 		// If you have a p12 file instead, you
@@ -82,6 +82,6 @@ func Example_jWT() {
 
 	// Initiate an http.Client, the following GET request will be
 	// authorized and authenticated on the behalf of user@example.com.
-	client := http.Client{Transport: f.NewTransport()}
+	client := http.Client{Transport: opts.NewTransport()}
 	client.Get("...")
 }
