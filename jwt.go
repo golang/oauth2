@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/oauth2/internal"
-	"github.com/golang/oauth2/jws"
+	"golang.org/x/oauth2/internal"
+	"golang.org/x/oauth2/jws"
 )
 
 var (

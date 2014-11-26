@@ -1,8 +1,10 @@
 language: go
-go: 1.3
+go:
+  - 1.3
+  - tip
 
 install:
-  - go get -v -tags='appengine appenginevm' ./...
+  - go get -v -tags='appengine appenginevm' golang.org/x/oauth2/...
 
 script:
-  - go test -v -tags='appengine appenginevm' ./...
+  - go test -v -tags='appengine appenginevm' golang.org/x/oauth2/...

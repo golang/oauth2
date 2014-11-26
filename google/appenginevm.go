@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/oauth2"
+	"golang.org/x/oauth2"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/memcache"
 )

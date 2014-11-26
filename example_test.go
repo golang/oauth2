@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/golang/oauth2"
+	"golang.org/x/oauth2"
 )
 
 // TODO(jbd): Remove after Go 1.4.
