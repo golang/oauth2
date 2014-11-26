@@ -343,14 +343,14 @@ func retrieveToken(o *Options, v url.Values) (*Token, error) {
 		token.TokenType, _ = b["token_type"].(string)
 		token.RefreshToken, _ = b["refresh_token"].(string)
 		token.raw = b
-		e, ok := b["expires_in"].(int)
+		e, ok := b["expires_in"].(float64)
 		if !ok {
 			// TODO(jbd): Facebook's OAuth2 implementation is broken and
 			// returns expires_in field in expires. Remove the fallback to expires,
 			// when Facebook fixes their implementation.
-			e, _ = b["expires"].(int)
+			e, _ = b["expires"].(float64)
 		}
-		expires = e
+		expires = int(e)
 	}
 	// Don't overwrite `RefreshToken` with an empty value
 	// if this was a token refreshing request.
