@@ -128,7 +128,7 @@ func TestExchangeRequest_JSONResponse(t *testing.T) {
 			t.Errorf("Unexpected exchange payload, %v is found.", string(body))
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"access_token": "90d64460d14870c08c81352a05dedd3465940a7c", "scope": "user", "token_type": "bearer"}`))
+		w.Write([]byte(`{"access_token": "90d64460d14870c08c81352a05dedd3465940a7c", "scope": "user", "token_type": "bearer", "expires_in": 86400}`))
 	}))
 	defer ts.Close()
 	opts := newOpts(ts.URL)
@@ -137,6 +137,9 @@ func TestExchangeRequest_JSONResponse(t *testing.T) {
 		t.Error(err)
 	}
 	tok := tr.Token()
+	if tok.Expiry.IsZero() {
+		t.Errorf("Token expiry should not be zero.")
+	}
 	if tok.Expired() {
 		t.Errorf("Token shouldn't be expired.")
 	}
