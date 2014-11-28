@@ -3,6 +3,7 @@ package oauth2
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -61,6 +62,69 @@ func TestExpiredWithExpiry(t *testing.T) {
 	}
 	if !token.Expired() {
 		t.Errorf("Token should be expired if no access token is provided")
+	}
+}
+
+func TestExtraFloat64WithInt(t *testing.T) {
+	token := &Token{
+		raw: map[string]interface{}{
+			"expires": int(1234567),
+		},
+	}
+
+	val := token.ExtraFloat64("expires")
+	if val != float64(1234567) {
+		t.Errorf("ExtraFloat64 should return int value 1234567, got %T %d instead", val, val)
+	}
+}
+
+func TestExtraFloat64WithFloat64(t *testing.T) {
+	token := &Token{
+		raw: map[string]interface{}{
+			"expires": float64(1234567),
+		},
+	}
+
+	val := token.ExtraFloat64("expires")
+	if val != float64(1234567) {
+		t.Errorf("ExtraFloat64 should return int value 1234567, got %T %d instead", val, val)
+	}
+}
+
+func TestExtraFloat64WithValidURLValues(t *testing.T) {
+	token := &Token{
+		raw: url.Values{
+			"expires": []string{"1234567"},
+		},
+	}
+
+	val := token.ExtraFloat64("expires")
+	if val != float64(1234567) {
+		t.Errorf("ExtraFloat64 should return int value 1234567, got %T %d instead", val, val)
+	}
+}
+
+func TestExtraFloat64WithInvalidURLValues(t *testing.T) {
+	token := &Token{
+		raw: url.Values{},
+	}
+
+	val := token.ExtraFloat64("expires")
+	if val != float64(0) {
+		t.Errorf("ExtraFloat64 should return int value 1234567, got %T %d instead", val, val)
+	}
+}
+
+func TestExtraFloat64WithString(t *testing.T) {
+	token := &Token{
+		raw: map[string]interface{}{
+			"expires": "1234567",
+		},
+	}
+
+	val := token.ExtraFloat64("expires")
+	if val != float64(0) {
+		t.Errorf("ExtraFloat64 should return int value 0, got %T %d instead", val, val)
 	}
 }
 
