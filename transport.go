@@ -13,6 +13,7 @@ import (
 
 const (
 	defaultTokenType = "Bearer"
+	expirationHysteresisSeconds = 60
 )
 
 // Token represents the crendentials used to authorize
@@ -52,6 +53,18 @@ func (t *Token) Extra(key string) string {
 	return ""
 }
 
+// ExpiringSoon returns true if the token is expired or
+// will be expiring soon within a hysteresis, currently 60 seconds
+func (t *Token) ExpiringSoon() bool {
+	if t.Expiry.IsZero() {
+		return false
+	} else {
+		hysteresis := expirationHysteresisSeconds * time.Second
+		futureExpiry := t.Expiry.Add(hysteresis)
+		return t.Expired() || futureExpiry.Before(time.Now())
+	}
+}
+
 // Expired returns true if there is no access token or the
 // access token is expired.
 func (t *Token) Expired() bool {
@@ -88,19 +101,10 @@ func newTransport(base http.RoundTripper, opts *Options, token *Token) *Transpor
 // access token. If no token exists or token is expired,
 // tries to refresh/fetch a new token.
 func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
-	token := t.token
 
-	if token == nil || token.Expired() {
-		// Check if the token is refreshable.
-		// If token is refreshable, don't return an error,
-		// rather refresh.
-		if err := t.refreshToken(); err != nil {
-			return nil, err
-		}
-		token = t.token
-		if t.opts.TokenStore != nil {
-			t.opts.TokenStore.WriteToken(token)
-		}
+	token, err := t.checkAndRefreshToken()
+	if err != nil {
+		return nil, err
 	}
 
 	// To set the Authorization header, we must make a copy of the Request
@@ -123,12 +127,42 @@ func (t *Transport) Token() *Token {
 	return t.token
 }
 
+// checkAndRefresh check token expiration using hysteresis,
+// will fetch a new token if possible using refreshToken,
+// and then write it to the TokenStore if defined.
+func (t* Transport) checkAndRefreshToken() (*Token, error) {
+	token := t.token
+
+	// Do an initial check to see if the token is expired
+	// before acquiring a lock.
+	if token == nil || token.ExpiringSoon() {
+		// Acquire a lock, and then re-check expiration
+		// to not refresh and store the token multiple
+		// times
+		t.mu.Lock()
+		defer t.mu.Unlock()
+
+		if token == nil || token.ExpiringSoon() {
+			// Check if the token is refreshable.
+			// If token is refreshable, don't return an error,
+			// rather refresh.
+			if err := t.refreshToken(); err != nil {
+				return nil, err
+			}
+			token = t.token
+			// Place the token back into the store under the lock
+			if t.opts.TokenStore != nil {
+				t.opts.TokenStore.WriteToken(token)
+			}
+		}
+	}
+	return token, nil
+}
+
 // refreshToken retrieves a new token, if a refreshing/fetching
 // method is known and required credentials are presented
 // (such as a refresh token).
 func (t *Transport) refreshToken() error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
 	token, err := t.opts.TokenFetcherFunc(t.token)
 	if err != nil {
 		return err
