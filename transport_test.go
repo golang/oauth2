@@ -60,7 +60,16 @@ func TestExpiredWithExpiry(t *testing.T) {
 		Expiry: time.Now().Add(-5 * time.Hour),
 	}
 	if !token.Expired() {
-		t.Errorf("Token should be expired if no access token is provided")
+		t.Errorf("Token should be expired based on the past date")
+	}
+}
+
+func TestExpiredWithExpiryHyst(t *testing.T) {
+	token := &Token{
+		Expiry: time.Now().Add(5 * time.Second),
+	}
+	if !token.ExpiringSoon() {
+		t.Errorf("Token should be expiring soon")
 	}
 }
 
