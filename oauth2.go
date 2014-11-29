@@ -185,7 +185,7 @@ func (o *Options) NewTransportFromTokenStore(store TokenStore) (*Transport, erro
 	if tok == nil {
 		return nil, nil
 	}
-	return o.newTransportFromToken(tok), nil
+	return o.NewTransportFromToken(tok), nil
 }
 
 // NewTransportFromCode exchanges the code to retrieve a new access token
@@ -195,17 +195,17 @@ func (o *Options) NewTransportFromCode(code string) (*Transport, error) {
 	if err != nil {
 		return nil, err
 	}
-	return o.newTransportFromToken(token), nil
+	return o.NewTransportFromToken(token), nil
 }
 
 // NewTransport returns a Transport.
 func (o *Options) NewTransport() *Transport {
-	return o.newTransportFromToken(nil)
+	return o.NewTransportFromToken(nil)
 }
 
-// newTransportFromToken returns a new Transport that is authorized
+// NewTransportFromToken returns a new Transport that is authorized
 // and authenticated with the provided token.
-func (o *Options) newTransportFromToken(t *Token) *Transport {
+func (o *Options) NewTransportFromToken(t *Token) *Transport {
 	// TODO(jbd): App Engine options initiate an http.Client that
 	// depends on the urlfetcher, but it breaks the promise we made
 	// that the options object should be working finely with nil-values
