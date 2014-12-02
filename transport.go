@@ -19,16 +19,16 @@ const (
 // the requests to access protected resources on the OAuth 2.0
 // provider's backend.
 type Token struct {
-	// A token that authorizes and authenticates the requests.
+	// AccessToken is the token that authorizes and authenticates the requests.
 	AccessToken string `json:"access_token"`
 
-	// Identifies the type of token returned.
+	// TokenType identifies the type of token returned.
 	TokenType string `json:"token_type,omitempty"`
 
-	// A token that may be used to obtain a new access token.
+	// RefreshToken is a token that may be used to obtain a new access token.
 	RefreshToken string `json:"refresh_token,omitempty"`
 
-	// The remaining lifetime of the access token.
+	// Expiry is the expiration datetime of the access token.
 	Expiry time.Time `json:"expiry,omitempty"`
 
 	// raw optionally contains extra metadata from the server

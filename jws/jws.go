@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-// The JWT claim set contains information about the JWT including the
+// ClaimSet contains information about the JWT signature including the
 // permissions being requested (scopes), the target of the token, the issuer,
 // the time the token was issued, and the lifetime of the token.
 type ClaimSet struct {
