@@ -5,15 +5,16 @@
 package oauth2
 
 import (
+	"crypto/rsa"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
-	"golang.org/x/oauth2/internal"
 	"golang.org/x/oauth2/jws"
 )
 
@@ -22,100 +23,126 @@ var (
 	defaultHeader    = &jws.Header{Algorithm: "RS256", Typ: "JWT"}
 )
 
-// JWTClient requires OAuth 2.0 JWT credentials.
-// Required for the 2-legged JWT flow.
-func JWTClient(email string, key []byte) Option {
-	return func(o *Options) error {
-		pk, err := internal.ParseKey(key)
-		if err != nil {
-			return err
-		}
-		o.Email = email
-		o.PrivateKey = pk
-		return nil
+// JWTConfig is the configuration for using JWT to fetch tokens,
+// commonly known as "two-legged OAuth".
+type JWTConfig struct {
+	// Email is the OAuth client identifier used when communicating with
+	// the configured OAuth provider.
+	Email string
+
+	// PrivateKey contains the contents of an RSA private key or the
+	// contents of a PEM file that contains a private key. The provided
+	// private key is used to sign JWT payloads.
+	// PEM containers with a passphrase are not supported.
+	// Use the following command to convert a PKCS 12 file into a PEM.
+	//
+	//    $ openssl pkcs12 -in key.p12 -out key.pem -nodes
+	//
+	PrivateKey *rsa.PrivateKey
+
+	// Subject is the optional user to impersonate.
+	Subject string
+
+	// Scopes optionally specifies a list of requested permission scopes.
+	Scopes []string
+
+	// TokenURL is the endpoint required to complete the 2-legged JWT flow.
+	TokenURL string
+}
+
+// TokenSource returns a JWT TokenSource using the configuration
+// in c and the HTTP client from the provided context.
+//
+// The returned TokenSource only does JWT requests when necessary but
+// otherwise returns the same token repeatedly until it expires.
+//
+// The provided initialToken may be nil, in which case the first
+// call to TokenSource will do a new JWT request.
+func (c *JWTConfig) TokenSource(ctx Context, initialToken *Token) TokenSource {
+	return &newWhenNeededSource{
+		t:   initialToken,
+		new: jwtSource{ctx, c},
 	}
 }
 
-// JWTEndpoint requires the JWT token endpoint of the OAuth 2.0 provider.
-func JWTEndpoint(aud string) Option {
-	return func(o *Options) error {
-		au, err := url.Parse(aud)
-		if err != nil {
-			return err
-		}
-		o.AUD = au
-		return nil
+// Client returns an HTTP client wrapping the context's
+// HTTP transport and adding Authorization headers with tokens
+// obtained from c.
+//
+// The provided initialToken may be nil, in which case the first
+// call to TokenSource will do a new JWT request.
+//
+// The returned client and its Transport should not be modified.
+func (c *JWTConfig) Client(ctx Context, initialToken *Token) *http.Client {
+	return &http.Client{
+		Transport: &Transport{
+			Source: c.TokenSource(ctx, initialToken),
+			Base:   contextTransport(ctx),
+		},
 	}
 }
 
-// Subject requires a user to impersonate.
-// Optional.
-func Subject(user string) Option {
-	return func(o *Options) error {
-		o.Subject = user
-		return nil
-	}
+// jwtSource is a source that always does a signed JWT request for a token.
+// It should typically be wrapped with a newWhenNeededSource.
+type jwtSource struct {
+	ctx  Context
+	conf *JWTConfig
 }
 
-func makeTwoLeggedFetcher(o *Options) func(t *Token) (*Token, error) {
-	return func(t *Token) (*Token, error) {
-		if t == nil {
-			t = &Token{}
-		}
-		claimSet := &jws.ClaimSet{
-			Iss:   o.Email,
-			Scope: strings.Join(o.Scopes, " "),
-			Aud:   o.AUD.String(),
-		}
-		if o.Subject != "" {
-			claimSet.Sub = o.Subject
-			// prn is the old name of sub. Keep setting it
-			// to be compatible with legacy OAuth 2.0 providers.
-			claimSet.Prn = o.Subject
-		}
-		payload, err := jws.Encode(defaultHeader, claimSet, o.PrivateKey)
-		if err != nil {
-			return nil, err
-		}
-		v := url.Values{}
-		v.Set("grant_type", defaultGrantType)
-		v.Set("assertion", payload)
-		c := o.Client
-		if c == nil {
-			c = &http.Client{}
-		}
-		resp, err := c.PostForm(o.AUD.String(), v)
+func (js jwtSource) Token() (*Token, error) {
+	hc, err := contextClient(js.ctx)
+	if err != nil {
+		return nil, err
+	}
+	claimSet := &jws.ClaimSet{
+		Iss:   js.conf.Email,
+		Scope: strings.Join(js.conf.Scopes, " "),
+		Aud:   js.conf.TokenURL,
+	}
+	if subject := js.conf.Subject; subject != "" {
+		claimSet.Sub = subject
+		// prn is the old name of sub. Keep setting it
+		// to be compatible with legacy OAuth 2.0 providers.
+		claimSet.Prn = subject
+	}
+	payload, err := jws.Encode(defaultHeader, claimSet, js.conf.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	v := url.Values{}
+	v.Set("grant_type", defaultGrantType)
+	v.Set("assertion", payload)
+	resp, err := hc.PostForm(js.conf.TokenURL, v)
+	if err != nil {
+		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
+	}
+	if c := resp.StatusCode; c < 200 || c > 299 {
+		return nil, fmt.Errorf("oauth2: cannot fetch token: %v\nResponse: %s", resp.Status, body)
+	}
+	b := make(map[string]interface{})
+	if err := json.Unmarshal(body, &b); err != nil {
+		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
+	}
+	token := &Token{}
+	token.AccessToken, _ = b["access_token"].(string)
+	token.TokenType, _ = b["token_type"].(string)
+	token.raw = b
+	if e, ok := b["expires_in"].(int); ok {
+		token.Expiry = time.Now().Add(time.Duration(e) * time.Second)
+	}
+	if idtoken, ok := b["id_token"].(string); ok {
+		// decode returned id token to get expiry
+		claimSet, err := jws.Decode(idtoken)
 		if err != nil {
 			return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 		}
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
-		}
-		if c := resp.StatusCode; c < 200 || c > 299 {
-			return nil, fmt.Errorf("oauth2: cannot fetch token: %v\nResponse: %s", resp.Status, body)
-		}
-		b := make(map[string]interface{})
-		if err := json.Unmarshal(body, &b); err != nil {
-			return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
-		}
-		token := &Token{}
-		token.AccessToken, _ = b["access_token"].(string)
-		token.TokenType, _ = b["token_type"].(string)
-		token.raw = b
-		if e, ok := b["expires_in"].(int); ok {
-			token.Expiry = time.Now().Add(time.Duration(e) * time.Second)
-		}
-		if idtoken, ok := b["id_token"].(string); ok {
-			// decode returned id token to get expiry
-			claimSet, err := jws.Decode(idtoken)
-			if err != nil {
-				return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
-			}
-			token.Expiry = time.Unix(claimSet.Exp, 0)
-			return token, nil
-		}
+		token.Expiry = time.Unix(claimSet.Exp, 0)
 		return token, nil
 	}
+	return token, nil
 }
