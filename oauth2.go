@@ -27,8 +27,13 @@ import (
 
 // Context can be an golang.org/x/net.Context, or an App Engine Context.
 // In the future these will be unified.
-// If you don't care and aren't running on App Engine, you may use nil.
+// If you don't care and aren't running on App Engine, you may use NoContext.
 type Context interface{}
+
+// NoContext is the default context. If you're not running this code
+// on App Engine or not using golang.org/x/net.Context to provide a custom
+// HTTP client, you should use NoContext.
+var NoContext Context = nil
 
 // Config describes a typical 3-legged OAuth2 flow, with both the
 // client application information and the server's URLs.
@@ -272,8 +277,8 @@ func contextTransport(ctx Context) http.RoundTripper {
 func (c *Config) Client(ctx Context, t *Token) *http.Client {
 	return &http.Client{
 		Transport: &Transport{
-			Source: c.TokenSource(ctx, t),
 			Base:   contextTransport(ctx),
+			Source: c.TokenSource(ctx, t),
 		},
 	}
 }

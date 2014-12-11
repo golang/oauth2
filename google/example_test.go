@@ -8,6 +8,7 @@ package google_test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"testing"
@@ -15,6 +16,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/appengine"
+	"google.golang.org/appengine/urlfetch"
 )
 
 // Remove after Go 1.4.
@@ -24,33 +26,31 @@ func TestA(t *testing.T) {}
 func Example_webServer() {
 	// Your credentials should be obtained from the Google
 	// Developer Console (https://console.developers.google.com).
-	opts, err := oauth2.New(
-		oauth2.Client("YOUR_CLIENT_ID", "YOUR_CLIENT_SECRET"),
-		oauth2.RedirectURL("YOUR_REDIRECT_URL"),
-		oauth2.Scope(
+	conf := &oauth2.Config{
+		ClientID:     "YOUR_CLIENT_ID",
+		ClientSecret: "YOUR_CLIENT_SECRET",
+		RedirectURL:  "YOUR_REDIRECT_URL",
+		Scopes: []string{
 			"https://www.googleapis.com/auth/bigquery",
 			"https://www.googleapis.com/auth/blogger",
-		),
-		google.Endpoint(),
-	)
-	if err != nil {
-		log.Fatal(err)
+		},
+		Endpoint: google.Endpoint,
 	}
 	// Redirect user to Google's consent page to ask for permission
 	// for the scopes specified above.
-	url := opts.AuthCodeURL("state", "online", "auto")
+	url := conf.AuthCodeURL("state")
 	fmt.Printf("Visit the URL for the auth dialog: %v", url)
 
-	// Handle the exchange code to initiate a transport
-	t, err := opts.NewTransportFromCode("exchange-code")
+	// Handle the exchange code to initiate a transport.
+	tok, err := conf.Exchange(oauth2.NoContext, "authorization-code")
 	if err != nil {
 		log.Fatal(err)
 	}
-	client := http.Client{Transport: t}
+	client := conf.Client(oauth2.NoContext, tok)
 	client.Get("...")
 }
 
-func Example_serviceAccountsJSON() {
+func ExampleJWTConfigFromJSON() {
 	// Your credentials should be obtained from the Google
 	// Developer Console (https://console.developers.google.com).
 	// Navigate to your project, then see the "Credentials" page
@@ -58,27 +58,26 @@ func Example_serviceAccountsJSON() {
 	// To create a service account client, click "Create new Client ID",
 	// select "Service Account", and click "Create Client ID". A JSON
 	// key file will then be downloaded to your computer.
-	opts, err := oauth2.New(
-		google.ServiceAccountJSONKey("/path/to/your-project-key.json"),
-		oauth2.Scope(
-			"https://www.googleapis.com/auth/bigquery",
-			"https://www.googleapis.com/auth/blogger",
-		),
-	)
+	data, err := ioutil.ReadFile("/path/to/your-project-key.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	conf, err := google.JWTConfigFromJSON(oauth2.NoContext, data, "https://www.googleapis.com/auth/bigquery")
 	if err != nil {
 		log.Fatal(err)
 	}
 	// Initiate an http.Client. The following GET request will be
 	// authorized and authenticated on the behalf of
 	// your service account.
-	client := http.Client{Transport: opts.NewTransport()}
+	client := conf.Client(oauth2.NoContext, nil)
 	client.Get("...")
 }
 
-func Example_serviceAccounts() {
+func Example_serviceAccount() {
 	// Your credentials should be obtained from the Google
 	// Developer Console (https://console.developers.google.com).
-	opts, err := oauth2.New(
+	conf := &oauth2.JWTConfig{
+		Email: "xxx@developer.gserviceaccount.com",
 		// The contents of your RSA private key or your PEM file
 		// that contains a private key.
 		// If you have a p12 file instead, you
@@ -87,58 +86,46 @@ func Example_serviceAccounts() {
 		//    $ openssl pkcs12 -in key.p12 -out key.pem -nodes
 		//
 		// It only supports PEM containers with no passphrase.
-		oauth2.JWTClient(
-			"xxx@developer.gserviceaccount.com",
-			[]byte("-----BEGIN RSA PRIVATE KEY-----...")),
-		oauth2.Scope(
+		PrivateKey: []byte("-----BEGIN RSA PRIVATE KEY-----..."),
+		Scopes: []string{
 			"https://www.googleapis.com/auth/bigquery",
 			"https://www.googleapis.com/auth/blogger",
-		),
-		google.JWTEndpoint(),
+		},
+		TokenURL: google.JWTTokenURL,
 		// If you would like to impersonate a user, you can
 		// create a transport with a subject. The following GET
 		// request will be made on the behalf of user@example.com.
-		// Subject is optional.
-		oauth2.Subject("user@example.com"),
-	)
-	if err != nil {
-		log.Fatal(err)
+		// Optional.
+		Subject: "user@example.com",
 	}
-
 	// Initiate an http.Client, the following GET request will be
 	// authorized and authenticated on the behalf of user@example.com.
-	client := http.Client{Transport: opts.NewTransport()}
+	client := conf.Client(oauth2.NoContext, nil)
 	client.Get("...")
 }
 
-func Example_appEngine() {
-	ctx := appengine.NewContext(nil)
-	opts, err := oauth2.New(
-		google.AppEngineContext(ctx),
-		oauth2.Scope(
-			"https://www.googleapis.com/auth/bigquery",
-			"https://www.googleapis.com/auth/blogger",
-		),
-	)
-	if err != nil {
-		log.Fatal(err)
+func ExampleAppEngineTokenSource() {
+	var req *http.Request // from the ServeHTTP handler
+	ctx := appengine.NewContext(req)
+	client := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: google.AppEngineTokenSource(ctx, "https://www.googleapis.com/auth/bigquery"),
+			Base: &urlfetch.Transport{
+				Context: ctx,
+			},
+		},
 	}
-	// The following client will be authorized by the App Engine
-	// app's service account for the provided scopes.
-	client := http.Client{Transport: opts.NewTransport()}
 	client.Get("...")
 }
 
-func Example_computeEngine() {
-	opts, err := oauth2.New(
-		// Query Google Compute Engine's metadata server to retrieve
-		// an access token for the provided account.
-		// If no account is specified, "default" is used.
-		google.ComputeEngineAccount(""),
-	)
-	if err != nil {
-		log.Fatal(err)
+func ExampleComputeTokenSource() {
+	client := &http.Client{
+		Transport: &oauth2.Transport{
+			// Fetch from Google Compute Engine's metadata server to retrieve
+			// an access token for the provided account.
+			// If no account is specified, "default" is used.
+			Source: google.ComputeTokenSource(""),
+		},
 	}
-	client := http.Client{Transport: opts.NewTransport()}
 	client.Get("...")
 }

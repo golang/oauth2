@@ -5,7 +5,6 @@
 package oauth2
 
 import (
-	"crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/oauth2/internal"
 	"golang.org/x/oauth2/jws"
 )
 
@@ -38,7 +38,7 @@ type JWTConfig struct {
 	//
 	//    $ openssl pkcs12 -in key.p12 -out key.pem -nodes
 	//
-	PrivateKey *rsa.PrivateKey
+	PrivateKey []byte
 
 	// Subject is the optional user to impersonate.
 	Subject string
@@ -76,8 +76,8 @@ func (c *JWTConfig) TokenSource(ctx Context, initialToken *Token) TokenSource {
 func (c *JWTConfig) Client(ctx Context, initialToken *Token) *http.Client {
 	return &http.Client{
 		Transport: &Transport{
-			Source: c.TokenSource(ctx, initialToken),
 			Base:   contextTransport(ctx),
+			Source: c.TokenSource(ctx, initialToken),
 		},
 	}
 }
@@ -90,6 +90,10 @@ type jwtSource struct {
 }
 
 func (js jwtSource) Token() (*Token, error) {
+	pk, err := internal.ParseKey(js.conf.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
 	hc, err := contextClient(js.ctx)
 	if err != nil {
 		return nil, err
@@ -105,7 +109,7 @@ func (js jwtSource) Token() (*Token, error) {
 		// to be compatible with legacy OAuth 2.0 providers.
 		claimSet.Prn = subject
 	}
-	payload, err := jws.Encode(defaultHeader, claimSet, js.conf.PrivateKey)
+	payload, err := jws.Encode(defaultHeader, claimSet, pk)
 	if err != nil {
 		return nil, err
 	}

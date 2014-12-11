@@ -7,45 +7,29 @@ import (
 	"time"
 )
 
-type mockTokenFetcher struct{ token *Token }
+type tokenSource struct{ token *Token }
 
-func (f *mockTokenFetcher) Fn() func(*Token) (*Token, error) {
-	return func(*Token) (*Token, error) {
-		return f.token, nil
-	}
+func (t *tokenSource) Token() (*Token, error) {
+	return t.token, nil
 }
 
-func TestInitialTokenRead(t *testing.T) {
-	tr := newTransport(http.DefaultTransport, nil, &Token{AccessToken: "abc"})
-	server := newMockServer(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") != "Bearer abc" {
-			t.Errorf("Transport doesn't set the Authorization header from the initial token")
-		}
-	})
-	defer server.Close()
-	client := http.Client{Transport: tr}
-	client.Get(server.URL)
-}
-
-func TestTokenFetch(t *testing.T) {
-	fetcher := &mockTokenFetcher{
+func TestTransportTokenSource(t *testing.T) {
+	ts := &tokenSource{
 		token: &Token{
 			AccessToken: "abc",
 		},
 	}
-	tr := newTransport(http.DefaultTransport, &Options{TokenFetcherFunc: fetcher.Fn()}, nil)
+	tr := &Transport{
+		Source: ts,
+	}
 	server := newMockServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer abc" {
 			t.Errorf("Transport doesn't set the Authorization header from the fetched token")
 		}
 	})
 	defer server.Close()
-
 	client := http.Client{Transport: tr}
 	client.Get(server.URL)
-	if tr.Token().AccessToken != "abc" {
-		t.Errorf("New token is not set, found %v", tr.Token())
-	}
 }
 
 func TestExpiredWithNoAccessToken(t *testing.T) {

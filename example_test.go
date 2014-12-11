@@ -7,7 +7,6 @@ package oauth2_test
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"testing"
 
 	"golang.org/x/oauth2"
@@ -17,23 +16,20 @@ import (
 // Related to https://codereview.appspot.com/107320046
 func TestA(t *testing.T) {}
 
-func Example_regular() {
-	opts, err := oauth2.New(
-		oauth2.Client("YOUR_CLIENT_ID", "YOUR_CLIENT_SECRET"),
-		oauth2.RedirectURL("YOUR_REDIRECT_URL"),
-		oauth2.Scope("SCOPE1", "SCOPE2"),
-		oauth2.Endpoint(
-			"https://provider.com/o/oauth2/auth",
-			"https://provider.com/o/oauth2/token",
-		),
-	)
-	if err != nil {
-		log.Fatal(err)
+func ExampleConfig() {
+	conf := &oauth2.Config{
+		ClientID:     "YOUR_CLIENT_ID",
+		ClientSecret: "YOUR_CLIENT_SECRET",
+		Scopes:       []string{"SCOPE1", "SCOPE2"},
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "https://provider.com/o/oauth2/auth",
+			TokenURL: "https://provider.com/o/oauth2/token",
+		},
 	}
 
 	// Redirect user to consent page to ask for permission
 	// for the scopes specified above.
-	url := opts.AuthCodeURL("state", "online", "auto")
+	url := conf.AuthCodeURL("state", oauth2.AccessTypeOffline)
 	fmt.Printf("Visit the URL for the auth dialog: %v", url)
 
 	// Use the authorization code that is pushed to the redirect URL.
@@ -41,22 +37,22 @@ func Example_regular() {
 	// an access token and initiate a Transport that is
 	// authorized and authenticated by the retrieved token.
 	var code string
-	if _, err = fmt.Scan(&code); err != nil {
+	if _, err := fmt.Scan(&code); err != nil {
 		log.Fatal(err)
 	}
-	t, err := opts.NewTransportFromCode(code)
+	tok, err := conf.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// You can use t to initiate a new http.Client and
-	// start making authenticated requests.
-	client := http.Client{Transport: t}
+	client := conf.Client(oauth2.NoContext, tok)
 	client.Get("...")
 }
 
-func Example_jWT() {
-	opts, err := oauth2.New(
+func ExampleJWTConfig() {
+	var initialToken *oauth2.Token // nil means no initial token
+	conf := &oauth2.JWTConfig{
+		Email: "xxx@developer.com",
 		// The contents of your RSA private key or your PEM file
 		// that contains a private key.
 		// If you have a p12 file instead, you
@@ -65,23 +61,12 @@ func Example_jWT() {
 		//    $ openssl pkcs12 -in key.p12 -out key.pem -nodes
 		//
 		// It only supports PEM containers with no passphrase.
-		oauth2.JWTClient(
-			"xxx@developer.gserviceaccount.com",
-			[]byte("-----BEGIN RSA PRIVATE KEY-----...")),
-		oauth2.Scope("SCOPE1", "SCOPE2"),
-		oauth2.JWTEndpoint("https://provider.com/o/oauth2/token"),
-		// If you would like to impersonate a user, you can
-		// create a transport with a subject. The following GET
-		// request will be made on the behalf of user@example.com.
-		// Subject is optional.
-		oauth2.Subject("user@example.com"),
-	)
-	if err != nil {
-		log.Fatal(err)
+		PrivateKey: []byte("-----BEGIN RSA PRIVATE KEY-----..."),
+		Subject:    "user@example.com",
+		TokenURL:   "https://provider.com/o/oauth2/token",
 	}
-
 	// Initiate an http.Client, the following GET request will be
 	// authorized and authenticated on the behalf of user@example.com.
-	client := http.Client{Transport: opts.NewTransport()}
+	client := conf.Client(oauth2.NoContext, initialToken)
 	client.Get("...")
 }

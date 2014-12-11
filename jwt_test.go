@@ -48,18 +48,16 @@ func TestJWTFetch_JSONResponse(t *testing.T) {
 		}`))
 	}))
 	defer ts.Close()
-	f, err := New(
-		JWTClient("aaa@xxx.com", dummyPrivateKey),
-		JWTEndpoint(ts.URL),
-	)
-	if err != nil {
-		t.Error(err)
-	}
-	tr := f.NewTransport()
-	c := http.Client{Transport: tr}
 
-	c.Get(ts.URL)
-	tok := tr.Token()
+	conf := &JWTConfig{
+		Email:      "aaa@xxx.com",
+		PrivateKey: dummyPrivateKey,
+		TokenURL:   ts.URL,
+	}
+	tok, err := conf.TokenSource(NoContext, nil).Token()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if tok.Expired() {
 		t.Errorf("Token shouldn't be expired.")
 	}
@@ -81,19 +79,15 @@ func TestJWTFetch_BadResponse(t *testing.T) {
 		w.Write([]byte(`{"scope": "user", "token_type": "bearer"}`))
 	}))
 	defer ts.Close()
-	f, err := New(
-		JWTClient("aaa@xxx.com", dummyPrivateKey),
-		JWTEndpoint(ts.URL),
-	)
-	if err != nil {
-		t.Error(err)
+
+	conf := &JWTConfig{
+		Email:      "aaa@xxx.com",
+		PrivateKey: dummyPrivateKey,
+		TokenURL:   ts.URL,
 	}
-	tr := f.NewTransport()
-	c := http.Client{Transport: tr}
-	c.Get(ts.URL)
-	tok := tr.Token()
+	tok, err := conf.TokenSource(NoContext, nil).Token()
 	if err != nil {
-		t.Errorf("Failed retrieving token: %s.", err)
+		t.Fatal(err)
 	}
 	if tok.AccessToken != "" {
 		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
@@ -113,19 +107,14 @@ func TestJWTFetch_BadResponseType(t *testing.T) {
 		w.Write([]byte(`{"access_token":123, "scope": "user", "token_type": "bearer"}`))
 	}))
 	defer ts.Close()
-	f, err := New(
-		JWTClient("aaa@xxx.com", dummyPrivateKey),
-		JWTEndpoint(ts.URL),
-	)
-	if err != nil {
-		t.Error(err)
+	conf := &JWTConfig{
+		Email:      "aaa@xxx.com",
+		PrivateKey: dummyPrivateKey,
+		TokenURL:   ts.URL,
 	}
-	tr := f.NewTransport()
-	c := http.Client{Transport: tr}
-	c.Get(ts.URL)
-	tok := tr.Token()
+	tok, err := conf.TokenSource(NoContext, nil).Token()
 	if err != nil {
-		t.Errorf("Failed retrieving token: %s.", err)
+		t.Fatal(err)
 	}
 	if tok.AccessToken != "" {
 		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
