@@ -228,6 +228,22 @@ func (c *Config) Exchange(ctx Context, code string) (*Token, error) {
 	})
 }
 
+// AuthenticatedExchange extends Exchanged with client id and client secret.
+//
+// Some clients might request authenticated token requests.
+// See the Exchange documentation.
+//
+func (c *Config) AuthenticatedExchange(ctx Context, code string) (*Token, error) {
+	return retrieveToken(ctx, c, url.Values{
+		"grant_type":    {"authorization_code"},
+		"code":          {code},
+		"redirect_uri":  condVal(c.RedirectURL),
+		"scope":         condVal(strings.Join(c.Scopes, " ")),
+		"client_id":     condVal(c.ClientID),
+		"client_secret": condVal(c.ClientSecret),
+	})
+}
+
 // contextClientFunc is a func which tries to return an *http.Client
 // given a Context value. If it returns an error, the search stops
 // with that error.  If it returns (nil, nil), the search continues
