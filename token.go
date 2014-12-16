@@ -70,18 +70,18 @@ func (t *Token) WithExtra(extra interface{}) *Token {
 	return t2
 }
 
-// Extra returns an extra field returned from the server during token
-// retrieval.
-func (t *Token) Extra(key string) string {
+// Extra returns an extra field.
+// Extra fields are key-value pairs returned by the server as a
+// part of the token retrieval response.
+func (t *Token) Extra(key string) interface{} {
 	if vals, ok := t.raw.(url.Values); ok {
+		// TODO(jbd): Cast numeric values to int64 or float64.
 		return vals.Get(key)
 	}
 	if raw, ok := t.raw.(map[string]interface{}); ok {
-		if val, ok := raw[key].(string); ok {
-			return val
-		}
+		return raw[key]
 	}
-	return ""
+	return nil
 }
 
 // expired reports whether the token is expired.
