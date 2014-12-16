@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 var dummyPrivateKey = []byte(`-----BEGIN RSA PRIVATE KEY-----
@@ -118,5 +119,40 @@ func TestJWTFetch_BadResponseType(t *testing.T) {
 	}
 	if tok.AccessToken != "" {
 		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
+	}
+}
+
+// Verify that a JWT with an expires_in field is unmarshalled correctly.
+// Sanity check that the resultant token expiry is within a sensible range.
+func TestJWTFetch_ExpiresIn(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+            "access_token":"90d64460d14870c08c81352a05dedd3465940a7c",
+            "scope": "user",
+            "token_type": "bearer",
+            "expires_in": 3600
+        }`))
+	}))
+	defer ts.Close()
+	conf := &JWTConfig{
+		Email:      "aaa@xxx.com",
+		PrivateKey: dummyPrivateKey,
+		TokenURL:   ts.URL,
+	}
+	tok, err := conf.TokenSource(NoContext, nil).Token()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if tok.Expired() {
+		t.Errorf("Token shouldn't be expired.")
+	}
+	if tok.Expiry.IsZero() {
+		t.Error("Expected token expiry to be non-zero.")
+	}
+	now := time.Now()
+	if tok.Expiry.Before(now) || tok.Expiry.After(now.Add(time.Hour)) {
+		t.Errorf("Token expiry %#v not within expected range.", tok.Expiry)
 	}
 }
