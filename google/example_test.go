@@ -83,9 +83,10 @@ func Example_serviceAccount() {
 		// If you have a p12 file instead, you
 		// can use `openssl` to export the private key into a pem file.
 		//
-		//    $ openssl pkcs12 -in key.p12 -out key.pem -nodes
+		//    $ openssl pkcs12 -in key.p12 -passin pass:notasecret -out key.pem -nodes
 		//
-		// It only supports PEM containers with no passphrase.
+		// The field only supports PEM containers with no passphrase.
+		// The openssl command will convert p12 keys to passphrase-less PEM containers.
 		PrivateKey: []byte("-----BEGIN RSA PRIVATE KEY-----..."),
 		Scopes: []string{
 			"https://www.googleapis.com/auth/bigquery",
