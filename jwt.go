@@ -74,12 +74,7 @@ func (c *JWTConfig) TokenSource(ctx Context, initialToken *Token) TokenSource {
 //
 // The returned client and its Transport should not be modified.
 func (c *JWTConfig) Client(ctx Context, initialToken *Token) *http.Client {
-	return &http.Client{
-		Transport: &Transport{
-			Base:   contextTransport(ctx),
-			Source: c.TokenSource(ctx, initialToken),
-		},
-	}
+	return NewClient(ctx, c.TokenSource(ctx, initialToken))
 }
 
 // jwtSource is a source that always does a signed JWT request for a token.

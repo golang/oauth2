@@ -275,12 +275,7 @@ func contextTransport(ctx Context) http.RoundTripper {
 // HTTP transport will be obtained using the provided context.
 // The returned client and its Transport should not be modified.
 func (c *Config) Client(ctx Context, t *Token) *http.Client {
-	return &http.Client{
-		Transport: &Transport{
-			Base:   contextTransport(ctx),
-			Source: c.TokenSource(ctx, t),
-		},
-	}
+	return NewClient(ctx, c.TokenSource(ctx, t))
 }
 
 // TokenSource returns a TokenSource that returns t until t expires,
@@ -474,3 +469,14 @@ var HTTPClient contextKey
 // an immutable public variable with a unique type. It's immutable
 // because nobody else can create a contextKey, being unexported.
 type contextKey struct{}
+
+// NewClient creates an *http.Client from a Context and TokenSource.
+// The client's lifetime does not extend beyond the lifetime of the context.
+func NewClient(ctx Context, src TokenSource) *http.Client {
+	return &http.Client{
+		Transport: &Transport{
+			Base:   contextTransport(ctx),
+			Source: src,
+		},
+	}
+}
