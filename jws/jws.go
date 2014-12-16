@@ -104,7 +104,7 @@ func (h *Header) encode() (string, error) {
 }
 
 // Decode decodes a claim set from a JWS payload.
-func Decode(payload string) (c *ClaimSet, err error) {
+func Decode(payload string) (*ClaimSet, error) {
 	// decode returned id token to get expiry
 	s := strings.Split(payload, ".")
 	if len(s) < 2 {
@@ -115,31 +115,28 @@ func Decode(payload string) (c *ClaimSet, err error) {
 	if err != nil {
 		return nil, err
 	}
-	c = &ClaimSet{}
+	c := &ClaimSet{}
 	err = json.NewDecoder(bytes.NewBuffer(decoded)).Decode(c)
 	return c, err
 }
 
 // Encode encodes a signed JWS with provided header and claim set.
-func Encode(header *Header, c *ClaimSet, signature *rsa.PrivateKey) (payload string, err error) {
-	var encodedHeader, encodedClaimSet string
-	encodedHeader, err = header.encode()
+func Encode(header *Header, c *ClaimSet, signature *rsa.PrivateKey) (string, error) {
+	head, err := header.encode()
 	if err != nil {
-		return
+		return "", err
 	}
-	encodedClaimSet, err = c.encode()
+	cs, err := c.encode()
 	if err != nil {
-		return
+		return "", err
 	}
-
-	ss := fmt.Sprintf("%s.%s", encodedHeader, encodedClaimSet)
+	ss := fmt.Sprintf("%s.%s", head, cs)
 	h := sha256.New()
 	h.Write([]byte(ss))
 	b, err := rsa.SignPKCS1v15(rand.Reader, signature, crypto.SHA256, h.Sum(nil))
 	if err != nil {
-		return
+		return "", err
 	}
-
 	sig := base64Encode(b)
 	return fmt.Sprintf("%s.%s", ss, sig), nil
 }
