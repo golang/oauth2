@@ -131,7 +131,7 @@ func (js jwtSource) Token() (*Token, error) {
 	token.AccessToken, _ = b["access_token"].(string)
 	token.TokenType, _ = b["token_type"].(string)
 	token.raw = b
-	if e, ok := b["expires_in"].(int); ok {
+	if e, ok := b["expires_in"].(float64); ok {
 		token.Expiry = time.Now().Add(time.Duration(e) * time.Second)
 	}
 	if idtoken, ok := b["id_token"].(string); ok {

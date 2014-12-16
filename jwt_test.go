@@ -44,7 +44,8 @@ func TestJWTFetch_JSONResponse(t *testing.T) {
 		w.Write([]byte(`{
 			"access_token": "90d64460d14870c08c81352a05dedd3465940a7c",
 			"scope": "user",
-			"token_type": "bearer"
+			"token_type": "bearer",
+			"expires_in": 3600
 		}`))
 	}))
 	defer ts.Close()
@@ -59,13 +60,16 @@ func TestJWTFetch_JSONResponse(t *testing.T) {
 		t.Fatal(err)
 	}
 	if tok.Expired() {
-		t.Errorf("Token shouldn't be expired.")
+		t.Errorf("Token shouldn't be expired")
 	}
 	if tok.AccessToken != "90d64460d14870c08c81352a05dedd3465940a7c" {
-		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
+		t.Errorf("Unexpected access token, %#v", tok.AccessToken)
 	}
 	if tok.TokenType != "bearer" {
-		t.Errorf("Unexpected token type, %#v.", tok.TokenType)
+		t.Errorf("Unexpected token type, %#v", tok.TokenType)
+	}
+	if tok.Expiry.IsZero() {
+		t.Errorf("Unexpected token expiry, %#v", tok.Expiry)
 	}
 	scope := tok.Extra("scope")
 	if scope != "user" {
