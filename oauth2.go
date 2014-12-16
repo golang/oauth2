@@ -236,7 +236,7 @@ type contextClientFunc func(Context) (*http.Client, error)
 
 var contextClientFuncs []contextClientFunc
 
-func registerContextClietnFunc(fn contextClientFunc) {
+func registerContextClientFunc(fn contextClientFunc) {
 	contextClientFuncs = append(contextClientFuncs, fn)
 }
 
