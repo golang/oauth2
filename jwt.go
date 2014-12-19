@@ -123,25 +123,33 @@ func (js jwtSource) Token() (*Token, error) {
 	if c := resp.StatusCode; c < 200 || c > 299 {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v\nResponse: %s", resp.Status, body)
 	}
-	b := make(map[string]interface{})
-	if err := json.Unmarshal(body, &b); err != nil {
+	// tokenRes is the JSON response body.
+	var tokenRes struct {
+		AccessToken string `json:"access_token"`
+		TokenType   string `json:"token_type"`
+		IDToken     string `json:"id_token"`
+		ExpiresIn   int64  `json:"expires_in"` // relative seconds from now
+	}
+	if err := json.Unmarshal(body, &tokenRes); err != nil {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 	}
-	token := &Token{}
-	token.AccessToken, _ = b["access_token"].(string)
-	token.TokenType, _ = b["token_type"].(string)
-	token.raw = b
-	if e, ok := b["expires_in"].(float64); ok {
-		token.Expiry = time.Now().Add(time.Duration(e) * time.Second)
+	token := &Token{
+		AccessToken: tokenRes.AccessToken,
+		TokenType:   tokenRes.TokenType,
+		raw:         make(map[string]interface{}),
 	}
-	if idtoken, ok := b["id_token"].(string); ok {
+	json.Unmarshal(body, &token.raw) // no error checks for optional fields
+
+	if secs := tokenRes.ExpiresIn; secs > 0 {
+		token.Expiry = time.Now().Add(time.Duration(secs) * time.Second)
+	}
+	if v := tokenRes.IDToken; v != "" {
 		// decode returned id token to get expiry
-		claimSet, err := jws.Decode(idtoken)
+		claimSet, err := jws.Decode(v)
 		if err != nil {
-			return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
+			return nil, fmt.Errorf("oauth2: error decoding JWT token: %v", err)
 		}
 		token.Expiry = time.Unix(claimSet.Exp, 0)
-		return token, nil
 	}
 	return token, nil
 }

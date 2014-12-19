@@ -300,8 +300,7 @@ func retrieveToken(ctx Context, c *Config, v url.Values) (*Token, error) {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v\nResponse: %s", r.Status, body)
 	}
 
-	token := &Token{}
-	expires := 0
+	var token *Token
 	content, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	switch content {
 	case "application/x-www-form-urlencoded", "text/plain":
@@ -309,10 +308,12 @@ func retrieveToken(ctx Context, c *Config, v url.Values) (*Token, error) {
 		if err != nil {
 			return nil, err
 		}
-		token.AccessToken = vals.Get("access_token")
-		token.TokenType = vals.Get("token_type")
-		token.RefreshToken = vals.Get("refresh_token")
-		token.raw = vals
+		token = &Token{
+			AccessToken:  vals.Get("access_token"),
+			TokenType:    vals.Get("token_type"),
+			RefreshToken: vals.Get("refresh_token"),
+			raw:          vals,
+		}
 		e := vals.Get("expires_in")
 		if e == "" {
 			// TODO(jbd): Facebook's OAuth2 implementation is broken and
@@ -320,36 +321,50 @@ func retrieveToken(ctx Context, c *Config, v url.Values) (*Token, error) {
 			// when Facebook fixes their implementation.
 			e = vals.Get("expires")
 		}
-		expires, _ = strconv.Atoi(e)
+		expires, _ := strconv.Atoi(e)
+		if expires != 0 {
+			token.Expiry = time.Now().Add(time.Duration(expires) * time.Second)
+		}
 	default:
-		b := make(map[string]interface{}) // TODO: don't use a map[string]interface{}; make a type
-		if err = json.Unmarshal(body, &b); err != nil {
+		var tj tokenJSON
+		if err = json.Unmarshal(body, &tj); err != nil {
 			return nil, err
 		}
-		token.AccessToken, _ = b["access_token"].(string)
-		token.TokenType, _ = b["token_type"].(string)
-		token.RefreshToken, _ = b["refresh_token"].(string)
-		token.raw = b
-		e, ok := b["expires_in"].(float64)
-		if !ok {
-			// TODO(jbd): Facebook's OAuth2 implementation is broken and
-			// returns expires_in field in expires. Remove the fallback to expires,
-			// when Facebook fixes their implementation.
-			e, _ = b["expires"].(float64)
+		token = &Token{
+			AccessToken:  tj.AccessToken,
+			TokenType:    tj.TokenType,
+			RefreshToken: tj.RefreshToken,
+			Expiry:       tj.expiry(),
+			raw:          make(map[string]interface{}),
 		}
-		expires = int(e)
+		json.Unmarshal(body, &token.raw) // no error checks for optional fields
 	}
 	// Don't overwrite `RefreshToken` with an empty value
 	// if this was a token refreshing request.
 	if token.RefreshToken == "" {
 		token.RefreshToken = v.Get("refresh_token")
 	}
-	if expires == 0 {
-		token.Expiry = time.Time{}
-	} else {
-		token.Expiry = time.Now().Add(time.Duration(expires) * time.Second)
-	}
 	return token, nil
+}
+
+// tokenJSON is the struct representing the HTTP response from OAuth2
+// providers returning a token in JSON form.
+type tokenJSON struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int32  `json:"expires_in"`
+	Expires      int32  `json:"expires"` // broken Facebook spelling of expires_in
+}
+
+func (e *tokenJSON) expiry() (t time.Time) {
+	if v := e.ExpiresIn; v != 0 {
+		return time.Now().Add(time.Duration(v) * time.Second)
+	}
+	if v := e.Expires; v != 0 {
+		return time.Now().Add(time.Duration(v) * time.Second)
+	}
+	return
 }
 
 func condVal(v string) []string {

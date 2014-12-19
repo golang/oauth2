@@ -181,12 +181,9 @@ func TestExchangeRequest_BadResponseType(t *testing.T) {
 	}))
 	defer ts.Close()
 	conf := newConf(ts.URL)
-	tok, err := conf.Exchange(NoContext, "exchange-code")
-	if err != nil {
-		t.Error(err)
-	}
-	if tok.AccessToken != "" {
-		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
+	_, err := conf.Exchange(NoContext, "exchange-code")
+	if err == nil {
+		t.Error("expected error from invalid access_token type")
 	}
 }
 

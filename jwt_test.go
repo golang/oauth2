@@ -117,10 +117,10 @@ func TestJWTFetch_BadResponseType(t *testing.T) {
 		TokenURL:   ts.URL,
 	}
 	tok, err := conf.TokenSource(NoContext, nil).Token()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if tok.AccessToken != "" {
-		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
+	if err == nil {
+		t.Error("got a token; expected error")
+		if tok.AccessToken != "" {
+			t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
+		}
 	}
 }
