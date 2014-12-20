@@ -62,7 +62,7 @@ func (t *Transport) CancelRequest(req *http.Request) {
 	type canceler interface {
 		CancelRequest(*http.Request)
 	}
-	if cr, ok := t.Base.(canceler); ok {
+	if cr, ok := t.base().(canceler); ok {
 		t.mu.Lock()
 		modReq := t.modReq[req]
 		delete(t.modReq, req)
