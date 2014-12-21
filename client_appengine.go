@@ -25,7 +25,7 @@ func init() {
 
 func contextClientAppEngine(ctx Context) (*http.Client, error) {
 	if actx, ok := ctx.(appengine.Context); ok {
-		return urlfetch.NewClient(actx), nil
+		return urlfetch.Client(actx), nil
 	}
 	// The user did it wrong. We'll log once (and hope they see it
 	// in dev_appserver), but stil return (nil, nil) in case some
