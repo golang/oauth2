@@ -4,9 +4,9 @@ We don't use GitHub pull requests but use Gerrit for code reviews,
 similar to the Go project.
 
 1. Sign one of the contributor license agreements below.
-2. go get golang.org/x/review/git-review to install the code reviewing tool.
-3. Get the package by running go get -d golang.org/x/oauth2.
-Make changes and create a change by running git review change <name>, provide a command message, and use git review mail to create a Gerrit CL.
+2. `go get golang.org/x/review/git-codereview` to install the code reviewing tool.
+3. Get the package by running `go get -d golang.org/x/oauth2`.
+Make changes and create a change by running `git codereview change <name>`, provide a command message, and use `git codereview mail` to create a Gerrit CL.
 Keep amending to the change and mail as your recieve feedback.
 
 For more information about the workflow, see Go's [Contribution Guidelines](https://golang.org/doc/contribute.html).
