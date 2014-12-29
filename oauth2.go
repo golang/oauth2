@@ -274,9 +274,9 @@ func retrieveToken(ctx Context, c *Config, v url.Values) (*Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	v.Set("client_id", c.ClientID)
 	bustedAuth := !providerAuthHeaderWorks(c.Endpoint.TokenURL)
 	if bustedAuth && c.ClientSecret != "" {
+		v.Set("client_id", c.ClientID)
 		v.Set("client_secret", c.ClientSecret)
 	}
 	req, err := http.NewRequest("POST", c.Endpoint.TokenURL, strings.NewReader(v.Encode()))
