@@ -16,7 +16,7 @@ import (
 //
 // Most users of this package should not access fields of Token
 // directly. They're exported mostly for use by related packages
-// implementing derivate OAuth2 flows.
+// implementing derivative OAuth2 flows.
 type Token struct {
 	// AccessToken is the token that authorizes and authenticates
 	// the requests.

@@ -61,6 +61,7 @@ type Config struct {
 type TokenSource interface {
 	// Token returns a token or an error.
 	// Token must be safe for concurrent use by multiple goroutines.
+	// The returned Token must not be modified.
 	Token() (*Token, error)
 }
 
