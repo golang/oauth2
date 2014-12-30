@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/jwt"
 )
 
 // TODO(bradfitz,jbd): import "google.golang.org/cloud/compute/metadata" instead of
@@ -39,7 +40,7 @@ const JWTTokenURL = "https://accounts.google.com/o/oauth2/token"
 // the credentials that authorize and authenticate the requests.
 // Create a service account on "Credentials" page under "APIs & Auth" for your
 // project at https://console.developers.google.com to download a JSON key file.
-func JWTConfigFromJSON(ctx oauth2.Context, jsonKey []byte, scope ...string) (*oauth2.JWTConfig, error) {
+func JWTConfigFromJSON(ctx oauth2.Context, jsonKey []byte, scope ...string) (*jwt.Config, error) {
 	var key struct {
 		Email      string `json:"client_email"`
 		PrivateKey string `json:"private_key"`
@@ -47,7 +48,7 @@ func JWTConfigFromJSON(ctx oauth2.Context, jsonKey []byte, scope ...string) (*oa
 	if err := json.Unmarshal(jsonKey, &key); err != nil {
 		return nil, err
 	}
-	return &oauth2.JWTConfig{
+	return &jwt.Config{
 		Email:      key.Email,
 		PrivateKey: []byte(key.PrivateKey),
 		Scopes:     scope,

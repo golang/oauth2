@@ -60,6 +60,16 @@ func (t *Token) SetAuthHeader(r *http.Request) {
 	r.Header.Set("Authorization", t.Type()+" "+t.AccessToken)
 }
 
+// WithExtra returns a new Token that's a clone of t, but using the
+// provided raw extra map. This is only intended for use by packages
+// implementing derivative OAuth2 flows.
+func (t *Token) WithExtra(extra interface{}) *Token {
+	t2 := new(Token)
+	*t2 = *t
+	t2.raw = extra
+	return t2
+}
+
 // Extra returns an extra field returned from the server during token
 // retrieval.
 func (t *Token) Extra(key string) string {

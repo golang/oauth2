@@ -412,7 +412,18 @@ type contextKey struct{}
 
 // NewClient creates an *http.Client from a Context and TokenSource.
 // The returned client is not valid beyond the lifetime of the context.
+//
+// As a special case, if src is nil, a non-OAuth2 client is returned
+// using the provided context. This exists to support related OAuth2
+// packages.
 func NewClient(ctx Context, src TokenSource) *http.Client {
+	if src == nil {
+		c, err := contextClient(ctx)
+		if err != nil {
+			return &http.Client{Transport: errorTransport{err}}
+		}
+		return c
+	}
 	return &http.Client{
 		Transport: &Transport{
 			Base:   contextTransport(ctx),

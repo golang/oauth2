@@ -2,7 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package oauth2
+// Package jwt implements the OAuth 2.0 JSON Web Token flow, commonly
+// known as "two-legged OAuth 2.0".
+//
+// See: https://tools.ietf.org/html/draft-ietf-oauth-jwt-bearer-12
+package jwt
 
 import (
 	"encoding/json"
@@ -14,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/internal"
 	"golang.org/x/oauth2/jws"
 )
@@ -23,9 +28,9 @@ var (
 	defaultHeader    = &jws.Header{Algorithm: "RS256", Typ: "JWT"}
 )
 
-// JWTConfig is the configuration for using JWT to fetch tokens,
-// commonly known as "two-legged OAuth".
-type JWTConfig struct {
+// Config is the configuration for using JWT to fetch tokens,
+// commonly known as "two-legged OAuth 2.0".
+type Config struct {
 	// Email is the OAuth client identifier used when communicating with
 	// the configured OAuth provider.
 	Email string
@@ -52,8 +57,8 @@ type JWTConfig struct {
 
 // TokenSource returns a JWT TokenSource using the configuration
 // in c and the HTTP client from the provided context.
-func (c *JWTConfig) TokenSource(ctx Context) TokenSource {
-	return ReuseTokenSource(nil, jwtSource{ctx, c})
+func (c *Config) TokenSource(ctx oauth2.Context) oauth2.TokenSource {
+	return oauth2.ReuseTokenSource(nil, jwtSource{ctx, c})
 }
 
 // Client returns an HTTP client wrapping the context's
@@ -61,26 +66,23 @@ func (c *JWTConfig) TokenSource(ctx Context) TokenSource {
 // obtained from c.
 //
 // The returned client and its Transport should not be modified.
-func (c *JWTConfig) Client(ctx Context) *http.Client {
-	return NewClient(ctx, c.TokenSource(ctx))
+func (c *Config) Client(ctx oauth2.Context) *http.Client {
+	return oauth2.NewClient(ctx, c.TokenSource(ctx))
 }
 
 // jwtSource is a source that always does a signed JWT request for a token.
 // It should typically be wrapped with a reuseTokenSource.
 type jwtSource struct {
-	ctx  Context
-	conf *JWTConfig
+	ctx  oauth2.Context
+	conf *Config
 }
 
-func (js jwtSource) Token() (*Token, error) {
+func (js jwtSource) Token() (*oauth2.Token, error) {
 	pk, err := internal.ParseKey(js.conf.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
-	hc, err := contextClient(js.ctx)
-	if err != nil {
-		return nil, err
-	}
+	hc := oauth2.NewClient(js.ctx, nil)
 	claimSet := &jws.ClaimSet{
 		Iss:   js.conf.Email,
 		Scope: strings.Join(js.conf.Scopes, " "),
@@ -121,12 +123,13 @@ func (js jwtSource) Token() (*Token, error) {
 	if err := json.Unmarshal(body, &tokenRes); err != nil {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 	}
-	token := &Token{
+	token := &oauth2.Token{
 		AccessToken: tokenRes.AccessToken,
 		TokenType:   tokenRes.TokenType,
-		raw:         make(map[string]interface{}),
 	}
-	json.Unmarshal(body, &token.raw) // no error checks for optional fields
+	raw := make(map[string]interface{})
+	json.Unmarshal(body, &raw) // no error checks for optional fields
+	token = token.WithExtra(raw)
 
 	if secs := tokenRes.ExpiresIn; secs > 0 {
 		token.Expiry = time.Now().Add(time.Duration(secs) * time.Second)

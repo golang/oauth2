@@ -2,12 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package oauth2
+package jwt
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"golang.org/x/oauth2"
 )
 
 var dummyPrivateKey = []byte(`-----BEGIN RSA PRIVATE KEY-----
@@ -50,12 +52,12 @@ func TestJWTFetch_JSONResponse(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	conf := &JWTConfig{
+	conf := &Config{
 		Email:      "aaa@xxx.com",
 		PrivateKey: dummyPrivateKey,
 		TokenURL:   ts.URL,
 	}
-	tok, err := conf.TokenSource(NoContext).Token()
+	tok, err := conf.TokenSource(oauth2.NoContext).Token()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,12 +86,12 @@ func TestJWTFetch_BadResponse(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	conf := &JWTConfig{
+	conf := &Config{
 		Email:      "aaa@xxx.com",
 		PrivateKey: dummyPrivateKey,
 		TokenURL:   ts.URL,
 	}
-	tok, err := conf.TokenSource(NoContext).Token()
+	tok, err := conf.TokenSource(oauth2.NoContext).Token()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,12 +119,12 @@ func TestJWTFetch_BadResponseType(t *testing.T) {
 		w.Write([]byte(`{"access_token":123, "scope": "user", "token_type": "bearer"}`))
 	}))
 	defer ts.Close()
-	conf := &JWTConfig{
+	conf := &Config{
 		Email:      "aaa@xxx.com",
 		PrivateKey: dummyPrivateKey,
 		TokenURL:   ts.URL,
 	}
-	tok, err := conf.TokenSource(NoContext).Token()
+	tok, err := conf.TokenSource(oauth2.NoContext).Token()
 	if err == nil {
 		t.Error("got a token; expected error")
 		if tok.AccessToken != "" {
