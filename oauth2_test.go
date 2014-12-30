@@ -99,8 +99,8 @@ func TestExchangeRequest(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if tok.Expired() {
-		t.Errorf("Token shouldn't be expired.")
+	if !tok.Valid() {
+		t.Fatalf("Token invalid. Got: %#v", tok)
 	}
 	if tok.AccessToken != "90d64460d14870c08c81352a05dedd3465940a7c" {
 		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
@@ -143,8 +143,8 @@ func TestExchangeRequest_JSONResponse(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if tok.Expired() {
-		t.Errorf("Token shouldn't be expired.")
+	if !tok.Valid() {
+		t.Fatalf("Token invalid. Got: %#v", tok)
 	}
 	if tok.AccessToken != "90d64460d14870c08c81352a05dedd3465940a7c" {
 		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)

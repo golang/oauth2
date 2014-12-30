@@ -69,7 +69,7 @@ func ExampleJWTConfigFromJSON() {
 	// Initiate an http.Client. The following GET request will be
 	// authorized and authenticated on the behalf of
 	// your service account.
-	client := conf.Client(oauth2.NoContext, nil)
+	client := conf.Client(oauth2.NoContext)
 	client.Get("...")
 }
 
@@ -101,7 +101,7 @@ func Example_serviceAccount() {
 	}
 	// Initiate an http.Client, the following GET request will be
 	// authorized and authenticated on the behalf of user@example.com.
-	client := conf.Client(oauth2.NoContext, nil)
+	client := conf.Client(oauth2.NoContext)
 	client.Get("...")
 }
 

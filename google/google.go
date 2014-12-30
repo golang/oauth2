@@ -15,7 +15,6 @@ package google // import "golang.org/x/oauth2/google"
 
 import (
 	"encoding/json"
-
 	"fmt"
 	"net"
 	"net/http"
@@ -23,6 +22,9 @@ import (
 
 	"golang.org/x/oauth2"
 )
+
+// TODO(bradfitz,jbd): import "google.golang.org/cloud/compute/metadata" instead of
+// the metaClient and metadata.google.internal stuff below.
 
 // Endpoint is Google's OAuth 2.0 endpoint.
 var Endpoint = oauth2.Endpoint{
@@ -66,7 +68,7 @@ type metaTokenRespBody struct {
 // Further information about retrieving access tokens from the GCE metadata
 // server can be found at https://cloud.google.com/compute/docs/authentication.
 func ComputeTokenSource(account string) oauth2.TokenSource {
-	return &computeSource{account: account}
+	return oauth2.ReuseTokenSource(nil, &computeSource{account: account})
 }
 
 type computeSource struct {

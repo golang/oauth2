@@ -52,33 +52,21 @@ type JWTConfig struct {
 
 // TokenSource returns a JWT TokenSource using the configuration
 // in c and the HTTP client from the provided context.
-//
-// The returned TokenSource only does JWT requests when necessary but
-// otherwise returns the same token repeatedly until it expires.
-//
-// The provided initialToken may be nil, in which case the first
-// call to TokenSource will do a new JWT request.
-func (c *JWTConfig) TokenSource(ctx Context, initialToken *Token) TokenSource {
-	return &newWhenNeededSource{
-		t:   initialToken,
-		new: jwtSource{ctx, c},
-	}
+func (c *JWTConfig) TokenSource(ctx Context) TokenSource {
+	return ReuseTokenSource(nil, jwtSource{ctx, c})
 }
 
 // Client returns an HTTP client wrapping the context's
 // HTTP transport and adding Authorization headers with tokens
 // obtained from c.
 //
-// The provided initialToken may be nil, in which case the first
-// call to TokenSource will do a new JWT request.
-//
 // The returned client and its Transport should not be modified.
-func (c *JWTConfig) Client(ctx Context, initialToken *Token) *http.Client {
-	return NewClient(ctx, c.TokenSource(ctx, initialToken))
+func (c *JWTConfig) Client(ctx Context) *http.Client {
+	return NewClient(ctx, c.TokenSource(ctx))
 }
 
 // jwtSource is a source that always does a signed JWT request for a token.
-// It should typically be wrapped with a newWhenNeededSource.
+// It should typically be wrapped with a reuseTokenSource.
 type jwtSource struct {
 	ctx  Context
 	conf *JWTConfig

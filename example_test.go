@@ -50,7 +50,6 @@ func ExampleConfig() {
 }
 
 func ExampleJWTConfig() {
-	var initialToken *oauth2.Token // nil means no initial token
 	conf := &oauth2.JWTConfig{
 		Email: "xxx@developer.com",
 		// The contents of your RSA private key or your PEM file
@@ -67,6 +66,6 @@ func ExampleJWTConfig() {
 	}
 	// Initiate an http.Client, the following GET request will be
 	// authorized and authenticated on the behalf of user@example.com.
-	client := conf.Client(oauth2.NoContext, initialToken)
+	client := conf.Client(oauth2.NoContext)
 	client.Get("...")
 }

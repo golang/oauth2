@@ -74,14 +74,16 @@ func (t *Token) Extra(key string) string {
 	return ""
 }
 
-// Expired returns true if there is no access token or the
-// access token is expired.
-func (t *Token) Expired() bool {
-	if t.AccessToken == "" {
-		return true
-	}
+// expired reports whether the token is expired.
+// t must be non-nil.
+func (t *Token) expired() bool {
 	if t.Expiry.IsZero() {
 		return false
 	}
 	return t.Expiry.Before(time.Now())
+}
+
+// Valid reports whether t is non-nil, has an AccessToken, and is not expired.
+func (t *Token) Valid() bool {
+	return t != nil && t.AccessToken != "" && !t.expired()
 }

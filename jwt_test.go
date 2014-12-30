@@ -55,12 +55,12 @@ func TestJWTFetch_JSONResponse(t *testing.T) {
 		PrivateKey: dummyPrivateKey,
 		TokenURL:   ts.URL,
 	}
-	tok, err := conf.TokenSource(NoContext, nil).Token()
+	tok, err := conf.TokenSource(NoContext).Token()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if tok.Expired() {
-		t.Errorf("Token shouldn't be expired")
+	if !tok.Valid() {
+		t.Errorf("Token invalid")
 	}
 	if tok.AccessToken != "90d64460d14870c08c81352a05dedd3465940a7c" {
 		t.Errorf("Unexpected access token, %#v", tok.AccessToken)
@@ -89,19 +89,25 @@ func TestJWTFetch_BadResponse(t *testing.T) {
 		PrivateKey: dummyPrivateKey,
 		TokenURL:   ts.URL,
 	}
-	tok, err := conf.TokenSource(NoContext, nil).Token()
+	tok, err := conf.TokenSource(NoContext).Token()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if tok.AccessToken != "" {
-		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
+	if tok == nil {
+		t.Fatalf("token is nil")
 	}
-	if tok.TokenType != "bearer" {
-		t.Errorf("Unexpected token type, %#v.", tok.TokenType)
+	if tok.Valid() {
+		t.Errorf("token is valid. want invalid.")
+	}
+	if tok.AccessToken != "" {
+		t.Errorf("Unexpected non-empty access token %q.", tok.AccessToken)
+	}
+	if want := "bearer"; tok.TokenType != want {
+		t.Errorf("TokenType = %q; want %q", tok.TokenType, want)
 	}
 	scope := tok.Extra("scope")
-	if scope != "user" {
-		t.Errorf("Unexpected value for scope: %v", scope)
+	if want := "user"; scope != want {
+		t.Errorf("token scope = %q; want %q", scope, want)
 	}
 }
 
@@ -116,7 +122,7 @@ func TestJWTFetch_BadResponseType(t *testing.T) {
 		PrivateKey: dummyPrivateKey,
 		TokenURL:   ts.URL,
 	}
-	tok, err := conf.TokenSource(NoContext, nil).Token()
+	tok, err := conf.TokenSource(NoContext).Token()
 	if err == nil {
 		t.Error("got a token; expected error")
 		if tok.AccessToken != "" {

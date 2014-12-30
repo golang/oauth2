@@ -26,7 +26,6 @@ import (
 )
 
 // Context can be an golang.org/x/net.Context, or an App Engine Context.
-// In the future these will be unified.
 // If you don't care and aren't running on App Engine, you may use NoContext.
 type Context interface{}
 
@@ -36,7 +35,7 @@ type Context interface{}
 var NoContext Context = nil
 
 // Config describes a typical 3-legged OAuth2 flow, with both the
-// client application information and the server's URLs.
+// client application information and the server's endpoint URLs.
 type Config struct {
 	// ClientID is the application's ID.
 	ClientID string
@@ -45,9 +44,9 @@ type Config struct {
 	ClientSecret string
 
 	// Endpoint contains the resource server's token endpoint
-	// URLs.  These are supplied by the server and are often
-	// available via site-specific packages (for example,
-	// google.Endpoint or github.Endpoint)
+	// URLs. These are constants specific to each server and are
+	// often available via site-specific packages, such as
+	// google.Endpoint or github.Endpoint.
 	Endpoint Endpoint
 
 	// RedirectURL is the URL to redirect users going through
@@ -61,6 +60,7 @@ type Config struct {
 // A TokenSource is anything that can return a token.
 type TokenSource interface {
 	// Token returns a token or an error.
+	// Token must be safe for concurrent use by multiple goroutines.
 	Token() (*Token, error)
 }
 
@@ -208,7 +208,7 @@ func (c *Config) Client(ctx Context, t *Token) *http.Client {
 //
 // Most users will use Config.Client instead.
 func (c *Config) TokenSource(ctx Context, t *Token) TokenSource {
-	nwn := &newWhenNeededSource{t: t}
+	nwn := &reuseTokenSource{t: t}
 	nwn.new = tokenRefresher{
 		ctx:      ctx,
 		conf:     c,
@@ -239,13 +239,13 @@ func (tf tokenRefresher) Token() (*Token, error) {
 	})
 }
 
-// newWhenNeededSource is a TokenSource that holds a single token in memory
+// reuseTokenSource is a TokenSource that holds a single token in memory
 // and validates its expiry before each call to retrieve it with
 // Token. If it's expired, it will be auto-refreshed using the
 // new TokenSource.
 //
 // The first call to TokenRefresher must be SetToken.
-type newWhenNeededSource struct {
+type reuseTokenSource struct {
 	new TokenSource // called when t is expired.
 
 	mu sync.Mutex // guards t
@@ -255,10 +255,10 @@ type newWhenNeededSource struct {
 // Token returns the current token if it's still valid, else will
 // refresh the current token (using r.Context for HTTP client
 // information) and return the new one.
-func (s *newWhenNeededSource) Token() (*Token, error) {
+func (s *reuseTokenSource) Token() (*Token, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.t != nil && !s.t.Expired() {
+	if s.t.Valid() {
 		return s.t, nil
 	}
 	t, err := s.new.Token()
@@ -410,12 +410,41 @@ var HTTPClient contextKey
 type contextKey struct{}
 
 // NewClient creates an *http.Client from a Context and TokenSource.
-// The client's lifetime does not extend beyond the lifetime of the context.
+// The returned client is not valid beyond the lifetime of the context.
 func NewClient(ctx Context, src TokenSource) *http.Client {
 	return &http.Client{
 		Transport: &Transport{
 			Base:   contextTransport(ctx),
-			Source: src,
+			Source: ReuseTokenSource(nil, src),
 		},
+	}
+}
+
+// ReuseTokenSource returns a TokenSource which repeatedly returns the
+// same token as long as it's valid, starting with t.
+// When its cached token is invalid, a new token is obtained from src.
+//
+// ReuseTokenSource is typically used to reuse tokens from a cache
+// (such as a file on disk) between runs of a program, rather than
+// obtaining new tokens unnecessarily.
+//
+// The initial token t may be nil, in which case the TokenSource is
+// wrapped in a caching version if it isn't one already. This also
+// means it's always safe to wrap ReuseTokenSource around any other
+// TokenSource without adverse effects.
+func ReuseTokenSource(t *Token, src TokenSource) TokenSource {
+	// Don't wrap a reuseTokenSource in itself. That would work,
+	// but cause an unnecessary number of mutex operations.
+	// Just build the equivalent one.
+	if rt, ok := src.(*reuseTokenSource); ok {
+		if t == nil {
+			// Just use it directly.
+			return rt
+		}
+		src = rt.new
+	}
+	return &reuseTokenSource{
+		t:   t,
+		new: src,
 	}
 }

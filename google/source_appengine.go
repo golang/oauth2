@@ -29,13 +29,16 @@ type tokenLock struct {
 }
 
 type appEngineTokenSource struct {
-	ctx    oauth2.Context
-	scopes []string
-	key    string // guarded by package-level mutex, aeTokensMu
+	ctx oauth2.Context
 
-	// fetcherFunc makes the actual RPC to fetch a new access token with an expiry time.
-	// Provider of this function is responsible to assert that the given context is valid.
-	fetcherFunc func(ctx oauth2.Context, scope ...string) (string, time.Time, error)
+	// fetcherFunc makes the actual RPC to fetch a new access
+	// token with an expiry time.  Provider of this function is
+	// responsible to assert that the given context is valid.
+	fetcherFunc func(ctx oauth2.Context, scope ...string) (accessToken string, expiry time.Time, err error)
+
+	// scopes and key are guarded by the package-level mutex aeTokensMu
+	scopes []string
+	key    string
 }
 
 func (ts *appEngineTokenSource) Token() (*oauth2.Token, error) {
@@ -53,7 +56,7 @@ func (ts *appEngineTokenSource) Token() (*oauth2.Token, error) {
 
 	tok.mu.Lock()
 	defer tok.mu.Unlock()
-	if tok.t != nil && !tok.t.Expired() {
+	if tok.t.Valid() {
 		return tok.t, nil
 	}
 	access, exp, err := ts.fetcherFunc(ts.ctx, ts.scopes...)
