@@ -15,13 +15,14 @@ package google // import "golang.org/x/oauth2/google"
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"net"
-	"net/http"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/jwt"
+	"google.golang.org/cloud/compute/metadata"
 )
 
 // TODO(bradfitz,jbd): import "google.golang.org/cloud/compute/metadata" instead of
@@ -56,12 +57,6 @@ func JWTConfigFromJSON(ctx oauth2.Context, jsonKey []byte, scope ...string) (*jw
 	}, nil
 }
 
-type metaTokenRespBody struct {
-	AccessToken string        `json:"access_token"`
-	ExpiresIn   time.Duration `json:"expires_in"`
-	TokenType   string        `json:"token_type"`
-}
-
 // ComputeTokenSource returns a token source that fetches access tokens
 // from Google Compute Engine (GCE)'s metadata server. It's only valid to use
 // this token source if your program is running on a GCE instance.
@@ -69,50 +64,40 @@ type metaTokenRespBody struct {
 // Further information about retrieving access tokens from the GCE metadata
 // server can be found at https://cloud.google.com/compute/docs/authentication.
 func ComputeTokenSource(account string) oauth2.TokenSource {
-	return oauth2.ReuseTokenSource(nil, &computeSource{account: account})
+	return oauth2.ReuseTokenSource(nil, computeSource{account: account})
 }
 
 type computeSource struct {
 	account string
 }
 
-var metaClient = &http.Client{
-	Transport: &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout:   750 * time.Millisecond,
-			KeepAlive: 30 * time.Second,
-		}).Dial,
-		ResponseHeaderTimeout: 750 * time.Millisecond,
-	},
-}
-
-func (cs *computeSource) Token() (*oauth2.Token, error) {
+func (cs computeSource) Token() (*oauth2.Token, error) {
+	if !metadata.OnGCE() {
+		return nil, errors.New("oauth2/google: can't get a token from the metadata service; not running on GCE")
+	}
 	acct := cs.account
 	if acct == "" {
 		acct = "default"
 	}
-	u := "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/" + acct + "/token"
-	req, err := http.NewRequest("GET", u, nil)
+	tokenJSON, err := metadata.Get("instance/service-accounts/" + acct + "/token")
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("X-Google-Metadata-Request", "True")
-	resp, err := metaClient.Do(req)
-	if err != nil {
-		return nil, err
+	var res struct {
+		AccessToken  string `json:"access_token"`
+		ExpiresInSec int    `json:"expires_in"`
+		TokenType    string `json:"token_type"`
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return nil, fmt.Errorf("oauth2: can't retrieve a token from metadata server, status code: %d", resp.StatusCode)
-	}
-	var tokenResp metaTokenRespBody
-	err = json.NewDecoder(resp.Body).Decode(&tokenResp)
+	err = json.NewDecoder(strings.NewReader(tokenJSON)).Decode(&res)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("oauth2/google: invalid token JSON from metadata: %v", err)
+	}
+	if res.ExpiresInSec == 0 || res.AccessToken == "" {
+		return nil, fmt.Errorf("oauth2/google: incomplete token received from metadata")
 	}
 	return &oauth2.Token{
-		AccessToken: tokenResp.AccessToken,
-		TokenType:   tokenResp.TokenType,
-		Expiry:      time.Now().Add(tokenResp.ExpiresIn * time.Second),
+		AccessToken: res.AccessToken,
+		TokenType:   res.TokenType,
+		Expiry:      time.Now().Add(time.Duration(res.ExpiresInSec) * time.Second),
 	}, nil
 }
