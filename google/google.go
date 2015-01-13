@@ -41,7 +41,7 @@ const JWTTokenURL = "https://accounts.google.com/o/oauth2/token"
 // the credentials that authorize and authenticate the requests.
 // Create a service account on "Credentials" page under "APIs & Auth" for your
 // project at https://console.developers.google.com to download a JSON key file.
-func JWTConfigFromJSON(ctx oauth2.Context, jsonKey []byte, scope ...string) (*jwt.Config, error) {
+func JWTConfigFromJSON(jsonKey []byte, scope ...string) (*jwt.Config, error) {
 	var key struct {
 		Email      string `json:"client_email"`
 		PrivateKey string `json:"private_key"`

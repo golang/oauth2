@@ -63,7 +63,7 @@ func ExampleJWTConfigFromJSON() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	conf, err := google.JWTConfigFromJSON(oauth2.NoContext, data, "https://www.googleapis.com/auth/bigquery")
+	conf, err := google.JWTConfigFromJSON(data, "https://www.googleapis.com/auth/bigquery")
 	if err != nil {
 		log.Fatal(err)
 	}
