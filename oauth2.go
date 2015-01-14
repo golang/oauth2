@@ -55,6 +55,9 @@ type Config struct {
 
 	// Scope specifies optional requested permissions.
 	Scopes []string
+
+	// force using client_secret for github enterprise
+	UseClientSecret bool
 }
 
 // A TokenSource is anything that can return a token.
@@ -276,7 +279,7 @@ func retrieveToken(ctx Context, c *Config, v url.Values) (*Token, error) {
 		return nil, err
 	}
 	v.Set("client_id", c.ClientID)
-	bustedAuth := !providerAuthHeaderWorks(c.Endpoint.TokenURL)
+	bustedAuth := !providerAuthHeaderWorks(c.Endpoint.TokenURL) || c.UseClientSecret
 	if bustedAuth && c.ClientSecret != "" {
 		v.Set("client_secret", c.ClientSecret)
 	}
