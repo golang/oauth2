@@ -33,6 +33,10 @@ type Transport struct {
 // RoundTrip authorizes and authenticates the request with an
 // access token. If no token exists or token is expired,
 // tries to refresh/fetch a new token.
+//
+// When the returned error is nil, the returned Response always contains
+// a non-nil Response.Body. Callers should close Response.Body when done
+// reading from it.
 func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if t.Source == nil {
 		return nil, errors.New("oauth2: Transport's Source is nil")
