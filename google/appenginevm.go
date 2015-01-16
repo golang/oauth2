@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build appenginevm !appengine
+// +build appenginevm
 
 package google
 
@@ -19,7 +19,7 @@ import (
 // that involves user accounts, see oauth2.Config instead.
 //
 // You are required to provide a valid appengine.Context as context.
-func AppEngineTokenSource(ctx appengine.Context, scope ...string) oauth2.TokenSource {
+func AppEngineTokenSource(ctx oauth2.Context, scope ...string) oauth2.TokenSource {
 	return &appEngineTokenSource{
 		ctx:         ctx,
 		scopes:      scope,
