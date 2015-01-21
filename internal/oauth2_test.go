@@ -45,7 +45,7 @@ empty=
 ;comment=true
 `,
 			map[string]map[string]string{
-				"a": map[string]string{},
+				"": map[string]string{},
 			},
 		},
 	}
