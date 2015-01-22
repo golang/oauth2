@@ -19,7 +19,7 @@ import (
 // If you are implementing a 3-legged OAuth 2.0 flow on App Engine
 // that involves user accounts, see oauth2.Config instead.
 //
-// You are required to provide a valid appengine.Context as context.
+// The provided context must have come from appengine.NewContext.
 func AppEngineTokenSource(ctx oauth2.Context, scope ...string) oauth2.TokenSource {
 	return &appEngineTokenSource{
 		ctx:         ctx,

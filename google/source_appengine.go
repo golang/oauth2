@@ -21,7 +21,7 @@ var (
 	aeTokens = make(map[string]*tokenLock) // key is '\0'-separated scopes
 )
 
-var errInvalidContext = errors.New("oauth2: a valid appengine.Context is required")
+var errInvalidContext = errors.New("oauth2: context must come from appengine.NewContext")
 
 type tokenLock struct {
 	mu sync.Mutex // guards t; held while updating t

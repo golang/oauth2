@@ -9,6 +9,7 @@ package google
 import (
 	"time"
 
+	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"google.golang.org/appengine"
 )
@@ -18,7 +19,7 @@ import (
 // If you are implementing a 3-legged OAuth 2.0 flow on App Engine
 // that involves user accounts, see oauth2.Config instead.
 //
-// You are required to provide a valid appengine.Context as context.
+// The provided context must have come from appengine.NewContext.
 func AppEngineTokenSource(ctx oauth2.Context, scope ...string) oauth2.TokenSource {
 	return &appEngineTokenSource{
 		ctx:         ctx,
@@ -28,7 +29,7 @@ func AppEngineTokenSource(ctx oauth2.Context, scope ...string) oauth2.TokenSourc
 }
 
 var aeVMFetcherFunc = func(ctx oauth2.Context, scope ...string) (string, time.Time, error) {
-	c, ok := ctx.(appengine.Context)
+	c, ok := ctx.(context.Context)
 	if !ok {
 		return "", time.Time{}, errInvalidContext
 	}
