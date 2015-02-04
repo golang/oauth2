@@ -134,6 +134,26 @@ func (c *Config) AuthCodeURL(state string, opts ...AuthCodeOption) string {
 	return buf.String()
 }
 
+// PasswordCredentialsToken converts a resource owner username and password
+// pair into a token.
+//
+// Per the RFC, this grant type should only be used "when there is a high
+// degree of trust between the resource owner and the client (e.g., the client
+// is part of the device operating system or a highly privileged application),
+// and when other authorization grant types are not available."
+// See https://tools.ietf.org/html/rfc6749#section-4.3 for more info.
+//
+// The HTTP client to use is derived from the context. If nil,
+// http.DefaultClient is used. See the Context type's documentation.
+func (c *Config) PasswordCredentialsToken(ctx Context, username, password string) (*Token, error) {
+	return retrieveToken(ctx, c, url.Values{
+		"grant_type": {"password"},
+		"username":   {username},
+		"password":   {password},
+		"scope":      condVal(strings.Join(c.Scopes, " ")),
+	})
+}
+
 // Exchange converts an authorization code into a token.
 //
 // It is used after a resource provider redirects the user back
