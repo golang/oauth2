@@ -384,6 +384,7 @@ func condVal(v string) []string {
 // - Google only accepts URL param (not spec compliant?), not Auth header
 func providerAuthHeaderWorks(tokenURL string) bool {
 	if strings.HasPrefix(tokenURL, "https://accounts.google.com/") ||
+		strings.HasPrefix(tokenURL, "https://www.googleapis.com/") ||
 		strings.HasPrefix(tokenURL, "https://github.com/") ||
 		strings.HasPrefix(tokenURL, "https://api.instagram.com/") ||
 		strings.HasPrefix(tokenURL, "https://www.douban.com/") ||
