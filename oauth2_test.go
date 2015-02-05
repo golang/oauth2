@@ -305,3 +305,26 @@ func TestFetchWithNoRefreshToken(t *testing.T) {
 		t.Errorf("Fetch should return an error if no refresh token is set")
 	}
 }
+
+func TestRefreshToken_RefreshTokenReplacement(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"access_token":"ACCESS TOKEN",  "scope": "user", "token_type": "bearer", "refresh_token": "NEW REFRESH TOKEN"}`))
+		return
+	}))
+	defer ts.Close()
+	conf := newConf(ts.URL)
+	tkr := tokenRefresher{
+		conf:         conf,
+		ctx:          NoContext,
+		refreshToken: "OLD REFRESH TOKEN",
+	}
+	tk, err := tkr.Token()
+	if err != nil {
+		t.Errorf("Unexpected refreshToken error returned: %v", err)
+		return
+	}
+	if tk.RefreshToken != tkr.refreshToken {
+		t.Errorf("tokenRefresher.refresh_token = %s; want %s", tkr.refreshToken, tk.RefreshToken)
+	}
+}

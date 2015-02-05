@@ -229,35 +229,46 @@ func (c *Config) Client(ctx Context, t *Token) *http.Client {
 //
 // Most users will use Config.Client instead.
 func (c *Config) TokenSource(ctx Context, t *Token) TokenSource {
-	nwn := &reuseTokenSource{t: t}
-	nwn.new = tokenRefresher{
-		ctx:      ctx,
-		conf:     c,
-		oldToken: &nwn.t,
+	tkr := &tokenRefresher{
+		ctx:  ctx,
+		conf: c,
 	}
-	return nwn
+	if t != nil {
+		tkr.refreshToken = t.RefreshToken
+	}
+	return &reuseTokenSource{
+		t:   t,
+		new: tkr,
+	}
 }
 
 // tokenRefresher is a TokenSource that makes "grant_type"=="refresh_token"
 // HTTP requests to renew a token using a RefreshToken.
 type tokenRefresher struct {
-	ctx      Context // used to get HTTP requests
-	conf     *Config
-	oldToken **Token // pointer to old *Token w/ RefreshToken
+	ctx          Context // used to get HTTP requests
+	conf         *Config
+	refreshToken string
 }
 
-func (tf tokenRefresher) Token() (*Token, error) {
-	t := *tf.oldToken
-	if t == nil {
-		return nil, errors.New("oauth2: attempted use of nil Token")
-	}
-	if t.RefreshToken == "" {
+func (tf *tokenRefresher) Token() (*Token, error) {
+	if tf.refreshToken == "" {
 		return nil, errors.New("oauth2: token expired and refresh token is not set")
 	}
-	return retrieveToken(tf.ctx, tf.conf, url.Values{
+
+	tk, err := retrieveToken(tf.ctx, tf.conf, url.Values{
 		"grant_type":    {"refresh_token"},
-		"refresh_token": {t.RefreshToken},
+		"refresh_token": {tf.refreshToken},
 	})
+
+	if err != nil {
+		return nil, err
+	}
+	if tk.RefreshToken != tf.refreshToken {
+		// possible race condition avoided because tokenRefresher
+		// should be protected by reuseTokenSource.mu
+		tf.refreshToken = tk.RefreshToken
+	}
+	return tk, err
 }
 
 // reuseTokenSource is a TokenSource that holds a single token in memory
