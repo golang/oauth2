@@ -78,11 +78,11 @@ var (
 	// "access_type" field that gets sent in the URL returned by
 	// AuthCodeURL.
 	//
-	// Online (the default if neither is specified) is the default.
-	// If your application needs to refresh access tokens when the
-	// user is not present at the browser, then use offline. This
-	// will result in your application obtaining a refresh token
-	// the first time your application exchanges an authorization
+	// Online is the default if neither is specified. If your
+	// application needs to refresh access tokens when the user
+	// is not present at the browser, then use offline. This will
+	// result in your application obtaining a refresh token the
+	// first time your application exchanges an authorization
 	// code for a user.
 	AccessTypeOnline  AuthCodeOption = setParam{"access_type", "online"}
 	AccessTypeOffline AuthCodeOption = setParam{"access_type", "offline"}
