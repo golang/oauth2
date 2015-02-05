@@ -244,8 +244,6 @@ func (tf tokenRefresher) Token() (*Token, error) {
 // and validates its expiry before each call to retrieve it with
 // Token. If it's expired, it will be auto-refreshed using the
 // new TokenSource.
-//
-// The first call to TokenRefresher must be SetToken.
 type reuseTokenSource struct {
 	new TokenSource // called when t is expired.
 
