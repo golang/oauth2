@@ -250,6 +250,10 @@ type tokenRefresher struct {
 	refreshToken string
 }
 
+// WARNING: Token is not safe for concurrent access, as it
+// updates the tokenRefresher's refreshToken field.
+// Within this package, it is used by reuseTokenSource which
+// synchronizes calls to this method with its own mutex.
 func (tf *tokenRefresher) Token() (*Token, error) {
 	if tf.refreshToken == "" {
 		return nil, errors.New("oauth2: token expired and refresh token is not set")
@@ -263,9 +267,7 @@ func (tf *tokenRefresher) Token() (*Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	if tk.RefreshToken != tf.refreshToken {
-		// possible race condition avoided because tokenRefresher
-		// should be protected by reuseTokenSource.mu
+	if tf.refreshToken != tk.RefreshToken {
 		tf.refreshToken = tk.RefreshToken
 	}
 	return tk, err
