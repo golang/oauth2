@@ -25,12 +25,12 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Context can be an golang.org/x/net.Context, or an App Engine Context.
+// Context can be an golang.org/x/net/context.Context, or an App Engine Context.
 // If you don't care and aren't running on App Engine, you may use NoContext.
 type Context interface{}
 
 // NoContext is the default context. If you're not running this code
-// on App Engine or not using golang.org/x/net.Context to provide a custom
+// on App Engine or not using golang.org/x/net/context.Context to provide a custom
 // HTTP client, you should use NoContext.
 var NoContext Context = nil
 
