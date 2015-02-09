@@ -19,15 +19,19 @@ func TestSDKConfig(t *testing.T) {
 		{"", "bar_access_token", false},
 		{"foo@example.com", "foo_access_token", false},
 		{"bar@example.com", "bar_access_token", false},
+		{"baz@serviceaccount.example.com", "", true},
 	}
 	for _, tt := range tests {
 		c, err := NewSDKConfig(tt.account)
-		if (err != nil) != tt.err {
+		if got, want := err != nil, tt.err; got != want {
 			if !tt.err {
 				t.Errorf("expected no error, got error: %v", tt.err, err)
 			} else {
-				t.Errorf("execcted error, got none")
+				t.Errorf("expected error, got none")
 			}
+			continue
+		}
+		if err != nil {
 			continue
 		}
 		tok := c.initialToken

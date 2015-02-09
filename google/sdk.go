@@ -23,11 +23,11 @@ import (
 type sdkCredentials struct {
 	Data []struct {
 		Credential struct {
-			ClientID     string    `json:"client_id"`
-			ClientSecret string    `json:"client_secret"`
-			AccessToken  string    `json:"access_token"`
-			RefreshToken string    `json:"refresh_token"`
-			TokenExpiry  time.Time `json:"token_expiry"`
+			ClientID     string     `json:"client_id"`
+			ClientSecret string     `json:"client_secret"`
+			AccessToken  string     `json:"access_token"`
+			RefreshToken string     `json:"refresh_token"`
+			TokenExpiry  *time.Time `json:"token_expiry"`
 		} `json:"credential"`
 		Key struct {
 			Account string `json:"account"`
@@ -92,6 +92,13 @@ func NewSDKConfig(account string) (*SDKConfig, error) {
 
 	for _, d := range c.Data {
 		if account == "" || d.Key.Account == account {
+			if d.Credential.AccessToken == "" && d.Credential.RefreshToken == "" {
+				return nil, fmt.Errorf("oauth2/google: no token available for account %q", account)
+			}
+			var expiry time.Time
+			if d.Credential.TokenExpiry != nil {
+				expiry = *d.Credential.TokenExpiry
+			}
 			return &SDKConfig{
 				conf: oauth2.Config{
 					ClientID:     d.Credential.ClientID,
@@ -103,7 +110,7 @@ func NewSDKConfig(account string) (*SDKConfig, error) {
 				initialToken: &oauth2.Token{
 					AccessToken:  d.Credential.AccessToken,
 					RefreshToken: d.Credential.RefreshToken,
-					Expiry:       d.Credential.TokenExpiry,
+					Expiry:       expiry,
 				},
 			}, nil
 		}
