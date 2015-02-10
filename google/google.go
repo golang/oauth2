@@ -25,9 +25,6 @@ import (
 	"google.golang.org/cloud/compute/metadata"
 )
 
-// TODO(bradfitz,jbd): import "google.golang.org/cloud/compute/metadata" instead of
-// the metaClient and metadata.google.internal stuff below.
-
 // Endpoint is Google's OAuth 2.0 endpoint.
 var Endpoint = oauth2.Endpoint{
 	AuthURL:  "https://accounts.google.com/o/oauth2/auth",
