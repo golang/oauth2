@@ -6,6 +6,7 @@ package google
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -137,23 +138,20 @@ func (c *SDKConfig) Scopes() []string {
 	return c.conf.Scopes
 }
 
-func sdkConfigPath() (string, error) {
+// sdkConfigPath tries to guess where the gcloud config is located.
+// It can be overridden during tests.
+var sdkConfigPath = func() (string, error) {
 	if runtime.GOOS == "windows" {
 		return filepath.Join(os.Getenv("APPDATA"), "gcloud"), nil
 	}
-	unixHomeDir = guessUnixHomeDir()
-	if unixHomeDir == "" {
-		return "", fmt.Errorf("unable to get current user home directory: os/user lookup failed; $HOME is empty")
+	homeDir := guessUnixHomeDir()
+	if homeDir == "" {
+		return "", errors.New("unable to get current user home directory: os/user lookup failed; $HOME is empty")
 	}
-	return filepath.Join(unixHomeDir, ".config", "gcloud"), nil
+	return filepath.Join(homeDir, ".config", "gcloud"), nil
 }
 
-var unixHomeDir string
-
 func guessUnixHomeDir() string {
-	if unixHomeDir != "" {
-		return unixHomeDir
-	}
 	usr, err := user.Current()
 	if err == nil {
 		return usr.HomeDir

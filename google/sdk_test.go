@@ -7,7 +7,10 @@ package google
 import "testing"
 
 func TestSDKConfig(t *testing.T) {
-	unixHomeDir = "testdata"
+	sdkConfigPath = func() (string, error) {
+		return "testdata/gcloud", nil
+	}
+
 	tests := []struct {
 		account     string
 		accessToken string
