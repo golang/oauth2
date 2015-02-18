@@ -421,7 +421,8 @@ func providerAuthHeaderWorks(tokenURL string) bool {
 		strings.HasPrefix(tokenURL, "https://www.douban.com/") ||
 		strings.HasPrefix(tokenURL, "https://api.dropbox.com/") ||
 		strings.HasPrefix(tokenURL, "https://api.soundcloud.com/") ||
-		strings.HasPrefix(tokenURL, "https://www.linkedin.com/") {
+		strings.HasPrefix(tokenURL, "https://www.linkedin.com/") ||
+		strings.HasPrefix(tokenURL, "https://api.twitch.tv/") {
 		// Some sites fail to implement the OAuth2 spec fully.
 		return false
 	}
