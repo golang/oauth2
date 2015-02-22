@@ -413,6 +413,7 @@ func condVal(v string) []string {
 // - Reddit only accepts client secret in the Authorization header
 // - Dropbox accepts either it in URL param or Auth header, but not both.
 // - Google only accepts URL param (not spec compliant?), not Auth header
+// - Stripe only accepts client secret in Auth header with Bearer method, not Basic
 func providerAuthHeaderWorks(tokenURL string) bool {
 	if strings.HasPrefix(tokenURL, "https://accounts.google.com/") ||
 		strings.HasPrefix(tokenURL, "https://www.googleapis.com/") ||
@@ -422,7 +423,8 @@ func providerAuthHeaderWorks(tokenURL string) bool {
 		strings.HasPrefix(tokenURL, "https://api.dropbox.com/") ||
 		strings.HasPrefix(tokenURL, "https://api.soundcloud.com/") ||
 		strings.HasPrefix(tokenURL, "https://www.linkedin.com/") ||
-		strings.HasPrefix(tokenURL, "https://api.twitch.tv/") {
+		strings.HasPrefix(tokenURL, "https://api.twitch.tv/") ||
+		strings.HasPrefix(tokenURL, "https://connect.stripe.com/") {
 		// Some sites fail to implement the OAuth2 spec fully.
 		return false
 	}
