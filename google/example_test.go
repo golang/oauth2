@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"testing"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -19,10 +18,6 @@ import (
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/urlfetch"
 )
-
-// Remove after Go 1.4.
-// Related to https://codereview.appspot.com/107320046
-func TestA(t *testing.T) {}
 
 func Example_webServer() {
 	// Your credentials should be obtained from the Google
