@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/internal"
 )
@@ -123,7 +124,7 @@ func NewSDKConfig(account string) (*SDKConfig, error) {
 // underlying http.RoundTripper will be obtained using the provided
 // context. The returned client and its Transport should not be
 // modified.
-func (c *SDKConfig) Client(ctx oauth2.Context) *http.Client {
+func (c *SDKConfig) Client(ctx context.Context) *http.Client {
 	return &http.Client{
 		Transport: &oauth2.Transport{
 			Source: c.TokenSource(ctx),
@@ -136,7 +137,7 @@ func (c *SDKConfig) Client(ctx oauth2.Context) *http.Client {
 // It will returns the current access token stored in the credentials,
 // and refresh it when it expires, but it won't update the credentials
 // with the new access token.
-func (c *SDKConfig) TokenSource(ctx oauth2.Context) oauth2.TokenSource {
+func (c *SDKConfig) TokenSource(ctx context.Context) oauth2.TokenSource {
 	return c.conf.TokenSource(ctx, c.initialToken)
 }
 
