@@ -5,12 +5,16 @@
 package oauth2
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"strconv"
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 )
@@ -156,6 +160,56 @@ func TestExchangeRequest_JSONResponse(t *testing.T) {
 	scope := tok.Extra("scope")
 	if scope != "user" {
 		t.Errorf("Unexpected value for scope: %v", scope)
+	}
+}
+
+const day = 24 * time.Hour
+
+func TestExchangeRequest_JSONResponse_Expiry(t *testing.T) {
+	seconds := int32(day.Seconds())
+	jsonNumberType := reflect.TypeOf(json.Number("0"))
+	for _, c := range []struct {
+		expires string
+		expect  error
+	}{
+		{fmt.Sprintf(`"expires_in": %d`, seconds), nil},
+		{fmt.Sprintf(`"expires_in": "%d"`, seconds), nil},                             // PayPal case
+		{fmt.Sprintf(`"expires": %d`, seconds), nil},                                  // Facebook case
+		{`"expires": false`, &json.UnmarshalTypeError{"bool", jsonNumberType}},        // wrong type
+		{`"expires": {}`, &json.UnmarshalTypeError{"object", jsonNumberType}},         // wrong type
+		{`"expires": "zzz"`, &strconv.NumError{"ParseInt", "zzz", strconv.ErrSyntax}}, // wrong value
+	} {
+		testExchangeRequest_JSONResponse_expiry(t, c.expires, c.expect)
+	}
+}
+
+func testExchangeRequest_JSONResponse_expiry(t *testing.T, exp string, expect error) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(fmt.Sprintf(`{"access_token": "90d", "scope": "user", "token_type": "bearer", %s}`, exp)))
+	}))
+	defer ts.Close()
+	conf := newConf(ts.URL)
+	t1 := time.Now().Add(day)
+	tok, err := conf.Exchange(NoContext, "exchange-code")
+	t2 := time.Now().Add(day)
+	if err == nil && expect != nil {
+		t.Errorf("Incorrect state, conf.Exchange() should return an error: %v", expect)
+	} else if err != nil {
+		if reflect.DeepEqual(err, expect) {
+			t.Logf("Expected error: %v", err)
+			return
+		} else {
+			t.Error(err)
+		}
+
+	}
+	if !tok.Valid() {
+		t.Fatalf("Token invalid. Got: %#v", tok)
+	}
+	expiry := tok.Expiry
+	if expiry.Before(t1) || expiry.After(t2) {
+		t.Errorf("Unexpected value for Expiry: %v (shold be between %v and %v)", expiry, t1, t2)
 	}
 }
 

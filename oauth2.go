@@ -374,11 +374,11 @@ func retrieveToken(ctx context.Context, c *Config, v url.Values) (*Token, error)
 // tokenJSON is the struct representing the HTTP response from OAuth2
 // providers returning a token in JSON form.
 type tokenJSON struct {
-	AccessToken  string `json:"access_token"`
-	TokenType    string `json:"token_type"`
-	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int32  `json:"expires_in"`
-	Expires      int32  `json:"expires"` // broken Facebook spelling of expires_in
+	AccessToken  string         `json:"access_token"`
+	TokenType    string         `json:"token_type"`
+	RefreshToken string         `json:"refresh_token"`
+	ExpiresIn    expirationTime `json:"expires_in"` // at least PayPal returns string, while most return number
+	Expires      expirationTime `json:"expires"`    // broken Facebook spelling of expires_in
 }
 
 func (e *tokenJSON) expiry() (t time.Time) {
@@ -389,6 +389,22 @@ func (e *tokenJSON) expiry() (t time.Time) {
 		return time.Now().Add(time.Duration(v) * time.Second)
 	}
 	return
+}
+
+type expirationTime int32
+
+func (e *expirationTime) UnmarshalJSON(b []byte) error {
+	var n json.Number
+	err := json.Unmarshal(b, &n)
+	if err != nil {
+		return err
+	}
+	i, err := n.Int64()
+	if err != nil {
+		return err
+	}
+	*e = expirationTime(i)
+	return nil
 }
 
 func condVal(v string) []string {
