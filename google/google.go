@@ -40,29 +40,40 @@ const JWTTokenURL = "https://accounts.google.com/o/oauth2/token"
 // under "APIs & Auth" > "Credentials". Download the Web application credentials in the
 // JSON format and provide the contents of the file as jsonKey.
 func ConfigFromJSON(jsonKey []byte, scope ...string) (*oauth2.Config, error) {
+	type cred struct {
+		ClientID     string   `json:"client_id"`
+		ClientSecret string   `json:"client_secret"`
+		RedirectURIs []string `json:"redirect_uris"`
+		AuthURI      string   `json:"auth_uri"`
+		TokenURI     string   `json:"token_uri"`
+	}
 	var j struct {
-		Web struct {
-			ClientID     string   `json:"client_id"`
-			ClientSecret string   `json:"client_secret"`
-			RedirectURIs []string `json:"redirect_uris"`
-			AuthURI      string   `json:"auth_uri"`
-			TokenURI     string   `json:"token_uri"`
-		} `json:"web"`
+		Web       *cred `json:"web"`
+		Installed *cred `json:"installed"`
 	}
 	if err := json.Unmarshal(jsonKey, &j); err != nil {
 		return nil, err
 	}
-	if len(j.Web.RedirectURIs) < 1 {
+	var c *cred
+	switch {
+	case j.Web != nil:
+		c = j.Web
+	case j.Installed != nil:
+		c = j.Installed
+	default:
+		return nil, fmt.Errorf("oauth2/google: no credentials found")
+	}
+	if len(c.RedirectURIs) < 1 {
 		return nil, errors.New("oauth2/google: missing redirect URL in the client_credentials.json")
 	}
 	return &oauth2.Config{
-		ClientID:     j.Web.ClientID,
-		ClientSecret: j.Web.ClientSecret,
-		RedirectURL:  j.Web.RedirectURIs[0],
+		ClientID:     c.ClientID,
+		ClientSecret: c.ClientSecret,
+		RedirectURL:  c.RedirectURIs[0],
 		Scopes:       scope,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  j.Web.AuthURI,
-			TokenURL: j.Web.TokenURI,
+			AuthURL:  c.AuthURI,
+			TokenURL: c.TokenURI,
 		},
 	}, nil
 }

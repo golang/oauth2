@@ -24,6 +24,13 @@ var webJSONKey = []byte(`
     }
 }`)
 
+var installedJSONKey = []byte(`{
+  "installed": {
+      "client_id": "222-installed.apps.googleusercontent.com",
+      "redirect_uris": ["https://www.example.com/oauth2callback"]
+    }
+}`)
+
 func TestConfigFromJSON(t *testing.T) {
 	conf, err := ConfigFromJSON(webJSONKey, "scope1", "scope2")
 	if err != nil {
@@ -46,5 +53,15 @@ func TestConfigFromJSON(t *testing.T) {
 	}
 	if got, want := conf.Endpoint.TokenURL, "https://google.com/o/oauth2/token"; got != want {
 		t.Errorf("TokenURL = %q; want %q", got, want)
+	}
+}
+
+func TestConfigFromJSON_Installed(t *testing.T) {
+	conf, err := ConfigFromJSON(installedJSONKey)
+	if err != nil {
+		t.Error(err)
+	}
+	if got, want := conf.ClientID, "222-installed.apps.googleusercontent.com"; got != want {
+		t.Errorf("ClientID = %q; want %q", got, want)
 	}
 }
