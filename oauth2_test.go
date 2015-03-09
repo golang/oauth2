@@ -6,6 +6,7 @@ package oauth2
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -326,5 +327,29 @@ func TestRefreshToken_RefreshTokenReplacement(t *testing.T) {
 	}
 	if tk.RefreshToken != tkr.refreshToken {
 		t.Errorf("tokenRefresher.refresh_token = %s; want %s", tkr.refreshToken, tk.RefreshToken)
+	}
+}
+
+func TestConfigClientWithToken(t *testing.T) {
+	tok := &Token{
+		AccessToken: "abc123",
+	}
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got, want := r.Header.Get("Authorization"), fmt.Sprintf("Bearer %s", tok.AccessToken); got != want {
+			t.Errorf("Authorization header = %q; want %q", got, want)
+		}
+		return
+	}))
+	defer ts.Close()
+	conf := newConf(ts.URL)
+
+	c := conf.Client(NoContext, tok)
+	req, err := http.NewRequest("GET", ts.URL, nil)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = c.Do(req)
+	if err != nil {
+		t.Error(err)
 	}
 }
