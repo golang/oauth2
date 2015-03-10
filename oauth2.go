@@ -414,6 +414,21 @@ func condVal(v string) []string {
 	return []string{v}
 }
 
+var brokenAuthHeaderProviders = []string{
+	"https://accounts.google.com/",
+	"https://www.googleapis.com/",
+	"https://github.com/",
+	"https://api.instagram.com/",
+	"https://www.douban.com/",
+	"https://api.dropbox.com/",
+	"https://api.soundcloud.com/",
+	"https://www.linkedin.com/",
+	"https://api.twitch.tv/",
+	"https://oauth.vk.com/",
+	"https://api.odnoklassniki.ru/",
+	"https://connect.stripe.com/",
+}
+
 // providerAuthHeaderWorks reports whether the OAuth2 server identified by the tokenURL
 // implements the OAuth2 spec correctly
 // See https://code.google.com/p/goauth2/issues/detail?id=31 for background.
@@ -423,20 +438,11 @@ func condVal(v string) []string {
 // - Google only accepts URL param (not spec compliant?), not Auth header
 // - Stripe only accepts client secret in Auth header with Bearer method, not Basic
 func providerAuthHeaderWorks(tokenURL string) bool {
-	if strings.HasPrefix(tokenURL, "https://accounts.google.com/") ||
-		strings.HasPrefix(tokenURL, "https://www.googleapis.com/") ||
-		strings.HasPrefix(tokenURL, "https://github.com/") ||
-		strings.HasPrefix(tokenURL, "https://api.instagram.com/") ||
-		strings.HasPrefix(tokenURL, "https://www.douban.com/") ||
-		strings.HasPrefix(tokenURL, "https://api.dropbox.com/") ||
-		strings.HasPrefix(tokenURL, "https://api.soundcloud.com/") ||
-		strings.HasPrefix(tokenURL, "https://www.linkedin.com/") ||
-		strings.HasPrefix(tokenURL, "https://api.twitch.tv/") ||
-		strings.HasPrefix(tokenURL, "https://oauth.vk.com/") ||
-		strings.HasPrefix(tokenURL, "http://api.odnoklassniki.ru/") ||
-		strings.HasPrefix(tokenURL, "https://connect.stripe.com/") {
-		// Some sites fail to implement the OAuth2 spec fully.
-		return false
+	for _, s := range brokenAuthHeaderProviders {
+		if strings.HasPrefix(tokenURL, s) {
+			// Some sites fail to implement the OAuth2 spec fully.
+			return false
+		}
 	}
 
 	// Assume the provider implements the spec properly
