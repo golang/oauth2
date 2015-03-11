@@ -430,6 +430,7 @@ func providerAuthHeaderWorks(tokenURL string) bool {
 		strings.HasPrefix(tokenURL, "https://www.douban.com/") ||
 		strings.HasPrefix(tokenURL, "https://api.dropbox.com/") ||
 		strings.HasPrefix(tokenURL, "https://api.soundcloud.com/") ||
+		strings.HasPrefix(tokenURL, "https://api.pushbullet.com/") ||
 		strings.HasPrefix(tokenURL, "https://www.linkedin.com/") ||
 		strings.HasPrefix(tokenURL, "https://api.twitch.tv/") ||
 		strings.HasPrefix(tokenURL, "https://oauth.vk.com/") ||
