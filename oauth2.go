@@ -427,6 +427,7 @@ var brokenAuthHeaderProviders = []string{
 	"https://oauth.vk.com/",
 	"https://api.odnoklassniki.ru/",
 	"https://connect.stripe.com/",
+	"https://api.pushbullet.com/",
 }
 
 // providerAuthHeaderWorks reports whether the OAuth2 server identified by the tokenURL
