@@ -155,7 +155,7 @@ func (c *Config) PasswordCredentialsToken(ctx context.Context, username, passwor
 // to the Redirect URI (the URL obtained from AuthCodeURL).
 //
 // The HTTP client to use is derived from the context.
-// If nil, http.DefaultClient is used.
+// If a client is not provided via the context, http.DefaultClient is used.
 //
 // The code will be in the *http.Request.FormValue("code"). Before
 // calling Exchange, be sure to validate FormValue("state").
