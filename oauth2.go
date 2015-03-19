@@ -430,6 +430,7 @@ var brokenAuthHeaderProviders = []string{
 	"https://api.pushbullet.com/",
 	"https://oauth.sandbox.trainingpeaks.com/",
 	"https://oauth.trainingpeaks.com/",
+	"https://www.strava.com/oauth/",
 }
 
 // providerAuthHeaderWorks reports whether the OAuth2 server identified by the tokenURL
