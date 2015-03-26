@@ -79,22 +79,28 @@ var (
 	// result in your application obtaining a refresh token the
 	// first time your application exchanges an authorization
 	// code for a user.
-	AccessTypeOnline  AuthCodeOption = setParam{"access_type", "online"}
-	AccessTypeOffline AuthCodeOption = setParam{"access_type", "offline"}
+	AccessTypeOnline  AuthCodeOption = SetParam("access_type", "online")
+	AccessTypeOffline AuthCodeOption = SetParam("access_type", "offline")
 
 	// ApprovalForce forces the users to view the consent dialog
 	// and confirm the permissions request at the URL returned
 	// from AuthCodeURL, even if they've already done so.
-	ApprovalForce AuthCodeOption = setParam{"approval_prompt", "force"}
+	ApprovalForce AuthCodeOption = SetParam("approval_prompt", "force")
 )
+
+// An AuthCodeOption is passed to Config.AuthCodeURL.
+type AuthCodeOption interface {
+	setValue(url.Values)
+}
 
 type setParam struct{ k, v string }
 
 func (p setParam) setValue(m url.Values) { m.Set(p.k, p.v) }
 
-// An AuthCodeOption is passed to Config.AuthCodeURL.
-type AuthCodeOption interface {
-	setValue(url.Values)
+// SetParam builds an AuthCodeOption which passes key/value parameters
+// to a provider's authorization endpoint.
+func SetParam(key, value string) AuthCodeOption {
+	return setParam{key, value}
 }
 
 // AuthCodeURL returns a URL to OAuth 2.0 provider's consent page
