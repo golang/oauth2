@@ -11,7 +11,7 @@
 // For more information, please read
 // https://developers.google.com/accounts/docs/OAuth2
 // and
-// https://developers.google.com/accounts/application-default-credentials.
+// https://developers.google.com/accounts/docs/application-default-credentials.
 package google // import "golang.org/x/oauth2/google"
 
 import (

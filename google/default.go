@@ -28,7 +28,7 @@ import (
 // and use "Application Default Credentials."
 //
 // For more details, see:
-// https://developers.google.com/accounts/application-default-credentials
+// https://developers.google.com/accounts/docs/application-default-credentials
 //
 func DefaultClient(ctx context.Context, scope ...string) (*http.Client, error) {
 	ts, err := DefaultTokenSource(ctx, scope...)
@@ -54,7 +54,7 @@ func DefaultClient(ctx context.Context, scope ...string) (*http.Client, error) {
 //      (In this final case any provided scopes are ignored.)
 //
 // For more details, see:
-// https://developers.google.com/accounts/application-default-credentials
+// https://developers.google.com/accounts/docs/application-default-credentials
 //
 func DefaultTokenSource(ctx context.Context, scope ...string) (oauth2.TokenSource, error) {
 	// First, try the environment variable.
@@ -94,7 +94,7 @@ func DefaultTokenSource(ctx context.Context, scope ...string) (oauth2.TokenSourc
 	}
 
 	// None are found; return helpful error.
-	const url = "https://developers.google.com/accounts/application-default-credentials"
+	const url = "https://developers.google.com/accounts/docs/application-default-credentials"
 	return nil, fmt.Errorf("google: could not find default credentials. See %v for more information.", url)
 }
 
