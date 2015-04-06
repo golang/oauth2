@@ -63,7 +63,7 @@ func TestAuthCodeURL(t *testing.T) {
 
 func TestAuthCodeURL_CustomParam(t *testing.T) {
 	conf := newConf("server")
-	param := SetParam("foo", "bar")
+	param := SetAuthURLParam("foo", "bar")
 	url := conf.AuthCodeURL("baz", param)
 	if url != "server/auth?client_id=CLIENT_ID&foo=bar&redirect_uri=REDIRECT_URL&response_type=code&scope=scope1+scope2&state=baz" {
 		t.Errorf("Auth code URL doesn't match the expected, found: %v", url)
