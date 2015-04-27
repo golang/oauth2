@@ -107,6 +107,7 @@ var brokenAuthHeaderProviders = []string{
 	"https://oauth.trainingpeaks.com/",
 	"https://www.strava.com/oauth/",
 	"https://app.box.com/",
+	"https://test-sandbox.auth.corp.google.com",
 }
 
 // providerAuthHeaderWorks reports whether the OAuth2 server identified by the tokenURL
