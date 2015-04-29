@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/internal"
@@ -54,7 +56,10 @@ type Token struct {
 // Type returns t.TokenType if non-empty, else "Bearer".
 func (t *Token) Type() string {
 	if t.TokenType != "" {
-		return t.TokenType
+		// ensure first letter in the TokenType string is uppercase
+		// (e.g. "Bearer", not "bearer")
+		r, n := utf8.DecodeRuneInString(t.TokenType)
+		return string(unicode.ToUpper(r)) + t.TokenType[n:]
 	}
 	return "Bearer"
 }
