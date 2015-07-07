@@ -6,7 +6,6 @@
 package internal
 
 import (
-	// "bytes"
 	"encoding/json"
 	"fmt"
 	"io"

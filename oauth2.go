@@ -155,6 +155,18 @@ func (c *Config) PasswordCredentialsToken(ctx context.Context, username, passwor
 // Pass in username/password and a reader to provide the POST body
 //
 // Returns the token, or err
+//
+// Use it like something like this:
+//
+//		if pb, err := json.Marshal(postBody); err == nil {
+// 			fmt.Println(string(pb))
+// 			postBodyReader := bytes.NewReader(pb)
+// 			token, err := oa2.GetTokenBasicAuth(oauth2.NoContext, "user1", "passwd1", postBodyReader)
+// 			fmt.Printf("token:%v:err:%v:", token, err)
+// 		} else {
+// 			fmt.Printf("json.Marshal:err:%v:", err)
+// 		}
+//
 func (c *Config) GetTokenBasicAuth(ctx context.Context, username, password string, postBodyReader io.Reader) (*Token, error) {
 
 	return retrieveTokenBasicAuth(ctx, username, password, c.Endpoint.TokenURL, postBodyReader)
