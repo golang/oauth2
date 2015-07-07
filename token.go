@@ -5,6 +5,7 @@
 package oauth2
 
 import (
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -136,6 +137,14 @@ func tokenFromInternal(t *internal.Token) *Token {
 // with an error..
 func retrieveToken(ctx context.Context, c *Config, v url.Values) (*Token, error) {
 	tk, err := internal.RetrieveToken(ctx, c.ClientID, c.ClientSecret, c.Endpoint.TokenURL, v)
+	if err != nil {
+		return nil, err
+	}
+	return tokenFromInternal(tk), nil
+}
+
+func retrieveTokenBasicAuth(ctx context.Context, username , password, endpoint string, v io.Reader) (*Token, error) {
+	tk, err := internal.RetrieveTokenBasicAuth(ctx, username, password, endpoint, v)
 	if err != nil {
 		return nil, err
 	}

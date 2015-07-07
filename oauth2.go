@@ -10,6 +10,7 @@ package oauth2 // import "golang.org/x/oauth2"
 import (
 	"bytes"
 	"errors"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -147,6 +148,17 @@ func (c *Config) PasswordCredentialsToken(ctx context.Context, username, passwor
 		"password":   {password},
 		"scope":      internal.CondVal(strings.Join(c.Scopes, " ")),
 	})
+}
+
+// Use Basic Auth (username/password) to get a token
+//
+// Pass in username/password and a reader to provide the POST body
+//
+// Returns the token, or err
+func (c *Config) GetTokenBasicAuth(ctx context.Context, username, password string, postBodyReader io.Reader) (*Token, error) {
+
+	return retrieveTokenBasicAuth(ctx, username, password, c.Endpoint.TokenURL, postBodyReader)
+
 }
 
 // Exchange converts an authorization code into a token.
