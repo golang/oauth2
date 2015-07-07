@@ -143,7 +143,7 @@ func retrieveToken(ctx context.Context, c *Config, v url.Values) (*Token, error)
 	return tokenFromInternal(tk), nil
 }
 
-func retrieveTokenBasicAuth(ctx context.Context, username , password, endpoint string, v io.Reader) (*Token, error) {
+func retrieveTokenBasicAuth(ctx context.Context, username, password, endpoint string, v io.Reader) (*Token, error) {
 	tk, err := internal.RetrieveTokenBasicAuth(ctx, username, password, endpoint, v)
 	if err != nil {
 		return nil, err
