@@ -195,7 +195,7 @@ func (c *Config) PasswordCredentialsToken(ctx context.Context, username, passwor
 //
 // 		pb, err := json.Marshal(postBody)
 //		...
-// 		token, err := oa2.GetTokenBasicAuth(oauth2.NoContext, "bmcquee", "3e4r#E$R", bytes.NewReader(pb))
+// 		token, err := oa2.GetTokenBasicAuth(oauth2.NoContext, "zup", "foo", bytes.NewReader(pb))
 // 
 func (c *Config) GetTokenBasicAuth(ctx context.Context, username, password string, postBodyReader io.Reader) (*Token, error) {
 
