@@ -150,7 +150,7 @@ func (c *Config) PasswordCredentialsToken(ctx context.Context, username, passwor
 	})
 }
 
-// Use Basic Auth (username/password) to get a token
+// GetTokenBasicAuth - use Basic Auth (username/password) to get a token
 //
 // Pass in username/password and a reader to provide the POST body
 //
@@ -167,6 +167,36 @@ func (c *Config) PasswordCredentialsToken(ctx context.Context, username, passwor
 // 			fmt.Printf("json.Marshal:err:%v:", err)
 // 		}
 //
+// This works for APIs such as these github calls:
+//
+// https://developer.github.com/enterprise/2.1/v3/oauth_authorizations/#get-or-create-an-authorization-for-a-specific-app
+//
+//		oa2 := oauth2.Config{
+// 		    ClientID:     "clientid1",
+// 		    ClientSecret: "clientSecret1",
+// 	    	Scopes:       []string{"repo", "public_repo", "gist", "repo:status", "user"},
+// 	    	Endpoint: oauth2.Endpoint{
+// 	        	AuthURL:  "https://mygithub.com/api/v3/authorizations",
+// 	        	TokenURL: "https://mygithub.com/api/v3/authorizations",
+//	 	    },
+// 		}
+
+// 		postBody := struct {
+// 			ClientId   string `json:"client_id"`
+// 			ClientSecret   string `json:"client_secret"`
+// 			Note   string `json:"note"`
+// 			Scopes      []string `json:"scopes"`
+// 		}{
+// 			oa2.ClientID,
+// 			oa2.ClientSecret,
+// 			"my oauth",
+// 			[]string{"public_repo"},
+// 		}
+//
+// 		pb, err := json.Marshal(postBody)
+//		...
+// 		token, err := oa2.GetTokenBasicAuth(oauth2.NoContext, "bmcquee", "3e4r#E$R", bytes.NewReader(pb))
+// 
 func (c *Config) GetTokenBasicAuth(ctx context.Context, username, password string, postBodyReader io.Reader) (*Token, error) {
 
 	return retrieveTokenBasicAuth(ctx, username, password, c.Endpoint.TokenURL, postBodyReader)

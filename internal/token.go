@@ -213,8 +213,10 @@ func RetrieveToken(ctx context.Context, ClientID, ClientSecret, TokenURL string,
 	return token, nil
 }
 
-//don't rewrite the url.Values
-//and json Marshal the POST - x-www-form-urlencoded seems to fail despite the content-type
+
+// Do Basic auth via username/password not client_id/client_secret
+//
+// POST body for the auth call comes from the caller as a Reader
 func RetrieveTokenBasicAuth(ctx context.Context, Username, Password, TokenURL string, postBodyReader io.Reader) (*Token, error) {
 
 	hc, err := ContextClient(ctx)
