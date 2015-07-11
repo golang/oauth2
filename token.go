@@ -5,7 +5,7 @@
 package oauth2
 
 import (
-	"io"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -143,10 +143,18 @@ func retrieveToken(ctx context.Context, c *Config, v url.Values) (*Token, error)
 	return tokenFromInternal(tk), nil
 }
 
-func retrieveTokenBasicAuth(ctx context.Context, username, password, endpoint string, v io.Reader) (*Token, error) {
-	tk, err := internal.RetrieveTokenBasicAuth(ctx, username, password, endpoint, v)
+func retrieveTokenBasicAuth(ctx context.Context, c *Config, cg CredsGetter) (*Token, error) {
+
+	creds, ok := cg(ctx)
+
+	if !ok {
+		return nil, fmt.Errorf("creds for basic auth not found")
+	}
+
+	tk, err := internal.RetrieveTokenBasicAuth(ctx, creds.Username, creds.Password, c.Endpoint.TokenURL, creds.PostBodyReader)
 	if err != nil {
 		return nil, err
 	}
+
 	return tokenFromInternal(tk), nil
 }

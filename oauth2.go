@@ -152,54 +152,22 @@ func (c *Config) PasswordCredentialsToken(ctx context.Context, username, passwor
 
 // GetTokenBasicAuth - use Basic Auth (username/password) to get a token
 //
-// Pass in username/password and a reader to provide the POST body
-//
-// Returns the token, or err
-//
-// Use it like something like this:
-//
-//		if pb, err := json.Marshal(postBody); err == nil {
-// 			fmt.Println(string(pb))
-// 			postBodyReader := bytes.NewReader(pb)
-// 			token, err := oa2.GetTokenBasicAuth(oauth2.NoContext, "user1", "passwd1", postBodyReader)
-// 			fmt.Printf("token:%v:err:%v:", token, err)
-// 		} else {
-// 			fmt.Printf("json.Marshal:err:%v:", err)
-// 		}
-//
-// This works for APIs such as these github calls:
+// Trying to get a token with basic auth as in:
 //
 // https://developer.github.com/enterprise/2.1/v3/oauth_authorizations/#get-or-create-an-authorization-for-a-specific-app
 //
-//		oa2 := oauth2.Config{
-// 		    ClientID:     "clientid1",
-// 		    ClientSecret: "clientSecret1",
-// 	    	Scopes:       []string{"repo", "public_repo", "gist", "repo:status", "user"},
-// 	    	Endpoint: oauth2.Endpoint{
-// 	        	AuthURL:  "https://mygithub.com/api/v3/authorizations",
-// 	        	TokenURL: "https://mygithub.com/api/v3/authorizations",
-//	 	    },
-// 		}
 
-// 		postBody := struct {
-// 			ClientId   string `json:"client_id"`
-// 			ClientSecret   string `json:"client_secret"`
-// 			Note   string `json:"note"`
-// 			Scopes      []string `json:"scopes"`
-// 		}{
-// 			oa2.ClientID,
-// 			oa2.ClientSecret,
-// 			"my oauth",
-// 			[]string{"public_repo"},
-// 		}
-//
-// 		pb, err := json.Marshal(postBody)
-//		...
-// 		token, err := oa2.GetTokenBasicAuth(oauth2.NoContext, "zup", "foo", bytes.NewReader(pb))
-// 
-func (c *Config) GetTokenBasicAuth(ctx context.Context, username, password string, postBodyReader io.Reader) (*Token, error) {
+type Creds struct {
+  Username string
+  Password string
+  PostBodyReader io.Reader
+}
 
-	return retrieveTokenBasicAuth(ctx, username, password, c.Endpoint.TokenURL, postBodyReader)
+type CredsGetter func(ctx context.Context) (*Creds, bool)
+
+func (c *Config) GetTokenBasicAuth(ctx context.Context, cg CredsGetter) (*Token, error) {
+
+	return retrieveTokenBasicAuth(ctx, c, cg)
 
 }
 
