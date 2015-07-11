@@ -63,6 +63,21 @@ type tokenJSON struct {
 	Expires      expirationTime `json:"expires"`    // broken Facebook spelling of expires_in
 }
 
+// tokenBasicAuthJSON basic auth json response
+//
+// it has no RefreshToken, Expires*
+// leave them in the struct so it won't break the expiry call and maybe other calls
+type tokenBasicAuthJSON struct {
+	Token       string `json:"token"`
+	Url         string `json:"url"`
+	AppRegistry struct {
+		Url      string `json:"url"`
+		ClientID string `json:"client_id"`
+	} `json:"app_registry"`
+	Note         string `json:"note"`
+	RefreshToken string `json:"refresh_token"`
+}
+
 func (e *tokenJSON) expiry() (t time.Time) {
 	if v := e.ExpiresIn; v != 0 {
 		return time.Now().Add(time.Duration(v) * time.Second)
@@ -213,7 +228,6 @@ func RetrieveToken(ctx context.Context, ClientID, ClientSecret, TokenURL string,
 	return token, nil
 }
 
-
 // Do Basic auth via username/password not client_id/client_secret
 //
 // POST body for the auth call comes from the caller as a Reader
@@ -274,15 +288,15 @@ func RetrieveTokenBasicAuth(ctx context.Context, Username, Password, TokenURL st
 			token.Expiry = time.Now().Add(time.Duration(expires) * time.Second)
 		}
 	default:
-		var tj tokenJSON
+		var tj tokenBasicAuthJSON
 		if err = json.Unmarshal(body, &tj); err != nil {
 			return nil, err
 		}
 		token = &Token{
-			AccessToken:  tj.AccessToken,
-			TokenType:    tj.TokenType,
-			RefreshToken: tj.RefreshToken,
-			Expiry:       tj.expiry(),
+			AccessToken:  tj.Token,
+			TokenType:    "oauth2",
+			RefreshToken: tj.Token,
+			Expiry:       time.Now().Add(time.Duration(99) * time.Minute),
 			Raw:          make(map[string]interface{}),
 		}
 		json.Unmarshal(body, &token.Raw) // no error checks for optional fields
