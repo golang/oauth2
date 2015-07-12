@@ -6,6 +6,9 @@
 package github // import "golang.org/x/oauth2/github"
 
 import (
+	"bytes"
+	"io"
+	"encoding/json"
 	"golang.org/x/oauth2"
 	"golang.org/x/net/context"
 )
@@ -16,7 +19,7 @@ var Endpoint = oauth2.Endpoint{
 	TokenURL: "https://github.com/login/oauth/access_token",
 }
 
-type BasicAuthRequest struct {
+type BasicAuthRequestBody struct {
     ClientId   string `json:"client_id"`
     ClientSecret   string `json:"client_secret"`
     Note   string `json:"note"`
@@ -26,6 +29,29 @@ type BasicAuthRequest struct {
 type BasicAuth struct {
 	context.Context
 	oauth2.Config
+}
+
+func NewBasicAuth(client_id, client_secret, note string, repos []string) (postBodyReader io.Reader, err error) {
+
+	postBody := BasicAuthRequestBody{
+		client_id,
+		client_secret,
+		note,
+		repos,
+	}
+
+	pb, err := json.Marshal(postBody)
+
+	if err != nil {
+
+		return
+
+	}
+
+	postBodyReader = bytes.NewReader(pb)
+
+	return
+
 }
 
 //set username/password and postbody in the context
