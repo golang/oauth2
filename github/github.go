@@ -7,10 +7,10 @@ package github // import "golang.org/x/oauth2/github"
 
 import (
 	"bytes"
-	"io"
 	"encoding/json"
-	"golang.org/x/oauth2"
+
 	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
 )
 
 // Endpoint is Github's OAuth 2.0 endpoint.
@@ -20,10 +20,10 @@ var Endpoint = oauth2.Endpoint{
 }
 
 type BasicAuthRequestBody struct {
-    ClientId   string `json:"client_id"`
-    ClientSecret   string `json:"client_secret"`
-    Note   string `json:"note"`
-    Scopes      []string `json:"scopes"`
+	ClientId     string   `json:"client_id"`
+	ClientSecret string   `json:"client_secret"`
+	Note         string   `json:"note"`
+	Scopes       []string `json:"scopes"`
 }
 
 type BasicAuth struct {
@@ -31,7 +31,7 @@ type BasicAuth struct {
 	oauth2.Config
 }
 
-func NewBasicAuth(client_id, client_secret, note string, repos []string) (postBodyReader io.Reader, err error) {
+func NewBasicAuth(username, password, client_id, client_secret, note string, repos []string) (creds oauth2.Creds, err error) {
 
 	postBody := BasicAuthRequestBody{
 		client_id,
@@ -48,16 +48,16 @@ func NewBasicAuth(client_id, client_secret, note string, repos []string) (postBo
 
 	}
 
-	postBodyReader = bytes.NewReader(pb)
+	creds = oauth2.Creds{username, password, bytes.NewReader(pb)}
 
 	return
 
 }
 
 //set username/password and postbody in the context
-func (gh BasicAuth) Token () (tk *oauth2.Token, err error) {
+func (gh BasicAuth) Token() (tk *oauth2.Token, err error) {
 
-    return gh.Config.GetTokenBasicAuth(gh.Context, FromContext)
+	return gh.Config.GetTokenBasicAuth(gh.Context, FromContext)
 
 }
 
