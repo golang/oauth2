@@ -16,7 +16,7 @@ var Endpoint = oauth2.Endpoint{
 	TokenURL: "https://github.com/login/oauth/access_token",
 }
 
-type BasicAuthReply struct {
+type BasicAuthRequest struct {
     ClientId   string `json:"client_id"`
     ClientSecret   string `json:"client_secret"`
     Note   string `json:"note"`
