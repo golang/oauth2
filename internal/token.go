@@ -110,6 +110,8 @@ var brokenAuthHeaderProviders = []string{
 	"https://test-sandbox.auth.corp.google.com",
 	"https://user.gini.net/",
 	"https://api.netatmo.net/",
+	"https://login.salesforce.com/",
+	"https://test.salesforce.com/",
 }
 
 // providerAuthHeaderWorks reports whether the OAuth2 server identified by the tokenURL
