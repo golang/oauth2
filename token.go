@@ -143,6 +143,8 @@ func retrieveToken(ctx context.Context, c *Config, v url.Values) (*Token, error)
 	return tokenFromInternal(tk), nil
 }
 
+// retrieveTokenBasicAuth is the interface between the internal call for getting the token
+// and the public facing method GetTokenBasicAuth
 func retrieveTokenBasicAuth(ctx context.Context, c *Config, cg CredsGetter) (*Token, error) {
 
 	creds, ok := cg(ctx)

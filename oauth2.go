@@ -150,21 +150,26 @@ func (c *Config) PasswordCredentialsToken(ctx context.Context, username, passwor
 	})
 }
 
-// GetTokenBasicAuth - use Basic Auth (username/password) to get a token
+// Creds provides the authorization data needed to do a Basic Auth call to get a token
 //
-// Trying to get a token with basic auth as in:
-//
-// https://developer.github.com/enterprise/2.1/v3/oauth_authorizations/#get-or-create-an-authorization-for-a-specific-app
-//
-
+// 	Username is Basic Auth username
+// 	Password is the corresponding password
+// 	PostBodyReader is a reader that will produce the desired body for the Post for the auth call
 type Creds struct {
   Username string
   Password string
   PostBodyReader io.Reader
 }
 
-type CredsGetter func(ctx context.Context) (*Creds, bool)
+// CredsGetter is a type that will get creds from a context for one of these calls
+type CredsGetter func(context.Context) (Creds, bool)
 
+// GetTokenBasicAuth - use Basic Auth (username/password) to get a token
+//
+// Get a token with basic auth as in:
+//
+// https://developer.github.com/enterprise/2.1/v3/oauth_authorizations/#get-or-create-an-authorization-for-a-specific-app
+//
 func (c *Config) GetTokenBasicAuth(ctx context.Context, cg CredsGetter) (*Token, error) {
 
 	return retrieveTokenBasicAuth(ctx, c, cg)
