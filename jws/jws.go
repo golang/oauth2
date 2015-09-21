@@ -55,7 +55,7 @@ func (c *ClaimSet) encode() (string, error) {
 		c.Exp = now.Add(time.Hour).Unix()
 	}
 	if c.Exp < c.Iat {
-		return "", fmt.Errorf("jws: invalid Exp must be later than Iat", c.Exp)
+		return "", fmt.Errorf("jws: invalid Exp = %v; must be later than Iat = %v", c.Exp, c.Iat)
 	}
 
 	b, err := json.Marshal(c)
