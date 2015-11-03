@@ -110,6 +110,8 @@ var brokenAuthHeaderProviders = []string{
 	"https://user.gini.net/",
 	"https://api.netatmo.net/",
 	"https://slack.com/",
+	"https://sandbox.feedly.com/",
+	"https://cloud.feedly.com/",
 }
 
 // providerAuthHeaderWorks reports whether the OAuth2 server identified by the tokenURL
