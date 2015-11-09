@@ -161,6 +161,8 @@ func base64Encode(b []byte) string {
 func base64Decode(s string) ([]byte, error) {
 	// add back missing padding
 	switch len(s) % 4 {
+	case 1:
+		s += "==="
 	case 2:
 		s += "=="
 	case 3:
