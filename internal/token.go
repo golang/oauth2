@@ -115,6 +115,10 @@ var brokenAuthHeaderProviders = []string{
 	"https://www.strava.com/oauth/",
 }
 
+func RegisterBrokenAuthHeaderProvider(tokenURL string) {
+	brokenAuthHeaderProviders = append(brokenAuthHeaderProviders, tokenURL)
+}
+
 // providerAuthHeaderWorks reports whether the OAuth2 server identified by the tokenURL
 // implements the OAuth2 spec correctly
 // See https://code.google.com/p/goauth2/issues/detail?id=31 for background.

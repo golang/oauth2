@@ -10,6 +10,14 @@ import (
 	"testing"
 )
 
+func TestRegisterBrokenAuthHeaderProvider(t *testing.T) {
+	RegisterBrokenAuthHeaderProvider("https://aaa.com/")
+	tokenURL := "https://aaa.com/token"
+	if providerAuthHeaderWorks(tokenURL) {
+		t.Errorf("URL: %s is a broken provider", tokenURL)
+	}
+}
+
 func Test_providerAuthHeaderWorks(t *testing.T) {
 	for _, p := range brokenAuthHeaderProviders {
 		if providerAuthHeaderWorks(p) {
