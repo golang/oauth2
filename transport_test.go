@@ -13,6 +13,20 @@ func (t *tokenSource) Token() (*Token, error) {
 	return t.token, nil
 }
 
+func TestTransportNilTokenSource(t *testing.T) {
+	tr := &Transport{}
+	server := newMockServer(func(w http.ResponseWriter, r *http.Request) {})
+	defer server.Close()
+	client := &http.Client{Transport: tr}
+	res, err := client.Get(server.URL)
+	if err == nil {
+		t.Errorf("a nil Source was passed into the transport expected an error")
+	}
+	if res != nil {
+		t.Errorf("expected a nil response, got %v", res)
+	}
+}
+
 func TestTransportTokenSource(t *testing.T) {
 	ts := &tokenSource{
 		token: &Token{
@@ -28,8 +42,12 @@ func TestTransportTokenSource(t *testing.T) {
 		}
 	})
 	defer server.Close()
-	client := http.Client{Transport: tr}
-	client.Get(server.URL)
+	client := &http.Client{Transport: tr}
+	res, err := client.Get(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
 }
 
 // Test for case-sensitive token types, per https://github.com/golang/oauth2/issues/113
@@ -60,8 +78,12 @@ func TestTransportTokenSourceTypes(t *testing.T) {
 			}
 		})
 		defer server.Close()
-		client := http.Client{Transport: tr}
-		client.Get(server.URL)
+		client := &http.Client{Transport: tr}
+		res, err := client.Get(server.URL)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res.Body.Close()
 	}
 }
 
