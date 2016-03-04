@@ -115,6 +115,7 @@ var brokenAuthHeaderProviders = []string{
 	"https://www.linkedin.com/",
 	"https://www.strava.com/oauth/",
 	"https://www.wunderlist.com/oauth/",
+	"https://api.patreon.com/",
 }
 
 func RegisterBrokenAuthHeaderProvider(tokenURL string) {
