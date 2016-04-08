@@ -14,3 +14,12 @@ var Endpoint = oauth2.Endpoint{
 	AuthURL:  "https://www.hipchat.com/users/authorize",
 	TokenURL: "https://api.hipchat.com/v2/oauth/token",
 }
+
+// ServerEndpoint returns a new oauth2.Endpoint for a HipChat Server instance
+// running on the given domain or host.
+func ServerEndpoint(host string) oauth2.Endpoint {
+	return oauth2.Endpoint{
+		AuthURL:  "https://" + host + "/users/authorize",
+		TokenURL: "https://" + host + "/v2/oauth/token",
+	}
+}
