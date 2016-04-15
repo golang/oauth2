@@ -28,19 +28,6 @@ func (t *mockTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 	return t.rt(req)
 }
 
-type mockCache struct {
-	token   *Token
-	readErr error
-}
-
-func (c *mockCache) ReadToken() (*Token, error) {
-	return c.token, c.readErr
-}
-
-func (c *mockCache) WriteToken(*Token) {
-	// do nothing
-}
-
 func newConf(url string) *Config {
 	return &Config{
 		ClientID:     "CLIENT_ID",
