@@ -32,7 +32,7 @@ func TestSignAndVerify(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := Verify(token, &privateKey.PublicKey)
+	err = Verify(token, &privateKey.PublicKey)
 	if err != nil {
 		t.Fatal(err)
 	}
