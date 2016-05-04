@@ -18,7 +18,7 @@ func TestContextClient(t *testing.T) {
 	})
 
 	c := &http.Client{}
-	ctx := context.WithValue(nil, HTTPClient, c)
+	ctx := context.WithValue(context.Background(), HTTPClient, c)
 
 	hc, err := ContextClient(ctx)
 	if err != nil {
