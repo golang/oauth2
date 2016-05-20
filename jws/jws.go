@@ -85,6 +85,31 @@ func (c *ClaimSet) encode() (string, error) {
 	return base64Encode(b), nil
 }
 
+func (c *ClaimSet) decode(jsonb []byte) error {
+	err := json.Unmarshal(jsonb, c)
+	if err != nil {
+		return err
+	}
+
+	var raw map[string]interface{}
+	err = json.Unmarshal(jsonb, &raw)
+	if err != nil {
+		return err
+	}
+
+	// remove common part.
+	delete(raw, "iss")
+	delete(raw, "scope")
+	delete(raw, "aud")
+	delete(raw, "exp")
+	delete(raw, "iat")
+	delete(raw, "typ")
+	delete(raw, "sub")
+	delete(raw, "prn")
+	c.PrivateClaims = raw
+	return nil
+}
+
 // Header represents the header for the signed JWS payloads.
 type Header struct {
 	// The algorithm used for signature.
@@ -115,7 +140,10 @@ func Decode(payload string) (*ClaimSet, error) {
 		return nil, err
 	}
 	c := &ClaimSet{}
-	err = json.NewDecoder(bytes.NewBuffer(decoded)).Decode(c)
+	err = c.decode(decoded)
+	if err != nil {
+		return nil, err
+	}
 	return c, err
 }
 

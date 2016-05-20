@@ -44,3 +44,39 @@ func TestVerifyFailsOnMalformedClaim(t *testing.T) {
 		t.Error("Improperly formed JWT should fail.")
 	}
 }
+
+func TestPrivateClaims(t *testing.T) {
+	header := &Header{
+		Algorithm: "RS256",
+		Typ:       "JWT",
+	}
+	pri := make(map[string]interface{})
+	pri["pri1"] = "aaa"
+	payload := &ClaimSet{
+		Iss:           "http://google.com/",
+		Aud:           "",
+		Exp:           3610,
+		Iat:           10,
+		PrivateClaims: pri,
+	}
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	token, err := Encode(header, payload, privateKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	c, err := Decode(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(c.PrivateClaims) != 1 ||
+		c.PrivateClaims["pri1"].(string) != "aaa" {
+		t.Fatal("Decode PrivateClaims fail")
+	}
+}
