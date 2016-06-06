@@ -23,32 +23,6 @@ import (
 	"golang.org/x/oauth2/internal"
 )
 
-// tokenFromInternal maps an *internal.Token struct into
-// an *oauth2.Token struct.
-func tokenFromInternal(t *internal.Token) *oauth2.Token {
-	if t == nil {
-		return nil
-	}
-	tk := &oauth2.Token{
-		AccessToken:  t.AccessToken,
-		TokenType:    t.TokenType,
-		RefreshToken: t.RefreshToken,
-		Expiry:       t.Expiry,
-	}
-	return tk.WithExtra(t.Raw)
-}
-
-// retrieveToken takes a *Config and uses that to retrieve an *internal.Token.
-// This token is then mapped from *internal.Token into an *oauth2.Token which is
-// returned along with an error.
-func retrieveToken(ctx context.Context, c *Config, v url.Values) (*oauth2.Token, error) {
-	tk, err := internal.RetrieveToken(ctx, c.ClientID, c.ClientSecret, c.TokenURL, v)
-	if err != nil {
-		return nil, err
-	}
-	return tokenFromInternal(tk), nil
-}
-
 // Client Credentials Config describes a 2-legged OAuth2 flow, with both the
 // client application information and the server's endpoint URLs.
 type Config struct {
@@ -70,10 +44,7 @@ type Config struct {
 // The HTTP client to use is derived from the context.
 // If nil, http.DefaultClient is used.
 func (c *Config) Token(ctx context.Context) (*oauth2.Token, error) {
-	return retrieveToken(ctx, c, url.Values{
-		"grant_type": {"client_credentials"},
-		"scope":      internal.CondVal(strings.Join(c.Scopes, " ")),
-	})
+	return c.TokenSource(ctx).Token()
 }
 
 // Client returns an HTTP client using the provided token.
@@ -105,8 +76,18 @@ type tokenSource struct {
 // Token refreshes the token by using a new client credentials request.
 // tokens received this way do not include a refresh token
 func (c *tokenSource) Token() (*oauth2.Token, error) {
-	return retrieveToken(c.ctx, c.conf, url.Values{
+	tk, err := internal.RetrieveToken(c.ctx, c.conf.ClientID, c.conf.ClientSecret, c.conf.TokenURL, url.Values{
 		"grant_type": {"client_credentials"},
 		"scope":      internal.CondVal(strings.Join(c.conf.Scopes, " ")),
 	})
+	if err != nil {
+		return nil, err
+	}
+	t := &oauth2.Token{
+		AccessToken:  tk.AccessToken,
+		TokenType:    tk.TokenType,
+		RefreshToken: tk.RefreshToken,
+		Expiry:       tk.Expiry,
+	}
+	return t.WithExtra(tk.Raw), nil
 }
