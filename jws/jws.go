@@ -92,6 +92,9 @@ type Header struct {
 
 	// Represents the token type.
 	Typ string `json:"typ"`
+
+	// The optional hint of which key is being used.
+	KeyID string `json:"kid,omitempty"`
 }
 
 func (h *Header) encode() (string, error) {
