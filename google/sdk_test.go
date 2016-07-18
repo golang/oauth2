@@ -25,7 +25,7 @@ func TestSDKConfig(t *testing.T) {
 		c, err := NewSDKConfig(tt.account)
 		if got, want := err != nil, tt.err; got != want {
 			if !tt.err {
-				t.Errorf("expected no error, got error: %v", tt.err, err)
+				t.Errorf("expected no error, got error: %v", err)
 			} else {
 				t.Errorf("expected error, got none")
 			}

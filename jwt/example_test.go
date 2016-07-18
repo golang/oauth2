@@ -9,7 +9,7 @@ import (
 	"golang.org/x/oauth2/jwt"
 )
 
-func ExampleJWTConfig() {
+func ExampleConfig() {
 	conf := &jwt.Config{
 		Email: "xxx@developer.com",
 		// The contents of your RSA private key or your PEM file
