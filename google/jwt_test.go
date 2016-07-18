@@ -76,8 +76,7 @@ func TestJWTAccessTokenSourceFromJSON(t *testing.T) {
 
 	// Finally, check the header private key.
 	parts := strings.Split(tok.AccessToken, ".")
-	parts[0] += strings.Repeat("=", len(parts[0])%4) // Add padding.
-	hdrJSON, err := base64.URLEncoding.DecodeString(parts[0])
+	hdrJSON, err := base64.RawURLEncoding.DecodeString(parts[0])
 	if err != nil {
 		t.Fatalf("base64 DecodeString: %v\nString: %q", err, parts[0])
 	}
