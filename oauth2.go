@@ -37,6 +37,8 @@ func RegisterBrokenAuthHeaderProvider(tokenURL string) {
 
 // Config describes a typical 3-legged OAuth2 flow, with both the
 // client application information and the server's endpoint URLs.
+// For the client credentials 2-legged OAuth2 flow, see the clientcredentials
+// package (https://golang.org/x/oauth2/clientcredentials).
 type Config struct {
 	// ClientID is the application's ID.
 	ClientID string
