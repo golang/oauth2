@@ -97,7 +97,7 @@ func TestExchangeRequest(t *testing.T) {
 	}))
 	defer ts.Close()
 	conf := newConf(ts.URL)
-	tok, err := conf.Exchange(NoContext, "exchange-code")
+	tok, err := conf.Exchange(context.Background(), "exchange-code")
 	if err != nil {
 		t.Error(err)
 	}
@@ -141,7 +141,7 @@ func TestExchangeRequest_JSONResponse(t *testing.T) {
 	}))
 	defer ts.Close()
 	conf := newConf(ts.URL)
-	tok, err := conf.Exchange(NoContext, "exchange-code")
+	tok, err := conf.Exchange(context.Background(), "exchange-code")
 	if err != nil {
 		t.Error(err)
 	}
@@ -236,7 +236,7 @@ func testExchangeRequest_JSONResponse_expiry(t *testing.T, exp string, expect er
 	defer ts.Close()
 	conf := newConf(ts.URL)
 	t1 := time.Now().Add(day)
-	tok, err := conf.Exchange(NoContext, "exchange-code")
+	tok, err := conf.Exchange(context.Background(), "exchange-code")
 	t2 := time.Now().Add(day)
 	// Do a fmt.Sprint comparison so either side can be
 	// nil. fmt.Sprint just stringifies them to "<nil>", and no
@@ -269,7 +269,7 @@ func TestExchangeRequest_BadResponse(t *testing.T) {
 	}))
 	defer ts.Close()
 	conf := newConf(ts.URL)
-	tok, err := conf.Exchange(NoContext, "code")
+	tok, err := conf.Exchange(context.Background(), "code")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -285,7 +285,7 @@ func TestExchangeRequest_BadResponseType(t *testing.T) {
 	}))
 	defer ts.Close()
 	conf := newConf(ts.URL)
-	_, err := conf.Exchange(NoContext, "exchange-code")
+	_, err := conf.Exchange(context.Background(), "exchange-code")
 	if err == nil {
 		t.Error("expected error from invalid access_token type")
 	}
@@ -344,7 +344,7 @@ func TestPasswordCredentialsTokenRequest(t *testing.T) {
 	}))
 	defer ts.Close()
 	conf := newConf(ts.URL)
-	tok, err := conf.PasswordCredentialsToken(NoContext, "user1", "password1")
+	tok, err := conf.PasswordCredentialsToken(context.Background(), "user1", "password1")
 	if err != nil {
 		t.Error(err)
 	}
@@ -380,7 +380,7 @@ func TestTokenRefreshRequest(t *testing.T) {
 	}))
 	defer ts.Close()
 	conf := newConf(ts.URL)
-	c := conf.Client(NoContext, &Token{RefreshToken: "REFRESH_TOKEN"})
+	c := conf.Client(context.Background(), &Token{RefreshToken: "REFRESH_TOKEN"})
 	c.Get(ts.URL + "/somethingelse")
 }
 
@@ -403,7 +403,7 @@ func TestFetchWithNoRefreshToken(t *testing.T) {
 	}))
 	defer ts.Close()
 	conf := newConf(ts.URL)
-	c := conf.Client(NoContext, nil)
+	c := conf.Client(context.Background(), nil)
 	_, err := c.Get(ts.URL + "/somethingelse")
 	if err == nil {
 		t.Errorf("Fetch should return an error if no refresh token is set")
@@ -420,7 +420,7 @@ func TestRefreshToken_RefreshTokenReplacement(t *testing.T) {
 	conf := newConf(ts.URL)
 	tkr := tokenRefresher{
 		conf:         conf,
-		ctx:          NoContext,
+		ctx:          context.Background(),
 		refreshToken: "OLD REFRESH TOKEN",
 	}
 	tk, err := tkr.Token()
@@ -446,7 +446,7 @@ func TestConfigClientWithToken(t *testing.T) {
 	defer ts.Close()
 	conf := newConf(ts.URL)
 
-	c := conf.Client(NoContext, tok)
+	c := conf.Client(context.Background(), tok)
 	req, err := http.NewRequest("GET", ts.URL, nil)
 	if err != nil {
 		t.Error(err)

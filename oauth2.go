@@ -21,6 +21,8 @@ import (
 
 // NoContext is the default context you should supply if not using
 // your own context.Context (see https://golang.org/x/net/context).
+//
+// Deprecated: Use context.Background() or context.TODO() instead.
 var NoContext = context.TODO()
 
 // RegisterBrokenAuthHeaderProvider registers an OAuth2 server
