@@ -44,8 +44,9 @@ func newConf(url string) *Config {
 func TestAuthCodeURL(t *testing.T) {
 	conf := newConf("server")
 	url := conf.AuthCodeURL("foo", AccessTypeOffline, ApprovalForce)
-	if url != "server/auth?access_type=offline&approval_prompt=force&client_id=CLIENT_ID&redirect_uri=REDIRECT_URL&response_type=code&scope=scope1+scope2&state=foo" {
-		t.Errorf("Auth code URL doesn't match the expected, found: %v", url)
+	const want = "server/auth?access_type=offline&approval_prompt=force&client_id=CLIENT_ID&redirect_uri=REDIRECT_URL&response_type=code&scope=scope1+scope2&state=foo"
+	if got := url; got != want {
+		t.Errorf("got auth code URL = %q; want %q", got, want)
 	}
 }
 
@@ -53,8 +54,9 @@ func TestAuthCodeURL_CustomParam(t *testing.T) {
 	conf := newConf("server")
 	param := SetAuthURLParam("foo", "bar")
 	url := conf.AuthCodeURL("baz", param)
-	if url != "server/auth?client_id=CLIENT_ID&foo=bar&redirect_uri=REDIRECT_URL&response_type=code&scope=scope1+scope2&state=baz" {
-		t.Errorf("Auth code URL doesn't match the expected, found: %v", url)
+	const want = "server/auth?client_id=CLIENT_ID&foo=bar&redirect_uri=REDIRECT_URL&response_type=code&scope=scope1+scope2&state=baz"
+	if got := url; got != want {
+		t.Errorf("got auth code = %q; want %q", got, want)
 	}
 }
 
@@ -67,8 +69,9 @@ func TestAuthCodeURL_Optional(t *testing.T) {
 		},
 	}
 	url := conf.AuthCodeURL("")
-	if url != "/auth-url?client_id=CLIENT_ID&response_type=code" {
-		t.Fatalf("Auth code URL doesn't match the expected, found: %v", url)
+	const want = "/auth-url?client_id=CLIENT_ID&response_type=code"
+	if got := url; got != want {
+		t.Fatalf("got auth code = %q; want %q", got, want)
 	}
 }
 
@@ -166,45 +169,40 @@ func TestExchangeRequest_JSONResponse(t *testing.T) {
 
 func TestExtraValueRetrieval(t *testing.T) {
 	values := url.Values{}
-
 	kvmap := map[string]string{
 		"scope": "user", "token_type": "bearer", "expires_in": "86400.92",
 		"server_time": "1443571905.5606415", "referer_ip": "10.0.0.1",
 		"etag": "\"afZYj912P4alikMz_P11982\"", "request_id": "86400",
 		"untrimmed": "  untrimmed  ",
 	}
-
 	for key, value := range kvmap {
 		values.Set(key, value)
 	}
 
-	tok := Token{
-		raw: values,
-	}
-
+	tok := Token{raw: values}
 	scope := tok.Extra("scope")
-	if scope != "user" {
-		t.Errorf("Unexpected scope %v wanted \"user\"", scope)
+	if got, want := scope, "user"; got != want {
+		t.Errorf("got scope = %q; want %q", got, want)
 	}
 	serverTime := tok.Extra("server_time")
-	if serverTime != 1443571905.5606415 {
-		t.Errorf("Unexpected non-float64 value for server_time: %v", serverTime)
+	if got, want := serverTime, 1443571905.5606415; got != want {
+		t.Errorf("got server_time value = %v; want %v", got, want)
 	}
-	refererIp := tok.Extra("referer_ip")
-	if refererIp != "10.0.0.1" {
-		t.Errorf("Unexpected non-string value for referer_ip: %v", refererIp)
+	refererIP := tok.Extra("referer_ip")
+	if got, want := refererIP, "10.0.0.1"; got != want {
+		t.Errorf("got referer_ip value = %v, want %v", got, want)
 	}
-	expires_in := tok.Extra("expires_in")
-	if expires_in != 86400.92 {
-		t.Errorf("Unexpected value for expires_in, wanted 86400 got %v", expires_in)
+	expiresIn := tok.Extra("expires_in")
+	if got, want := expiresIn, 86400.92; got != want {
+		t.Errorf("got expires_in value = %v, want %v", got, want)
 	}
-	requestId := tok.Extra("request_id")
-	if requestId != int64(86400) {
-		t.Errorf("Unexpected non-int64 value for request_id: %v", requestId)
+	requestID := tok.Extra("request_id")
+	if got, want := requestID, int64(86400); got != want {
+		t.Errorf("got request_id value = %v, want %v", got, want)
 	}
 	untrimmed := tok.Extra("untrimmed")
-	if untrimmed != "  untrimmed  " {
-		t.Errorf("Unexpected value for untrimmed, got %q expected \"  untrimmed \"", untrimmed)
+	if got, want := untrimmed, "  untrimmed  "; got != want {
+		t.Errorf("got untrimmed = %q; want %q", got, want)
 	}
 }
 
@@ -425,11 +423,11 @@ func TestRefreshToken_RefreshTokenReplacement(t *testing.T) {
 	}
 	tk, err := tkr.Token()
 	if err != nil {
-		t.Errorf("Unexpected refreshToken error returned: %v", err)
+		t.Errorf("got err = %v; want none", err)
 		return
 	}
 	if tk.RefreshToken != tkr.refreshToken {
-		t.Errorf("tokenRefresher.refresh_token = %s; want %s", tkr.refreshToken, tk.RefreshToken)
+		t.Errorf("tokenRefresher.refresh_token = %q; want %q", tkr.refreshToken, tk.RefreshToken)
 	}
 }
 
