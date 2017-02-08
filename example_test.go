@@ -48,7 +48,7 @@ func ExampleConfig() {
 	client.Get("...")
 }
 
-func ExampleHTTPClient() {
+func ExampleCustomHTTP() {
 	hc := &http.Client{Timeout: 2 * time.Second}
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, hc)
 
@@ -57,15 +57,24 @@ func ExampleHTTPClient() {
 		ClientSecret: "YOUR_CLIENT_SECRET",
 		Scopes:       []string{"SCOPE1", "SCOPE2"},
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  "https://provider.com/o/oauth2/auth",
 			TokenURL: "https://provider.com/o/oauth2/token",
+			AuthURL:  "https://provider.com/o/oauth2/auth",
 		},
 	}
 
-	// Exchange request will be made by the custom
-	// HTTP client, hc.
-	_, err := conf.Exchange(ctx, "foo")
+	tokenSource, err := conf.PasswordCredentialsToken(ctx, "YOUR_USERNAME", "YOUR_PASSWORD")
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// The returned client does not reuse
+	// properties from the hc HTTP Client.
+	client := oauth2.NewClient(ctx, tokenSource)
+
+	resp, err := client.Get("http://www.example.com")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_ = resp // use the response
 }
