@@ -38,6 +38,9 @@ type Config struct {
 
 	// Scope specifies optional requested permissions.
 	Scopes []string
+
+	// Audience specifies optional audience of the token.
+	Audience string
 }
 
 // Token uses client credentials to retrieve a token.
@@ -79,6 +82,7 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 	tk, err := internal.RetrieveToken(c.ctx, c.conf.ClientID, c.conf.ClientSecret, c.conf.TokenURL, url.Values{
 		"grant_type": {"client_credentials"},
 		"scope":      internal.CondVal(strings.Join(c.conf.Scopes, " ")),
+		"audience":   internal.CondVal(c.conf.Audience),
 	})
 	if err != nil {
 		return nil, err
