@@ -23,7 +23,7 @@ import (
 	"golang.org/x/oauth2/internal"
 )
 
-// Client Credentials Config describes a 2-legged OAuth2 flow, with both the
+// Config describes a 2-legged OAuth2 flow, with both the
 // client application information and the server's endpoint URLs.
 type Config struct {
 	// ClientID is the application's ID.
