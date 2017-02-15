@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 
 	"golang.org/x/oauth2"
 )
@@ -44,4 +45,43 @@ func ExampleConfig() {
 
 	client := conf.Client(ctx, tok)
 	client.Get("...")
+}
+
+func ExampleNewClient() {
+	customHTTPClient := &http.Client{
+		Timeout: time.Duration(10) * time.Seconds,
+	}
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, customHTTPClient)
+
+	conf := &oauth2.Config{
+		ClientID:     "YOUR_CLIENT_ID",
+		ClientSecret: "YOUR_CLIENT_SECRET",
+		Endpoint: oauth2.Endpoint{
+			TokenURL: "https://provider.com/o/oauth2/token",
+		},
+	}
+
+	// Use only if there is a high degree of trust between
+	// the resource owner and the client.
+	tokenSrc, err := conf.PasswordCredentialsToken(ctx, "YOUR_USERNAME", "YOUR_PASSWORD")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// The Timeout configuration on the HTTP Client
+	// constructed above is used only during token
+	// acquisition and is not configured as part of
+	// the client returned from NewClient.
+	authedHTTPClient := oauth2.NewClient(ctx, tokenSrc)
+
+	response, err := authedHTTPClient.Get("http://www.example.com")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if response.Code != http.StatusOK {
+		log.Fatal("response was not 200")
+	}
 }
