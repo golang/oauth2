@@ -7,7 +7,12 @@ package internal
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
+
+	"golang.org/x/net/context"
 )
 
 func TestRegisterBrokenAuthHeaderProvider(t *testing.T) {
@@ -15,6 +20,26 @@ func TestRegisterBrokenAuthHeaderProvider(t *testing.T) {
 	tokenURL := "https://aaa.com/token"
 	if providerAuthHeaderWorks(tokenURL) {
 		t.Errorf("got %q as unbroken; want broken", tokenURL)
+	}
+}
+
+func TestRetrieveTokenBustedNoSecret(t *testing.T) {
+	const clientID = "client-id"
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got, want := r.FormValue("client_id"), clientID; got != want {
+			t.Errorf("client_id = %q; want %q", got, want)
+		}
+		if got, want := r.FormValue("client_secret"), ""; got != want {
+			t.Errorf("client_secret = %q; want empty", got)
+		}
+	}))
+	defer ts.Close()
+
+	RegisterBrokenAuthHeaderProvider(ts.URL)
+	_, err := RetrieveToken(context.Background(), clientID, "", ts.URL, url.Values{})
+	if err != nil {
+		t.Errorf("RetrieveToken = %v; want no error", err)
 	}
 }
 
