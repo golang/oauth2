@@ -58,3 +58,24 @@ func Test_providerAuthHeaderWorks(t *testing.T) {
 		t.Errorf("got %q as unbroken; want broken", p)
 	}
 }
+
+func TestProviderAuthHeaderWorksDomain(t *testing.T) {
+	tests := []struct {
+		tokenURL  string
+		wantWorks bool
+	}{
+		{"https://dev-12345.okta.com/token-url", false},
+		{"https://dev-12345.oktapreview.com/token-url", false},
+		{"https://dev-12345.okta.org/token-url", true},
+		{"https://foo.bar.force.com/token-url", false},
+		{"https://foo.force.com/token-url", false},
+		{"https://force.com/token-url", true},
+	}
+
+	for _, test := range tests {
+		got := providerAuthHeaderWorks(test.tokenURL)
+		if got != test.wantWorks {
+			t.Errorf("providerAuthHeaderWorks(%q) = %v; want %v", test.tokenURL, got, test.wantWorks)
+		}
+	}
+}
