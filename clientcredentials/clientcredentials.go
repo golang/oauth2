@@ -10,7 +10,7 @@
 // resources based on an authorization previously arranged with the authorization
 // server.
 //
-// See http://tools.ietf.org/html/draft-ietf-oauth-v2-31#section-4.4
+// See https://tools.ietf.org/html/rfc6749#section-4.4
 package clientcredentials // import "golang.org/x/oauth2/clientcredentials"
 
 import (
