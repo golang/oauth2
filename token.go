@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/internal"
@@ -65,7 +67,10 @@ func (t *Token) Type() string {
 		return "Basic"
 	}
 	if t.TokenType != "" {
-		return t.TokenType
+		// ensure first letter in the TokenType string is uppercase
+		// (e.g. "Bearer", not "bearer")
+		r, n := utf8.DecodeRuneInString(t.TokenType)
+		return string(unicode.ToUpper(r)) + t.TokenType[n:]
 	}
 	return "Bearer"
 }
