@@ -125,6 +125,7 @@ var brokenAuthHeaderProviders = []string{
 // brokenAuthHeaderDomains lists broken providers that issue dynamic endpoints.
 var brokenAuthHeaderDomains = []string{
 	".force.com",
+	".myshopify.com",
 	".okta.com",
 	".oktapreview.com",
 }
