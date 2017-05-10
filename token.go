@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"log"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/internal"
@@ -76,7 +77,19 @@ func (t *Token) Type() string {
 // This method is unnecessary when using Transport or an HTTP Client
 // returned by this package.
 func (t *Token) SetAuthHeader(r *http.Request) {
-	r.Header.Set("Authorization", t.Type()+" "+t.AccessToken)
+	if t.Type() == "MAC" {
+		macKey, okKey := t.Extra("MacKey").(string)
+		macAlgorithm, okAlgorithm := t.Extra("MacAlgorithm").(string)
+
+		if !okKey || !okAlgorithm {
+			log.Fatal("MacKey or MacAlgorithm malformed or missing")
+			return
+		}
+
+		internal.AddHMACOauthToHeader(r, t.AccessToken, macKey, macAlgorithm)
+	} else {
+		r.Header.Set("Authorization", t.Type()+" "+t.AccessToken)
+	}
 }
 
 // WithExtra returns a new Token that's a clone of t, but using the
