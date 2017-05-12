@@ -129,6 +129,7 @@ var brokenAuthHeaderDomains = []string{
 	".myshopify.com",
 	".okta.com",
 	".oktapreview.com",
+	".okta-emea.com",
 }
 
 func RegisterBrokenAuthHeaderProvider(tokenURL string) {
