@@ -39,6 +39,7 @@ If you don't want to update your entire app to use the new App Engine packages,
 you may use both sets of packages in parallel, using only the new packages
 with the `oauth2` package.
 
+```go
 	import (
 		"golang.org/x/net/context"
 		"golang.org/x/oauth2"
@@ -62,6 +63,7 @@ with the `oauth2` package.
 		}
 		client.Get("...")
 	}
+```
 
 ## Contributing
 
