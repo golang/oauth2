@@ -63,6 +63,21 @@ type tokenJSON struct {
 	Expires      expirationTime `json:"expires"`    // broken Facebook spelling of expires_in
 }
 
+// tokenBasicAuthJSON basic auth json response
+//
+// it has no RefreshToken, Expires*
+// leave them in the struct so it won't break the expiry call and maybe other calls
+type tokenBasicAuthJSON struct {
+	Token       string `json:"token"`
+	Url         string `json:"url"`
+	AppRegistry struct {
+		Url      string `json:"url"`
+		ClientID string `json:"client_id"`
+	} `json:"app_registry"`
+	Note         string `json:"note"`
+	RefreshToken string `json:"refresh_token"`
+}
+
 func (e *tokenJSON) expiry() (t time.Time) {
 	if v := e.ExpiresIn; v != 0 {
 		return time.Now().Add(time.Duration(v) * time.Second)
@@ -245,5 +260,82 @@ func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string,
 	if token.RefreshToken == "" {
 		token.RefreshToken = v.Get("refresh_token")
 	}
+	return token, nil
+}
+
+// Do Basic auth via username/password not client_id/client_secret
+//
+// POST body for the auth call comes from the caller as a Reader
+func RetrieveTokenBasicAuth(ctx context.Context, Username, Password, TokenURL string, postBodyReader io.Reader) (*Token, error) {
+
+	hc, err := ContextClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	bustedAuth := !providerAuthHeaderWorks(TokenURL)
+
+	req, err := http.NewRequest("POST", TokenURL, postBodyReader)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	if !bustedAuth {
+		req.SetBasicAuth(Username, Password)
+	}
+	r, err := hc.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
+	}
+	if code := r.StatusCode; code < 200 || code > 299 {
+		return nil, fmt.Errorf("oauth2: cannot fetch token: %v\nResponse: %s", r.Status, body)
+	}
+
+	var token *Token
+	content, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	switch content {
+	case "application/x-www-form-urlencoded", "text/plain":
+		vals, err := url.ParseQuery(string(body))
+		if err != nil {
+			return nil, err
+		}
+		token = &Token{
+			AccessToken:  vals.Get("access_token"),
+			TokenType:    vals.Get("token_type"),
+			RefreshToken: vals.Get("refresh_token"),
+			Raw:          vals,
+		}
+		e := vals.Get("expires_in")
+		if e == "" {
+			// TODO(jbd): Facebook's OAuth2 implementation is broken and
+			// returns expires_in field in expires. Remove the fallback to expires,
+			// when Facebook fixes their implementation.
+			e = vals.Get("expires")
+		}
+		expires, _ := strconv.Atoi(e)
+		if expires != 0 {
+			token.Expiry = time.Now().Add(time.Duration(expires) * time.Second)
+		}
+	default:
+		var tj tokenBasicAuthJSON
+		if err = json.Unmarshal(body, &tj); err != nil {
+			return nil, err
+		}
+		token = &Token{
+			AccessToken:  tj.Token,
+			TokenType:    "oauth2",
+			RefreshToken: tj.Token,
+			Expiry:       time.Now().Add(time.Duration(99) * time.Minute),
+			Raw:          make(map[string]interface{}),
+		}
+		json.Unmarshal(body, &token.Raw) // no error checks for optional fields
+	}
+
 	return token, nil
 }

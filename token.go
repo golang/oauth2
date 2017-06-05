@@ -5,6 +5,7 @@
 package oauth2
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -154,5 +155,23 @@ func retrieveToken(ctx context.Context, c *Config, v url.Values) (*Token, error)
 	if err != nil {
 		return nil, err
 	}
+	return tokenFromInternal(tk), nil
+}
+
+// retrieveTokenBasicAuth is the interface between the internal call for getting the token
+// and the public facing method GetTokenBasicAuth
+func retrieveTokenBasicAuth(ctx context.Context, c *Config, cg CredsGetter) (*Token, error) {
+
+	creds, ok := cg(ctx)
+
+	if !ok {
+		return nil, fmt.Errorf("creds for basic auth not found")
+	}
+
+	tk, err := internal.RetrieveTokenBasicAuth(ctx, creds.Username, creds.Password, c.Endpoint.TokenURL, creds.PostBodyReader)
+	if err != nil {
+		return nil, err
+	}
+
 	return tokenFromInternal(tk), nil
 }
