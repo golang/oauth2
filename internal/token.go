@@ -188,6 +188,9 @@ func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string,
 	if !bustedAuth {
 		req.SetBasicAuth(clientID, clientSecret)
 	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
 	r, err := hc.Do(req)
 	if err != nil {
 		return nil, err
