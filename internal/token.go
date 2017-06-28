@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
+	"golang.org/x/net/context/ctxhttp"
 )
 
 // Token represents the crendentials used to authorize
@@ -189,7 +190,7 @@ func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string,
 	if !bustedAuth {
 		req.SetBasicAuth(clientID, clientSecret)
 	}
-	r, err := hc.Do(req)
+	r, err := ctxhttp.Do(ctx, hc, req)
 	if err != nil {
 		return nil, err
 	}
