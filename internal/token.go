@@ -130,6 +130,7 @@ var brokenAuthHeaderDomains = []string{
 	".force.com",
 	".myshopify.com",
 	".okta.com",
+	".okta-emea.com",
 	".oktapreview.com",
 }
 

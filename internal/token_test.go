@@ -65,6 +65,7 @@ func TestProviderAuthHeaderWorksDomain(t *testing.T) {
 		wantWorks bool
 	}{
 		{"https://dev-12345.okta.com/token-url", false},
+		{"https://dev-12345.okta-emea.com/token-url", false},
 		{"https://dev-12345.oktapreview.com/token-url", false},
 		{"https://dev-12345.okta.org/token-url", true},
 		{"https://foo.bar.force.com/token-url", false},
