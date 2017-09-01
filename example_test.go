@@ -48,9 +48,8 @@ func ExampleConfig() {
 	client.Get("...")
 }
 
-func ExampleCustomHTTP() {
-	hc := &http.Client{Timeout: 2 * time.Second}
-	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, hc)
+func ExampleConfig_customHTTP() {
+	ctx := context.Background()
 
 	conf := &oauth2.Config{
 		ClientID:     "YOUR_CLIENT_ID",
@@ -62,19 +61,29 @@ func ExampleCustomHTTP() {
 		},
 	}
 
-	tokenSource, err := conf.PasswordCredentialsToken(ctx, "YOUR_USERNAME", "YOUR_PASSWORD")
+	// Redirect user to consent page to ask for permission
+	// for the scopes specified above.
+	url := conf.AuthCodeURL("state", oauth2.AccessTypeOffline)
+	fmt.Printf("Visit the URL for the auth dialog: %v", url)
+
+	// Use the authorization code that is pushed to the redirect
+	// URL. Exchange will do the handshake to retrieve the
+	// initial access token. The HTTP Client returned by
+	// conf.Client will refresh the token as necessary.
+	var code string
+	if _, err := fmt.Scan(&code); err != nil {
+		log.Fatal(err)
+	}
+
+	// Use the custom HTTP client when requesting a token.
+	httpClient := &http.Client{Timeout: 2 * time.Second}
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
+
+	tok, err := conf.Exchange(ctx, code)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// The returned client does not reuse
-	// properties from the hc HTTP Client.
-	client := oauth2.NewClient(ctx, tokenSource)
-
-	resp, err := client.Get("http://www.example.com")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_ = resp // use the response
+	client := conf.Client(ctx, tok)
+	_ = client
 }
