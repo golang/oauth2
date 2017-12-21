@@ -35,10 +35,3 @@ func ParseKey(key []byte) (*rsa.PrivateKey, error) {
 	}
 	return parsed, nil
 }
-
-func CondVal(v string) []string {
-	if v == "" {
-		return nil
-	}
-	return []string{v}
-}
