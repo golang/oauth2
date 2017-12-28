@@ -6,6 +6,7 @@ package internal
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -249,6 +250,9 @@ func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string,
 	// if this was a token refreshing request.
 	if token.RefreshToken == "" {
 		token.RefreshToken = v.Get("refresh_token")
+	}
+	if token.AccessToken == "" {
+		return token, errors.New("oauth2: server response missing access_token")
 	}
 	return token, nil
 }

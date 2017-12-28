@@ -278,12 +278,9 @@ func TestExchangeRequest_BadResponse(t *testing.T) {
 	}))
 	defer ts.Close()
 	conf := newConf(ts.URL)
-	tok, err := conf.Exchange(context.Background(), "code")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if tok.AccessToken != "" {
-		t.Errorf("Unexpected access token, %#v.", tok.AccessToken)
+	_, err := conf.Exchange(context.Background(), "code")
+	if err == nil {
+		t.Error("expected error from missing access_token")
 	}
 }
 
@@ -296,7 +293,7 @@ func TestExchangeRequest_BadResponseType(t *testing.T) {
 	conf := newConf(ts.URL)
 	_, err := conf.Exchange(context.Background(), "exchange-code")
 	if err == nil {
-		t.Error("expected error from invalid access_token type")
+		t.Error("expected error from non-string access_token")
 	}
 }
 
