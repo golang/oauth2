@@ -313,15 +313,11 @@ var HTTPClient internal.ContextKey
 // packages.
 func NewClient(ctx context.Context, src TokenSource) *http.Client {
 	if src == nil {
-		c, err := internal.ContextClient(ctx)
-		if err != nil {
-			return &http.Client{Transport: internal.ErrorTransport{Err: err}}
-		}
-		return c
+		return internal.ContextClient(ctx)
 	}
 	return &http.Client{
 		Transport: &Transport{
-			Base:   internal.ContextTransport(ctx),
+			Base:   internal.ContextClient(ctx).Transport,
 			Source: ReuseTokenSource(nil, src),
 		},
 	}

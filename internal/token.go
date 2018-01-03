@@ -170,10 +170,6 @@ func providerAuthHeaderWorks(tokenURL string) bool {
 }
 
 func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string, v url.Values) (*Token, error) {
-	hc, err := ContextClient(ctx)
-	if err != nil {
-		return nil, err
-	}
 	bustedAuth := !providerAuthHeaderWorks(tokenURL)
 	if bustedAuth {
 		if clientID != "" {
@@ -191,7 +187,7 @@ func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string,
 	if !bustedAuth {
 		req.SetBasicAuth(url.QueryEscape(clientID), url.QueryEscape(clientSecret))
 	}
-	r, err := ctxhttp.Do(ctx, hc, req)
+	r, err := ctxhttp.Do(ctx, ContextClient(ctx), req)
 	if err != nil {
 		return nil, err
 	}
