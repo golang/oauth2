@@ -23,7 +23,7 @@ import (
 // Note that this is not a standard OAuth flow, but rather an
 // optimization supported by a few Google services.
 // Unless you know otherwise, you should use JWTConfigFromJSON instead.
-func JWTAccessTokenSourceFromJSON(jsonKey []byte, audience string, privateClaims map[string]interface{}) (oauth2.TokenSource, error) {
+func JWTAccessTokenSourceFromJSON(jsonKey []byte, audience string) (oauth2.TokenSource, error) {
 	cfg, err := JWTConfigFromJSON(jsonKey)
 	if err != nil {
 		return nil, fmt.Errorf("google: could not parse JSON key: %v", err)
@@ -37,6 +37,28 @@ func JWTAccessTokenSourceFromJSON(jsonKey []byte, audience string, privateClaims
 		audience: audience,
 		pk:       pk,
 		pkID:     cfg.PrivateKeyID,
+	}
+	tok, err := ts.Token()
+	if err != nil {
+		return nil, err
+	}
+	return oauth2.ReuseTokenSource(tok, ts), nil
+}
+
+func JWTAccessTokenSourceFromJSONWithPrivateClaims(jsonKey []byte, audience string, privateClaims map[string]interface{}) (oauth2.TokenSource, error) {
+	cfg, err := JWTConfigFromJSON(jsonKey)
+	if err != nil {
+		return nil, fmt.Errorf("google: could not parse JSON key: %v", err)
+	}
+	pk, err := internal.ParseKey(cfg.PrivateKey)
+	if err != nil {
+		return nil, fmt.Errorf("google: could not parse key: %v", err)
+	}
+	ts := &jwtAccessTokenSource{
+		email:         cfg.Email,
+		audience:      audience,
+		pk:            pk,
+		pkID:          cfg.PrivateKeyID,
 		privateClaims: privateClaims,
 	}
 	tok, err := ts.Token()
@@ -50,18 +72,18 @@ type jwtAccessTokenSource struct {
 	email, audience string
 	pk              *rsa.PrivateKey
 	pkID            string
-	privateClaims map[string]interface{}
+	privateClaims   map[string]interface{}
 }
 
 func (ts *jwtAccessTokenSource) Token() (*oauth2.Token, error) {
 	iat := time.Now()
 	exp := iat.Add(time.Hour)
 	cs := &jws.ClaimSet{
-		Iss: ts.email,
-		Sub: ts.email,
-		Aud: ts.audience,
-		Iat: iat.Unix(),
-		Exp: exp.Unix(),
+		Iss:           ts.email,
+		Sub:           ts.email,
+		Aud:           ts.audience,
+		Iat:           iat.Unix(),
+		Exp:           exp.Unix(),
 		PrivateClaims: ts.privateClaims,
 	}
 	hdr := &jws.Header{
