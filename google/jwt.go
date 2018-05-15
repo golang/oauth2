@@ -45,6 +45,17 @@ func JWTAccessTokenSourceFromJSON(jsonKey []byte, audience string) (oauth2.Token
 	return oauth2.ReuseTokenSource(tok, ts), nil
 }
 
+// JWTAccessTokenSourceFromJSONWithPrivateClaims uses a Google Developers service
+// account JSON key file to read the credentials that authorize and authenticate
+// the requests, and returns a TokenSource that does not use any OAuth2 flow but
+// instead creates a JWT and sends that as the access token.
+//
+// Unlike JWTAccessTokenSourceFromJSON, JWTAccessTokenSourceFromJSONWithPrivateClaims
+// has an additional argument for passing private claims into the generated token.
+// This is helpful when exchanging a service account signed token for a
+// Google ID token.
+//
+// Unless you know otherwise, you should use JWTConfigFromJSON.
 func JWTAccessTokenSourceFromJSONWithPrivateClaims(jsonKey []byte, audience string, privateClaims map[string]interface{}) (oauth2.TokenSource, error) {
 	cfg, err := JWTConfigFromJSON(jsonKey)
 	if err != nil {
