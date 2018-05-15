@@ -40,4 +40,4 @@
 // is the same as the one obtained from the oauth2.Config returned from
 // ConfigFromJSON or JWTConfigFromJSON, but the DefaultCredentials may contain
 // additional information that is useful is some circumstances.
-package google // import "golang.org/x/oauth2/google"
+package google 
