@@ -11,6 +11,6 @@ import (
 
 // Endpoint is GitLab's OAuth 2.0 endpoint.
 var Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://gitlab.com/login/oauth2/authorize",
-	TokenURL: "https://gitlab.com/login/oauth2/access_token",
+	AuthURL:  "https://gitlab.com/oauth/authorize",
+	TokenURL: "https://gitlab.com/oauth/token",
 }
