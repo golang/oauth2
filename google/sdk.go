@@ -5,15 +5,13 @@
 package google
 
 import (
-	"bufio"
+	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/user"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -22,27 +20,19 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type sdkCredentials struct {
-	Data []struct {
-		Credential struct {
-			ClientID     string     `json:"client_id"`
-			ClientSecret string     `json:"client_secret"`
-			AccessToken  string     `json:"access_token"`
-			RefreshToken string     `json:"refresh_token"`
-			TokenExpiry  *time.Time `json:"token_expiry"`
-		} `json:"credential"`
-		Key struct {
-			Account string `json:"account"`
-			Scope   string `json:"scope"`
-		} `json:"key"`
-	}
+type configHelperResp struct {
+	Credential struct {
+		AccessToken string `json:"access_token"`
+		TokenExpiry string `json:"token_expiry"`
+	} `json:"credential"`
 }
+
+type configHelper func() (*configHelperResp, error)
 
 // An SDKConfig provides access to tokens from an account already
 // authorized via the Google Cloud SDK.
 type SDKConfig struct {
-	conf         oauth2.Config
-	initialToken *oauth2.Token
+	helper configHelper
 }
 
 // NewSDKConfig creates an SDKConfig for the given Google Cloud SDK
@@ -52,72 +42,37 @@ type SDKConfig struct {
 // before using this function.
 // The Google Cloud SDK is available at https://cloud.google.com/sdk/.
 func NewSDKConfig(account string) (*SDKConfig, error) {
-	configPath, err := sdkConfigPath()
-	if err != nil {
-		return nil, fmt.Errorf("oauth2/google: error getting SDK config path: %v", err)
-	}
-	credentialsPath := filepath.Join(configPath, "credentials")
-	f, err := os.Open(credentialsPath)
-	if err != nil {
-		return nil, fmt.Errorf("oauth2/google: failed to load SDK credentials: %v", err)
-	}
-	defer f.Close()
-
-	var c sdkCredentials
-	if err := json.NewDecoder(f).Decode(&c); err != nil {
-		return nil, fmt.Errorf("oauth2/google: failed to decode SDK credentials from %q: %v", credentialsPath, err)
-	}
-	if len(c.Data) == 0 {
-		return nil, fmt.Errorf("oauth2/google: no credentials found in %q, run `gcloud auth login` to create one", credentialsPath)
-	}
+	gcloudCmd := gcloudCommand()
 	if account == "" {
-		propertiesPath := filepath.Join(configPath, "properties")
-		f, err := os.Open(propertiesPath)
-		if err != nil {
-			return nil, fmt.Errorf("oauth2/google: failed to load SDK properties: %v", err)
+		cmd := exec.Command(gcloudCmd, "auth", "list", "--filter=status=ACTIVE", "--format=value(account)")
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		if err := cmd.Run(); err != nil {
+			return nil, fmt.Errorf("failure looking up the active Cloud SDK account: %v", err)
 		}
-		defer f.Close()
-		ini, err := parseINI(f)
-		if err != nil {
-			return nil, fmt.Errorf("oauth2/google: failed to parse SDK properties %q: %v", propertiesPath, err)
-		}
-		core, ok := ini["core"]
-		if !ok {
-			return nil, fmt.Errorf("oauth2/google: failed to find [core] section in %v", ini)
-		}
-		active, ok := core["account"]
-		if !ok {
-			return nil, fmt.Errorf("oauth2/google: failed to find %q attribute in %v", "account", core)
-		}
-		account = active
+		account = strings.TrimSpace(out.String())
 	}
+	helper := func() (*configHelperResp, error) {
+		cmd := exec.Command(gcloudCmd, "config", "config-helper", "--account", account, "--format=json")
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		if err := cmd.Run(); err != nil {
+			return nil, err
+		}
+		var resp configHelperResp
+		if err := json.Unmarshal(out.Bytes(), &resp); err != nil {
+			return nil, fmt.Errorf("failure parsing the output from the Cloud SDK config helper: %v", err)
+		}
+		return &resp, nil
+	}
+	return &SDKConfig{helper}, nil
+}
 
-	for _, d := range c.Data {
-		if account == "" || d.Key.Account == account {
-			if d.Credential.AccessToken == "" && d.Credential.RefreshToken == "" {
-				return nil, fmt.Errorf("oauth2/google: no token available for account %q", account)
-			}
-			var expiry time.Time
-			if d.Credential.TokenExpiry != nil {
-				expiry = *d.Credential.TokenExpiry
-			}
-			return &SDKConfig{
-				conf: oauth2.Config{
-					ClientID:     d.Credential.ClientID,
-					ClientSecret: d.Credential.ClientSecret,
-					Scopes:       strings.Split(d.Key.Scope, " "),
-					Endpoint:     Endpoint,
-					RedirectURL:  "oob",
-				},
-				initialToken: &oauth2.Token{
-					AccessToken:  d.Credential.AccessToken,
-					RefreshToken: d.Credential.RefreshToken,
-					Expiry:       expiry,
-				},
-			}, nil
-		}
+func gcloudCommand() string {
+	if runtime.GOOS == "windows" {
+		return "gcloud.cmd"
 	}
-	return nil, fmt.Errorf("oauth2/google: no such credentials for account %q", account)
+	return "gcloud"
 }
 
 // Client returns an HTTP client using Google Cloud SDK credentials to
@@ -128,7 +83,7 @@ func NewSDKConfig(account string) (*SDKConfig, error) {
 func (c *SDKConfig) Client(ctx context.Context) *http.Client {
 	return &http.Client{
 		Transport: &oauth2.Transport{
-			Source: c.TokenSource(ctx),
+			Source: c,
 		},
 	}
 }
@@ -139,53 +94,23 @@ func (c *SDKConfig) Client(ctx context.Context) *http.Client {
 // and refresh it when it expires, but it won't update the credentials
 // with the new access token.
 func (c *SDKConfig) TokenSource(ctx context.Context) oauth2.TokenSource {
-	return c.conf.TokenSource(ctx, c.initialToken)
+	return c
 }
 
-// Scopes are the OAuth 2.0 scopes the current account is authorized for.
-func (c *SDKConfig) Scopes() []string {
-	return c.conf.Scopes
-}
-
-func parseINI(ini io.Reader) (map[string]map[string]string, error) {
-	result := map[string]map[string]string{
-		"": {}, // root section
+// Token returns an oauth2.Token retrieved from the Google Cloud SDK.
+func (c *SDKConfig) Token() (*oauth2.Token, error) {
+	resp, err := c.helper()
+	if err != nil {
+		return nil, fmt.Errorf("failure invoking the Cloud SDK config helper: %v", err)
 	}
-	scanner := bufio.NewScanner(ini)
-	currentSection := ""
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, ";") {
-			// comment.
-			continue
-		}
-		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
-			currentSection = strings.TrimSpace(line[1 : len(line)-1])
-			result[currentSection] = map[string]string{}
-			continue
-		}
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) == 2 && parts[0] != "" {
-			result[currentSection][strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
-		}
+	expiry, err := time.Parse(time.RFC3339, resp.Credential.TokenExpiry)
+	if err != nil {
+		return nil, fmt.Errorf("failure parsing the access token expiration time: %v", err)
 	}
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error scanning ini: %v", err)
-	}
-	return result, nil
-}
-
-// sdkConfigPath tries to guess where the gcloud config is located.
-// It can be overridden during tests.
-var sdkConfigPath = func() (string, error) {
-	if runtime.GOOS == "windows" {
-		return filepath.Join(os.Getenv("APPDATA"), "gcloud"), nil
-	}
-	homeDir := guessUnixHomeDir()
-	if homeDir == "" {
-		return "", errors.New("unable to get current user home directory: os/user lookup failed; $HOME is empty")
-	}
-	return filepath.Join(homeDir, ".config", "gcloud"), nil
+	return &oauth2.Token{
+		AccessToken: resp.Credential.AccessToken,
+		Expiry:      expiry,
+	}, nil
 }
 
 func guessUnixHomeDir() string {

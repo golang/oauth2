@@ -5,103 +5,58 @@
 package google
 
 import (
-	"reflect"
-	"strings"
+	"fmt"
 	"testing"
+	"time"
 )
 
 func TestSDKConfig(t *testing.T) {
-	sdkConfigPath = func() (string, error) {
-		return "testdata/gcloud", nil
+	var helperCallCount int
+	mockTokenFormat := "Token #%d"
+	mockHelper := func() (*configHelperResp, error) {
+		token := fmt.Sprintf(mockTokenFormat, helperCallCount)
+		helperCallCount += 1
+		return &configHelperResp{
+			Credential: struct {
+				AccessToken string `json:"access_token"`
+				TokenExpiry string `json:"token_expiry"`
+			}{
+				AccessToken: token,
+				TokenExpiry: time.Now().Format(time.RFC3339),
+			},
+		}, nil
+	}
+	mockConfig := &SDKConfig{mockHelper}
+	for i := 0; i < 10; i++ {
+		tok, err := mockConfig.Token()
+		if err != nil {
+			t.Errorf("Unexpected error reading a mock config helper response: %v", err)
+		} else if got, want := tok.AccessToken, fmt.Sprintf(mockTokenFormat, i); got != want {
+			t.Errorf("Got access token of %q; wanted %q", got, want)
+		}
 	}
 
-	tests := []struct {
-		account     string
-		accessToken string
-		err         bool
-	}{
-		{"", "bar_access_token", false},
-		{"foo@example.com", "foo_access_token", false},
-		{"bar@example.com", "bar_access_token", false},
-		{"baz@serviceaccount.example.com", "", true},
+	failingHelper := func() (*configHelperResp, error) {
+		return nil, fmt.Errorf("mock config helper failure")
 	}
-	for _, tt := range tests {
-		c, err := NewSDKConfig(tt.account)
-		if got, want := err != nil, tt.err; got != want {
-			if !tt.err {
-				t.Errorf("got %v, want nil", err)
-			} else {
-				t.Errorf("got nil, want error")
-			}
-			continue
-		}
-		if err != nil {
-			continue
-		}
-		tok := c.initialToken
-		if tok == nil {
-			t.Errorf("got nil, want %q", tt.accessToken)
-			continue
-		}
-		if tok.AccessToken != tt.accessToken {
-			t.Errorf("got %q, want %q", tok.AccessToken, tt.accessToken)
-		}
+	failingConfig := &SDKConfig{failingHelper}
+	if tok, err := failingConfig.Token(); err == nil {
+		t.Errorf("unexpected token response for failing helper: got %v", tok)
 	}
-}
 
-func TestParseINI(t *testing.T) {
-	tests := []struct {
-		ini  string
-		want map[string]map[string]string
-	}{
-		{
-			`root = toor
-[foo]
-bar = hop
-ini = nin
-`,
-			map[string]map[string]string{
-				"":    {"root": "toor"},
-				"foo": {"bar": "hop", "ini": "nin"},
+	badTimestampHelper := func() (*configHelperResp, error) {
+		return &configHelperResp{
+			Credential: struct {
+				AccessToken string `json:"access_token"`
+				TokenExpiry string `json:"token_expiry"`
+			}{
+				AccessToken: "Fake token",
+				TokenExpiry: "The time at which it expires",
 			},
-		},
-		{
-			"\t  extra \t =  whitespace  \t\r\n \t [everywhere] \t \r\n  here \t =  \t there  \t \r\n",
-			map[string]map[string]string{
-				"":           {"extra": "whitespace"},
-				"everywhere": {"here": "there"},
-			},
-		},
-		{
-			`[empty]
-[section]
-empty=
-`,
-			map[string]map[string]string{
-				"":        {},
-				"empty":   {},
-				"section": {"empty": ""},
-			},
-		},
-		{
-			`ignore
-[invalid
-=stuff
-;comment=true
-`,
-			map[string]map[string]string{
-				"": {},
-			},
-		},
+		}, nil
 	}
-	for _, tt := range tests {
-		result, err := parseINI(strings.NewReader(tt.ini))
-		if err != nil {
-			t.Errorf("parseINI(%q) error %v, want: no error", tt.ini, err)
-			continue
-		}
-		if !reflect.DeepEqual(result, tt.want) {
-			t.Errorf("parseINI(%q) = %#v, want: %#v", tt.ini, result, tt.want)
-		}
+	badTimestampConfig := &SDKConfig{badTimestampHelper}
+	if tok, err := badTimestampConfig.Token(); err == nil {
+		t.Errorf("unexpected token response for a helper that returns bad expiry timestamps: got %v", tok)
 	}
 }
