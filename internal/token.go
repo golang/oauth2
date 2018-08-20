@@ -103,6 +103,7 @@ var brokenAuthHeaderProviders = []string{
 	"https://api.twitch.tv/",
 	"https://id.twitch.tv/",
 	"https://app.box.com/",
+	"https://api.box.com/",
 	"https://connect.stripe.com/",
 	"https://login.mailchimp.com/",
 	"https://login.microsoftonline.com/",
