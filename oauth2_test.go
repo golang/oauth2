@@ -74,6 +74,10 @@ func TestAuthCodeURL_Optional(t *testing.T) {
 
 func TestURLUnsafeClientConfig(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got, want := r.Header.Get("Authorization"), "Basic Q0xJRU5UX0lEJTNGJTNGOkNMSUVOVF9TRUNSRVQlM0YlM0Y="; got != want {
+			t.Errorf("Authorization header = %q; want %q", got, want)
+		}
+
 		w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
 		w.Write([]byte("access_token=90d64460d14870c08c81352a05dedd3465940a7c&scope=user&token_type=bearer"))
 	}))
