@@ -440,7 +440,7 @@ func TestTokenRefreshRequest(t *testing.T) {
 			t.Errorf("Unexpected Content-Type header %q", headerContentType)
 		}
 		body, _ := ioutil.ReadAll(r.Body)
-		if string(body) != "grant_type=refresh_token&refresh_token=REFRESH_TOKEN" {
+		if string(body) != "grant_type=refresh_token&refresh_token=REFRESH_TOKEN&scope=scope1+scope2" {
 			t.Errorf("Unexpected refresh token payload %q", body)
 		}
 		w.Header().Set("Content-Type", "application/json")
