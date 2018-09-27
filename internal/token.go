@@ -92,7 +92,7 @@ func (e *expirationTime) UnmarshalJSON(b []byte) error {
 
 var brokenAuthHeaderProviders = []string{
 	"https://accounts.google.com/",
-	"https://oauth2.googleapis.com/token"
+	"https://oauth2.googleapis.com/token",
 	"https://api.codeswholesale.com/oauth/token",
 	"https://api.dropbox.com/",
 	"https://api.dropboxapi.com/",
