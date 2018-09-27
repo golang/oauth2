@@ -42,6 +42,9 @@ type Config struct {
 
 	// EndpointParams specifies additional parameters for requests to the token endpoint.
 	EndpointParams url.Values
+
+	// AuthChecker checker broken AuthHeaderProviders
+	AuthChecker func(tokenURL string) bool
 }
 
 // Token uses client credentials to retrieve a token.
@@ -92,7 +95,7 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 		}
 		v[k] = p
 	}
-	tk, err := internal.RetrieveToken(c.ctx, c.conf.ClientID, c.conf.ClientSecret, c.conf.TokenURL, v)
+	tk, err := internal.RetrieveToken(c.ctx, c.conf.ClientID, c.conf.ClientSecret, c.conf.TokenURL, c.conf.AuthChecker, v)
 	if err != nil {
 		if rErr, ok := err.(*internal.RetrieveError); ok {
 			return nil, (*oauth2.RetrieveError)(rErr)
