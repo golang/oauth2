@@ -72,6 +72,8 @@ func TestProviderAuthHeaderWorksDomain(t *testing.T) {
 		{"https://foo.bar.force.com/token-url", false},
 		{"https://foo.force.com/token-url", false},
 		{"https://force.com/token-url", true},
+		{"https://www.googleapis.com", false},
+		{"https://oauth2.googleapis.com", false},
 	}
 
 	for _, test := range tests {
