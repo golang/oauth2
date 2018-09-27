@@ -39,7 +39,7 @@ func TestRetrieveTokenBustedNoSecret(t *testing.T) {
 	defer ts.Close()
 
 	RegisterBrokenAuthHeaderProvider(ts.URL)
-	_, err := RetrieveToken(context.Background(), clientID, "", ts.URL, url.Values{})
+	_, err := RetrieveToken(context.Background(), clientID, "", ts.URL, nil, url.Values{})
 	if err != nil {
 		t.Errorf("RetrieveToken = %v; want no error", err)
 	}
@@ -91,7 +91,7 @@ func TestRetrieveTokenWithContexts(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	_, err := RetrieveToken(context.Background(), clientID, "", ts.URL, url.Values{})
+	_, err := RetrieveToken(context.Background(), clientID, "", ts.URL, nil, url.Values{})
 	if err != nil {
 		t.Errorf("RetrieveToken (with background context) = %v; want no error", err)
 	}
@@ -104,7 +104,7 @@ func TestRetrieveTokenWithContexts(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, err = RetrieveToken(ctx, clientID, "", cancellingts.URL, url.Values{})
+	_, err = RetrieveToken(ctx, clientID, "", cancellingts.URL, nil, url.Values{})
 	close(retrieved)
 	if err == nil {
 		t.Errorf("RetrieveToken (with cancelled context) = nil; want error")

@@ -61,6 +61,9 @@ type Config struct {
 
 	// Scope specifies optional requested permissions.
 	Scopes []string
+
+	// AuthChecker checker broken AuthHeaderProviders
+	AuthChecker func(tokenURL string) bool
 }
 
 // A TokenSource is anything that can return a token.
