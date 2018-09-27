@@ -119,7 +119,6 @@ var brokenAuthHeaderProviders = []string{
 	"https://test.salesforce.com/",
 	"https://user.gini.net/",
 	"https://www.douban.com/",
-	"https://www.googleapis.com/",
 	"https://www.linkedin.com/",
 	"https://www.strava.com/oauth/",
 	"https://www.wunderlist.com/oauth/",
@@ -138,6 +137,7 @@ var brokenAuthHeaderProviders = []string{
 var brokenAuthHeaderDomains = []string{
 	".auth0.com",
 	".force.com",
+	".googleapis.com",
 	".myshopify.com",
 	".okta.com",
 	".oktapreview.com",
