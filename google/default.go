@@ -41,22 +41,27 @@ func DefaultTokenSource(ctx context.Context, scope ...string) (oauth2.TokenSourc
 
 // Common implementation for FindDefaultCredentials.
 func findDefaultCredentials(ctx context.Context, scopes []string) (*DefaultCredentials, error) {
+	// Stores the error we will return.
+	var cerr error
+
 	// First, try the environment variable.
+	// If environment variable is defined no other option will be tried.
 	const envVar = "GOOGLE_APPLICATION_CREDENTIALS"
 	if filename := os.Getenv(envVar); filename != "" {
 		creds, err := readCredentialsFile(ctx, filename, scopes)
 		if err != nil {
-			return nil, fmt.Errorf("google: error getting credentials using %v environment variable: %v", envVar, err)
+			cerr = fmt.Errorf("google: error getting credentials using %v environment variable: %v", envVar, err)
+			return nil, cerr
 		}
 		return creds, nil
 	}
 
 	// Second, try a well-known file.
 	filename := wellKnownFile()
-	if creds, err := readCredentialsFile(ctx, filename, scopes); err == nil {
+	if creds, err := readCredentialsFile(ctx, filename, scopes); err != nil {
+		cerr = fmt.Errorf("google: error getting credentials using well-known file (%v): %v", filename, err)
+	} else {
 		return creds, nil
-	} else if !os.IsNotExist(err) {
-		return nil, fmt.Errorf("google: error getting credentials using well-known file (%v): %v", filename, err)
 	}
 
 	// Third, if we're on Google App Engine use those credentials.
@@ -78,7 +83,8 @@ func findDefaultCredentials(ctx context.Context, scopes []string) (*DefaultCrede
 
 	// None are found; return helpful error.
 	const url = "https://developers.google.com/accounts/docs/application-default-credentials"
-	return nil, fmt.Errorf("google: could not find default credentials. See %v for more information.", url)
+	cerr = fmt.Errorf("%v. See %v for more information", cerr, url)
+	return nil, cerr
 }
 
 // Common implementation for CredentialsFromJSON.
