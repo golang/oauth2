@@ -6,6 +6,7 @@ package oauth2
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -66,6 +67,62 @@ func TestAuthCodeURL_Optional(t *testing.T) {
 	}
 	url := conf.AuthCodeURL("")
 	const want = "/auth-url?client_id=CLIENT_ID&response_type=code"
+	if got := url; got != want {
+		t.Fatalf("got auth code = %q; want %q", got, want)
+	}
+}
+
+func TestAuthCodeURL_UserInfoClaims(t *testing.T) {
+	claimSet := &ClaimSet{}
+	claimSet.AddVoluntaryClaim(UserInfoClaim, "email")
+	conf := &Config{
+		ClientID: "CLIENT_ID",
+		Endpoint: Endpoint{
+			AuthURL:  "/auth-url",
+			TokenURL: "/token-url",
+		},
+		ClaimSet: claimSet,
+	}
+	url := conf.AuthCodeURL("")
+	const want = "/auth-url?claims=%7B%22userinfo%22%3A%7B%22email%22%3Anull%7D%7D&client_id=CLIENT_ID&response_type=code"
+	if got := url; got != want {
+		t.Fatalf("got auth code = %q; want %q", got, want)
+	}
+}
+
+func TestAuthCodeURL_IdTokenClaims(t *testing.T) {
+	claimSet := &ClaimSet{}
+	claimSet.AddClaimWithValues(IdTokenClaim, "name", false, "nameValue1", "nameValue2")
+	conf := &Config{
+		ClientID: "CLIENT_ID",
+		Endpoint: Endpoint{
+			AuthURL:  "/auth-url",
+			TokenURL: "/token-url",
+		},
+		ClaimSet: claimSet,
+	}
+	url := conf.AuthCodeURL("")
+	const want = "/auth-url?claims=%7B%22id_token%22%3A%7B%22name%22%3A%7B%22values%22%3A%5B%22nameValue1%22%2C%22nameValue2%22%5D%7D%7D%7D&client_id=CLIENT_ID&response_type=code"
+	if got := url; got != want {
+		t.Fatalf("got auth code = %q; want %q", got, want)
+	}
+}
+
+func TestAuthCodeURL_MultipleClaims(t *testing.T) {
+	claimSet := &ClaimSet{}
+	claimSet.AddVoluntaryClaim(UserInfoClaim, "email")
+	claimSet.AddClaimWithValue(IdTokenClaim, "email", true, "emailValue")
+	claimSet.AddClaimWithValues(IdTokenClaim, "name", false, "nameValue1", "nameValue2")
+	conf := &Config{
+		ClientID: "CLIENT_ID",
+		Endpoint: Endpoint{
+			AuthURL:  "/auth-url",
+			TokenURL: "/token-url",
+		},
+		ClaimSet: claimSet,
+	}
+	url := conf.AuthCodeURL("")
+	const want = "/auth-url?claims=%7B%22id_token%22%3A%7B%22email%22%3A%7B%22essential%22%3Atrue%2C%22value%22%3A%22emailValue%22%7D%2C%22name%22%3A%7B%22values%22%3A%5B%22nameValue1%22%2C%22nameValue2%22%5D%7D%7D%2C%22userinfo%22%3A%7B%22email%22%3Anull%7D%7D&client_id=CLIENT_ID&response_type=code"
 	if got := url; got != want {
 		t.Fatalf("got auth code = %q; want %q", got, want)
 	}
@@ -231,10 +288,10 @@ func TestExchangeRequest_JSONResponse(t *testing.T) {
 func TestExtraValueRetrieval(t *testing.T) {
 	values := url.Values{}
 	kvmap := map[string]string{
-		"scope": "user", "token_type": "bearer", "expires_in": "86400.92",
+		"scope":       "user", "token_type": "bearer", "expires_in": "86400.92",
 		"server_time": "1443571905.5606415", "referer_ip": "10.0.0.1",
-		"etag": "\"afZYj912P4alikMz_P11982\"", "request_id": "86400",
-		"untrimmed": "  untrimmed  ",
+		"etag":        "\"afZYj912P4alikMz_P11982\"", "request_id": "86400",
+		"untrimmed":   "  untrimmed  ",
 	}
 	for key, value := range kvmap {
 		values.Set(key, value)
@@ -546,5 +603,80 @@ func TestConfigClientWithToken(t *testing.T) {
 	_, err = c.Do(req)
 	if err != nil {
 		t.Error(err)
+	}
+}
+
+func TestClaimSet_AddVoluntaryClaim(t *testing.T) {
+	claimSet := &ClaimSet{}
+	claimSet.AddVoluntaryClaim(UserInfoClaim, "name")
+
+	body, err := json.Marshal(claimSet)
+	if err != nil {
+		t.Error(err)
+	}
+
+	expected := `{"userinfo":{"name":null}}`
+	if string(body) != expected {
+		t.Errorf("Claims request parameter = %q; want %q", string(body), expected)
+	}
+}
+
+func TestClaimSet_AddClaimWithValue_Essential(t *testing.T) {
+	claimSet := &ClaimSet{}
+	claimSet.AddClaimWithValue(UserInfoClaim, "name", true, "nameValue")
+
+	body, err := json.Marshal(claimSet)
+	if err != nil {
+		t.Error(err)
+	}
+
+	expected := `{"userinfo":{"name":{"essential":true,"value":"nameValue"}}}`
+	if string(body) != expected {
+		t.Errorf("Claims request parameter = %q; want %q", string(body), expected)
+	}
+}
+
+func TestClaimSet_AddClaimWithValue_Voluntary(t *testing.T) {
+	claimSet := &ClaimSet{}
+	claimSet.AddClaimWithValue(UserInfoClaim, "name", false, "nameValue")
+
+	body, err := json.Marshal(claimSet)
+	if err != nil {
+		t.Error(err)
+	}
+
+	expected := `{"userinfo":{"name":{"value":"nameValue"}}}`
+	if string(body) != expected {
+		t.Errorf("Claims request parameter = %q; want %q", string(body), expected)
+	}
+}
+
+func TestClaimSet_AddClaimWithValues_Essential(t *testing.T) {
+	claimSet := &ClaimSet{}
+	claimSet.AddClaimWithValues(IdTokenClaim, "email", true, "emailValue", "mailValue")
+
+	body, err := json.Marshal(claimSet)
+	if err != nil {
+		t.Error(err)
+	}
+
+	expected := `{"id_token":{"email":{"essential":true,"values":["emailValue","mailValue"]}}}`
+	if string(body) != expected {
+		t.Errorf("Claims request parameter = %q; want %q", string(body), expected)
+	}
+}
+
+func TestClaimSet_AddClaimWithValues_Voluntary(t *testing.T) {
+	claimSet := &ClaimSet{}
+	claimSet.AddClaimWithValues(IdTokenClaim, "email", false, "emailValue", "mailValue")
+
+	body, err := json.Marshal(claimSet)
+	if err != nil {
+		t.Error(err)
+	}
+
+	expected := `{"id_token":{"email":{"values":["emailValue","mailValue"]}}}`
+	if string(body) != expected {
+		t.Errorf("Claims request parameter = %q; want %q", string(body), expected)
 	}
 }

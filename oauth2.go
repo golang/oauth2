@@ -11,6 +11,7 @@ package oauth2 // import "golang.org/x/oauth2"
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
@@ -61,6 +62,10 @@ type Config struct {
 
 	// Scope specifies optional requested permissions.
 	Scopes []string
+
+	// ClaimSet is optional requested parameter used to that
+	// specific Claims be returned.
+	ClaimSet *ClaimSet
 }
 
 // A TokenSource is anything that can return a token.
@@ -76,6 +81,26 @@ type TokenSource interface {
 type Endpoint struct {
 	AuthURL  string
 	TokenURL string
+}
+
+// JSON keys for top-level member of the Claims request JSON.
+const (
+	UserInfoClaim = "userinfo"
+	IdTokenClaim  = "id_token"
+)
+
+// claim describes JSON object used to specify additional information
+// about the Claim being requested.
+type claim struct {
+	Essential bool     `json:"essential,omitempty"`
+	Value     string   `json:"value,omitempty"`
+	Values    []string `json:"values,omitempty"`
+}
+
+// ClaimSet contains map with members of the Claims request.
+// It provides methods to add specific Claims.
+type ClaimSet struct {
+	claims map[string]map[string]*claim
 }
 
 var (
@@ -150,6 +175,13 @@ func (c *Config) AuthCodeURL(state string, opts ...AuthCodeOption) string {
 		buf.WriteByte('&')
 	} else {
 		buf.WriteByte('?')
+	}
+	if c.ClaimSet != nil {
+		body, err := json.Marshal(c.ClaimSet)
+		if err != nil {
+			panic(err)
+		}
+		v.Set("claims", string(body))
 	}
 	buf.WriteString(v.Encode())
 	return buf.String()
@@ -226,6 +258,51 @@ func (c *Config) TokenSource(ctx context.Context, t *Token) TokenSource {
 	return &reuseTokenSource{
 		t:   t,
 		new: tkr,
+	}
+}
+
+// MarshalJSON is part of the json.Marshaler interface.
+// It's used to encode hidden map that contains Claims objects.
+func (c *ClaimSet) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.claims)
+}
+
+// AddVoluntaryClaim adds the Claim being requested in default manner,
+// as a Voluntary Claim.
+func (c *ClaimSet) AddVoluntaryClaim(topLevelName string, claimName string) {
+	c.initializeTopLevelMember(topLevelName)
+	c.claims[topLevelName][claimName] = nil
+}
+
+// AddClaimWithValue adds the Claim being requested to return a particular value.
+// The Claim can be defined as an Essential Claim.
+func (c *ClaimSet) AddClaimWithValue(topLevelName string, claimName string, essential bool, value string) {
+	c.initializeTopLevelMember(topLevelName)
+	c.claims[topLevelName][claimName] = &claim{
+		Essential: essential,
+		Value:     value,
+	}
+}
+
+// AddClaimWithValues adds the Claim being requested to return
+// one of a set of values, with the values appearing in order of preference.
+// The Claim can be defined as an Essential Claim.
+func (c *ClaimSet) AddClaimWithValues(topLevelName string, claimName string, essential bool, values ...string) {
+	c.initializeTopLevelMember(topLevelName)
+	c.claims[topLevelName][claimName] = &claim{
+		Essential: essential,
+		Values:    values,
+	}
+}
+
+// initializeTopLevelMember checks if top-level member is initialized
+// as a map of JSON Claims objects and initializes it, if it's needed.
+func (c *ClaimSet) initializeTopLevelMember(topLevelName string) {
+	if c.claims == nil {
+		c.claims = map[string]map[string]*claim{}
+	}
+	if c.claims[topLevelName] == nil {
+		c.claims[topLevelName] = map[string]*claim{}
 	}
 }
 
