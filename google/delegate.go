@@ -72,7 +72,7 @@ func DelegateTokenSource(ctx context.Context, rootSource oauth2.TokenSource,
         if !reEmail.MatchString(principal) {
                 return nil, fmt.Errorf("oauth2/google:  principal must be a serviceAccount email address")
         }
-        if lifetime <= time.Duration(3600) {
+        if lifetime > (3600 * time.Second) {
                 return nil, fmt.Errorf("oauth2/google:  lifetime must be less than or equal to 3600 seconds")
         }
         for _, d := range delegates {
@@ -113,7 +113,6 @@ func (ts *delegateTokenSource) Token() (*oauth2.Token, error) {
         if tok.Valid() {
                 return tok, nil
         }
-
         client := oauth2.NewClient(ts.ctx, ts.rootSource)
 
         service, err := iamcredentials.New(client)
@@ -122,7 +121,7 @@ func (ts *delegateTokenSource) Token() (*oauth2.Token, error) {
         }
         name := "projects/-/serviceAccounts/" + ts.principal
         tokenRequest := &iamcredentials.GenerateAccessTokenRequest{
-                Lifetime:  ts.lifetime.String(),
+                Lifetime:  fmt.Sprintf("%ds", int(ts.lifetime.Seconds())),
                 Delegates: ts.delegates,
                 Scope:     ts.newScopes,
         }
