@@ -7,12 +7,21 @@ package google
 import (
         "context"
         "fmt"
+        "regexp"
+        "strings"
         "sync"
         "time"
 
         "golang.org/x/oauth2"
         "google.golang.org/api/iamcredentials/v1"
 )
+
+var (
+        mu  sync.Mutex
+        tok *oauth2.Token
+)
+
+const emailRegex string = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
 
 // DelegateTokenSource allows a TokenSource issued to a user or
 // service account to impersonate another.  The target service account
@@ -25,7 +34,7 @@ import (
 //     rootSource *must* include scopes that contains
 //     "https://www.googleapis.com/auth/iam"
 //     or
-//     "https://www.googleapis.com/auth/cloud-platform"
+//     "https://www.googleapis.com/auth/cloud.platform"
 //  principal (string): The service account to impersonate.
 //  new_scopes ([]string): Scopes to request during the
 //     authorization grant.
@@ -54,6 +63,29 @@ func DelegateTokenSource(ctx context.Context, rootSource oauth2.TokenSource,
         principal string, lifetime time.Duration, delegates []string,
         newScopes []string) (oauth2.TokenSource, error) {
 
+        reEmail := regexp.MustCompile(emailRegex)
+        scopePrefix := "https://www.googleapis.com/auth/"
+
+        if rootSource == nil {
+                return nil, fmt.Errorf("oauth2/google:  rootSource cannot be nil")
+        }
+        if !reEmail.MatchString(principal) {
+                return nil, fmt.Errorf("oauth2/google:  principal must be a serviceAccount email address")
+        }
+        if lifetime <= time.Duration(3600) {
+                return nil, fmt.Errorf("oauth2/google:  lifetime must be less than or equal to 3600 seconds")
+        }
+        for _, d := range delegates {
+                if !reEmail.MatchString(d) {
+                        return nil, fmt.Errorf("oauth2/google:  delegates must be a serviceAccount email address: %v", d)
+                }
+        }
+        for _, s := range newScopes {
+                if !strings.HasPrefix(s, scopePrefix) {
+                        return nil, fmt.Errorf("oauth2/google:  scopes must be a Google Auth scope url: %v", s)
+                }
+        }
+
         return &delegateTokenSource{
                 ctx:        ctx,
                 rootSource: rootSource,
@@ -73,11 +105,6 @@ type delegateTokenSource struct {
         newScopes  []string
 }
 
-var (
-        mu  sync.Mutex
-        tok *oauth2.Token
-)
-
 func (ts *delegateTokenSource) Token() (*oauth2.Token, error) {
 
         mu.Lock()
@@ -91,7 +118,7 @@ func (ts *delegateTokenSource) Token() (*oauth2.Token, error) {
 
         service, err := iamcredentials.New(client)
         if err != nil {
-                return nil, fmt.Errorf("google: Error creating IAMCredentials: %v", err)
+                return nil, fmt.Errorf("oauth2/google: Error creating IAMCredentials: %v", err)
         }
         name := "projects/-/serviceAccounts/" + ts.principal
         tokenRequest := &iamcredentials.GenerateAccessTokenRequest{
@@ -101,12 +128,12 @@ func (ts *delegateTokenSource) Token() (*oauth2.Token, error) {
         }
         at, err := service.Projects.ServiceAccounts.GenerateAccessToken(name, tokenRequest).Do()
         if err != nil {
-                return nil, fmt.Errorf("google: Error calling iamcredentials.GenerateAccessToken: %v", err)
+                return nil, fmt.Errorf("oauth2/google: Error calling iamcredentials.GenerateAccessToken: %v", err)
         }
 
         expireAt, err := time.Parse(time.RFC3339, at.ExpireTime)
         if err != nil {
-                return nil, fmt.Errorf("google: Error parsing ExpireTime from iamcredentials: %v", err)
+                return nil, fmt.Errorf("oauth2/google: Error parsing ExpireTime from iamcredentials: %v", err)
         }
 
         tok = &oauth2.Token{
