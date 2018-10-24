@@ -7,8 +7,6 @@ package google
 import (
         "context"
         "fmt"
-        "regexp"
-        "strings"
         "sync"
         "time"
 
@@ -20,8 +18,6 @@ var (
         mu  sync.Mutex
         tok *oauth2.Token
 )
-
-const emailRegex string = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
 
 // DelegateTokenSource allows a TokenSource issued to a user or
 // service account to impersonate another.  The target service account
@@ -63,27 +59,11 @@ func DelegateTokenSource(ctx context.Context, rootSource oauth2.TokenSource,
         principal string, lifetime time.Duration, delegates []string,
         newScopes []string) (oauth2.TokenSource, error) {
 
-        reEmail := regexp.MustCompile(emailRegex)
-        scopePrefix := "https://www.googleapis.com/auth/"
-
         if rootSource == nil {
                 return nil, fmt.Errorf("oauth2/google:  rootSource cannot be nil")
         }
-        if !reEmail.MatchString(principal) {
-                return nil, fmt.Errorf("oauth2/google:  principal must be a serviceAccount email address")
-        }
         if lifetime > (3600 * time.Second) {
                 return nil, fmt.Errorf("oauth2/google:  lifetime must be less than or equal to 3600 seconds")
-        }
-        for _, d := range delegates {
-                if !reEmail.MatchString(d) {
-                        return nil, fmt.Errorf("oauth2/google:  delegates must be a serviceAccount email address: %v", d)
-                }
-        }
-        for _, s := range newScopes {
-                if !strings.HasPrefix(s, scopePrefix) {
-                        return nil, fmt.Errorf("oauth2/google:  scopes must be a Google Auth scope url: %v", s)
-                }
         }
 
         return &delegateTokenSource{
@@ -119,7 +99,7 @@ func (ts *delegateTokenSource) Token() (*oauth2.Token, error) {
         if err != nil {
                 return nil, fmt.Errorf("oauth2/google: Error creating IAMCredentials: %v", err)
         }
-        name := "projects/-/serviceAccounts/" + ts.principal
+        name := fmt.Sprintf("projects/-/serviceAccounts/%s", ts.principal)
         tokenRequest := &iamcredentials.GenerateAccessTokenRequest{
                 Lifetime:  fmt.Sprintf("%ds", int(ts.lifetime.Seconds())),
                 Delegates: ts.delegates,
