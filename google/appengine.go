@@ -5,12 +5,12 @@
 package google
 
 import (
+	"context"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
-	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 )
 
