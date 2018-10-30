@@ -8,20 +8,11 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
+	"google.golang.org/appengine"
 )
-
-// appengineFlex is set at init time by appengineflex_hook.go. If true, we are on App Engine Flex.
-var appengineFlex bool
-
-// Set at init time by appengine_hook.go. If nil, we're not on App Engine.
-var appengineTokenFunc func(c context.Context, scopes ...string) (token string, expiry time.Time, err error)
-
-// Set at init time by appengine_hook.go. If nil, we're not on App Engine.
-var appengineAppIDFunc func(c context.Context) string
 
 // AppEngineTokenSource returns a token source that fetches tokens
 // issued to the current App Engine application's service account.
@@ -30,7 +21,7 @@ var appengineAppIDFunc func(c context.Context) string
 //
 // The provided context must have come from appengine.NewContext.
 func AppEngineTokenSource(ctx context.Context, scope ...string) oauth2.TokenSource {
-	if appengineTokenFunc == nil {
+	if !appengine.IsAppEngine() {
 		panic("google: AppEngineTokenSource can only be used on App Engine.")
 	}
 	scopes := append([]string{}, scope...)
@@ -60,7 +51,7 @@ type appEngineTokenSource struct {
 }
 
 func (ts *appEngineTokenSource) Token() (*oauth2.Token, error) {
-	if appengineTokenFunc == nil {
+	if !appengine.IsAppEngine() {
 		panic("google: AppEngineTokenSource can only be used on App Engine.")
 	}
 
@@ -77,7 +68,7 @@ func (ts *appEngineTokenSource) Token() (*oauth2.Token, error) {
 	if tok.t.Valid() {
 		return tok.t, nil
 	}
-	access, exp, err := appengineTokenFunc(ts.ctx, ts.scopes...)
+	access, exp, err := appengine.AccessToken(ts.ctx, ts.scopes...)
 	if err != nil {
 		return nil, err
 	}

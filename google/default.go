@@ -16,6 +16,7 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
+	"google.golang.org/appengine"
 )
 
 // DefaultClient returns an HTTP Client that uses the
@@ -59,10 +60,11 @@ func findDefaultCredentials(ctx context.Context, scopes []string) (*DefaultCrede
 		return nil, fmt.Errorf("google: error getting credentials using well-known file (%v): %v", filename, err)
 	}
 
-	// Third, if we're on Google App Engine use those credentials.
-	if appengineTokenFunc != nil && !appengineFlex {
+	// Third, if we're on Google App Engine standard use those credentials. App Engine flexible
+	// doesn't support appengine.AccessToken so we depend on the metadata server for flex.
+	if appengine.IsStandard() {
 		return &DefaultCredentials{
-			ProjectID:   appengineAppIDFunc(ctx),
+			ProjectID:   appengine.AppID(ctx),
 			TokenSource: AppEngineTokenSource(ctx, scopes...),
 		}, nil
 	}
