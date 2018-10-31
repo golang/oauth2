@@ -37,9 +37,11 @@ type DefaultCredentials = Credentials
 //
 //   1. A JSON file whose path is specified by the
 //      GOOGLE_APPLICATION_CREDENTIALS environment variable.
+//      An error is returned if credentials could not be read.
 //   2. A JSON file in a location known to the gcloud command-line tool.
 //      On Windows, this is %APPDATA%/gcloud/application_default_credentials.json.
 //      On other systems, $HOME/.config/gcloud/application_default_credentials.json.
+//      If this file cannot be read next options are tried.
 //   3. On Google App Engine it uses the appengine.AccessToken function.
 //   4. On Google Compute Engine and Google App Engine Managed VMs, it fetches
 //      credentials from the metadata server.
