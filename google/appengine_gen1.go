@@ -24,10 +24,10 @@ func init() {
 }
 
 // See comment on AppEngineTokenSource in appengine.go.
-func getAppEngineTokenSource(ctx context.Context, scope ...string) oauth2.TokenSource {
+func appEngineTokenSource(ctx context.Context, scope ...string) oauth2.TokenSource {
 	scopes := append([]string{}, scope...)
 	sort.Strings(scopes)
-	return &appEngineTokenSource{
+	return &gaeTokenSource{
 		ctx:    ctx,
 		scopes: scopes,
 		key:    strings.Join(scopes, " "),
@@ -45,13 +45,13 @@ type tokenLock struct {
 	t  *oauth2.Token
 }
 
-type appEngineTokenSource struct {
+type gaeTokenSource struct {
 	ctx    context.Context
 	scopes []string
 	key    string // to aeTokens map; space-separated scopes
 }
 
-func (ts *appEngineTokenSource) Token() (*oauth2.Token, error) {
+func (ts *gaeTokenSource) Token() (*oauth2.Token, error) {
 	aeTokensMu.Lock()
 	tok, ok := aeTokens[ts.key]
 	if !ok {

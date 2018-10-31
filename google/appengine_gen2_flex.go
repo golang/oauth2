@@ -25,7 +25,7 @@ var (
 )
 
 // See comment on AppEngineTokenSource in appengine.go.
-func getAppEngineTokenSource(ctx context.Context, scope ...string) oauth2.TokenSource {
+func appEngineTokenSource(ctx context.Context, scope ...string) oauth2.TokenSource {
 	once.Do(logFunc)
 	return ComputeTokenSource("")
 }

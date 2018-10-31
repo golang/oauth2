@@ -34,5 +34,5 @@ var appengineAppIDFunc func(c context.Context) string
 // context and scopes are not used. Please use DefaultTokenSource (or ComputeTokenSource,
 // which DefaultTokenSource will use in this case) instead.
 func AppEngineTokenSource(ctx context.Context, scope ...string) oauth2.TokenSource {
-	return getAppEngineTokenSource(ctx, scope...)
+	return appEngineTokenSource(ctx, scope...)
 }
