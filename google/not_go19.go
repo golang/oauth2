@@ -35,8 +35,10 @@ type DefaultCredentials struct {
 //   2. A JSON file in a location known to the gcloud command-line tool.
 //      On Windows, this is %APPDATA%/gcloud/application_default_credentials.json.
 //      On other systems, $HOME/.config/gcloud/application_default_credentials.json.
-//   3. On Google App Engine it uses the appengine.AccessToken function.
-//   4. On Google Compute Engine and Google App Engine Managed VMs, it fetches
+//   3. On Google App Engine standard first generation runtimes (<= Go 1.9) it uses
+//      the appengine.AccessToken function.
+//   4. On Google Compute Engine, Google App Engine standard second generation runtimes
+//      (>= Go 1.11), and Google App Engine flexible environment, it fetches
 //      credentials from the metadata server.
 //      (In this final case any provided scopes are ignored.)
 func FindDefaultCredentials(ctx context.Context, scopes ...string) (*DefaultCredentials, error) {
