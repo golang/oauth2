@@ -59,15 +59,18 @@ func findDefaultCredentials(ctx context.Context, scopes []string) (*DefaultCrede
 		return nil, fmt.Errorf("google: error getting credentials using well-known file (%v): %v", filename, err)
 	}
 
-	// Third, if we're on Google App Engine use those credentials.
-	if appengineTokenFunc != nil && !appengineFlex {
+	// Third, if we're on a Google App Engine standard first generation runtime (<= Go 1.9)
+	// use those credentials. App Engine standard second generation runtimes (>= Go 1.11)
+	// and App Engine flexible use ComputeTokenSource and the metadata server.
+	if appengineTokenFunc != nil {
 		return &DefaultCredentials{
 			ProjectID:   appengineAppIDFunc(ctx),
 			TokenSource: AppEngineTokenSource(ctx, scopes...),
 		}, nil
 	}
 
-	// Fourth, if we're on Google Compute Engine use the metadata server.
+	// Fourth, if we're on Google Compute Engine, an App Engine standard second generation runtime,
+	// or App Engine flexible, use the metadata server.
 	if metadata.OnGCE() {
 		id, _ := metadata.ProjectID()
 		return &DefaultCredentials{
