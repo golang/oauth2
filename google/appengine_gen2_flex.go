@@ -16,16 +16,12 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var (
-	once sync.Once
-
-	logFunc = func() {
-		log.Print("google: AppEngineTokenSource is deprecated on App Engine standard second generation runtimes (>= Go 1.11) and App Engine flexible. Please use DefaultTokenSource or ComputeTokenSource.")
-	}
-)
+var logOnce sync.Once // only spam about deprecation once
 
 // See comment on AppEngineTokenSource in appengine.go.
 func appEngineTokenSource(ctx context.Context, scope ...string) oauth2.TokenSource {
-	once.Do(logFunc)
+	logOnce.Do(func() {
+		log.Print("google: AppEngineTokenSource is deprecated on App Engine standard second generation runtimes (>= Go 1.11) and App Engine flexible. Please use DefaultTokenSource or ComputeTokenSource.")
+	})
 	return ComputeTokenSource("")
 }
