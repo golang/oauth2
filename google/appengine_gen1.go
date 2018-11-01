@@ -9,11 +9,11 @@
 package google
 
 import (
+	"context"
 	"sort"
 	"strings"
 	"sync"
 
-	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"google.golang.org/appengine"
 )

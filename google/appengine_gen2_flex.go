@@ -9,10 +9,10 @@
 package google
 
 import (
+	"context"
 	"log"
 	"sync"
 
-	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 )
 
