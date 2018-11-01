@@ -5,9 +5,9 @@
 package google
 
 import (
+	"context"
 	"time"
 
-	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 )
 

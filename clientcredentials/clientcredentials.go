@@ -14,12 +14,12 @@
 package clientcredentials // import "golang.org/x/oauth2/clientcredentials"
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 
-	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/internal"
 )
