@@ -70,6 +70,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
+## Policy for new packages
+
+We no longer accept new provider-specific packages in this repo. For
+defining provider endpoints and provider-specific OAuth2 behavior, we
+encourage you to create packages elsewhere. We'll keep the existing
+packages for compatibility.
+
 ## Report Issues / Send Patches
 
 This repository uses Gerrit for code changes. To learn how to submit changes to
