@@ -5,12 +5,13 @@
 package google_test
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 
-	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"golang.org/x/oauth2/jwt"
@@ -159,4 +160,33 @@ func ExampleCredentialsFromJSON() {
 		log.Fatal(err)
 	}
 	_ = creds // TODO: Use creds.
+}
+
+func ExampleImpersonatedCredentials() {
+	ctx := context.Background()
+	targetPrincipal := "impersonated-account@project.iam.gserviceaccount.com"
+	lifetime := 30 * time.Second
+	delegates := []string{}
+	targetScopes := []string{"https://www.googleapis.com/auth/devstorage.read_only"}
+	rootTokenSource, err := google.DefaultTokenSource(ctx,
+		"https://www.googleapis.com/auth/iam")
+	if err != nil {
+		log.Fatal(err)
+	}
+	impersonatedTokenSource, err := google.ImpersonatedTokenSource(
+		google.ImpersonatedTokenConfig{
+			RootTokenSource: rootTokenSource,
+			TargetPrincipal: targetPrincipal,
+			Lifetime:        lifetime,
+			Delegates:       delegates,
+			TargetScopes:    targetScopes,
+		},
+	)
+
+	client := &http.Client{
+		Transport: &oauth2.Transport{
+			Source: impersonatedTokenSource,
+		},
+	}
+	client.Get("...")
 }
