@@ -135,6 +135,7 @@ var brokenAuthHeaderProviders = []string{
 	"https://account.health.nokia.com",
 	"https://accounts.zoho.com",
 	"https://gitter.im/login/oauth/token",
+	"https://openid-connect.onelogin.com/oidc",
 }
 
 // brokenAuthHeaderDomains lists broken providers that issue dynamic endpoints.
