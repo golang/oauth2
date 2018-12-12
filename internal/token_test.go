@@ -22,6 +22,14 @@ func TestRegisterBrokenAuthHeaderProvider(t *testing.T) {
 	}
 }
 
+func TestRegisterNonQueryEscapedAuthHeaderProvider(t *testing.T) {
+	RegisterNonQueryEscapedAuthHeaderProvider("https://aaa.com/")
+	tokenURL := "https://aaa.com/token"
+	if providerAuthHeaderEscapable(tokenURL) {
+		t.Errorf("got %q as escapable; want unescapable", tokenURL)
+	}
+}
+
 func TestRetrieveTokenBustedNoSecret(t *testing.T) {
 	const clientID = "client-id"
 
@@ -39,6 +47,29 @@ func TestRetrieveTokenBustedNoSecret(t *testing.T) {
 
 	RegisterBrokenAuthHeaderProvider(ts.URL)
 	_, err := RetrieveToken(context.Background(), clientID, "", ts.URL, url.Values{})
+	if err != nil {
+		t.Errorf("RetrieveToken = %v; want no error", err)
+	}
+}
+
+func TestRetrieveTokenUnescaped(t *testing.T) {
+	const clientID = "client+id"
+	const clientSecret = "client/secret"
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		headerAuth := r.Header.Get("Authorization")
+		if headerAuth != "Basic Y2xpZW50K2lkOmNsaWVudC9zZWNyZXQ=" {
+			t.Errorf("Unexpected authorization header, %v is found.", headerAuth)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"access_token": "ACCESS_TOKEN", "token_type": "bearer"}`)
+	}))
+	defer ts.Close()
+
+	RegisterNonQueryEscapedAuthHeaderProvider(ts.URL)
+	_, err := RetrieveToken(context.Background(), clientID, clientSecret, ts.URL, url.Values{})
 	if err != nil {
 		t.Errorf("RetrieveToken = %v; want no error", err)
 	}

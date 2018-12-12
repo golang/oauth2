@@ -38,6 +38,17 @@ func RegisterBrokenAuthHeaderProvider(tokenURL string) {
 	internal.RegisterBrokenAuthHeaderProvider(tokenURL)
 }
 
+// RegisterNonQueryEscapedAuthHeaderProvider registers an OAuth2 server
+// identified by the tokenURL prefix as an OAuth2 implementation
+// which doesn't support the query escaping the Authorization header token.
+// Once a server is registered, credentials (client_id and client_secret)
+// will not be URL query escaped before Base64 encoding them in
+// the Authorization header.
+// See https://github.com/golang/oauth2/issues/320 for background.
+func RegisterNonQueryEscapedAuthHeaderProvider(tokenURL string) {
+	internal.RegisterNonQueryEscapedAuthHeaderProvider(tokenURL)
+}
+
 // Config describes a typical 3-legged OAuth2 flow, with both the
 // client application information and the server's endpoint URLs.
 // For the client credentials 2-legged OAuth2 flow, see the clientcredentials

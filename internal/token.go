@@ -183,8 +183,33 @@ func providerAuthHeaderWorks(tokenURL string) bool {
 	return true
 }
 
+var nonQueryEscapedAuthHeaderProviders = []string{}
+
+func RegisterNonQueryEscapedAuthHeaderProvider(tokenURL string) {
+	nonQueryEscapedAuthHeaderProviders = append(nonQueryEscapedAuthHeaderProviders, tokenURL)
+}
+
+// providerAuthHeaderEscapable reports whether the OAuth2 server identified by the tokenURL
+// implements the OAuth2 spec correctly and query escapes the headers.
+// See https://github.com/golang/oauth2/issues/320 for background.
+func providerAuthHeaderEscapable(tokenURL string) bool {
+	for _, s := range nonQueryEscapedAuthHeaderProviders {
+		if strings.HasPrefix(tokenURL, s) {
+			// Some sites fail to implement the OAuth2 spec fully.
+			return false
+		}
+	}
+
+	// Assume the provider implements the spec properly
+	// otherwise. We can add more exceptions as they're
+	// discovered. We will _not_ be adding configurable hooks
+	// to this package to let users select server bugs.
+	return true
+}
+
 func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string, v url.Values) (*Token, error) {
 	bustedAuth := !providerAuthHeaderWorks(tokenURL)
+	nonEscapableAuth := !providerAuthHeaderEscapable(tokenURL)
 	if bustedAuth {
 		if clientID != "" {
 			v.Set("client_id", clientID)
@@ -199,8 +224,11 @@ func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string,
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	if !bustedAuth {
-		//req.SetBasicAuth(url.QueryEscape(clientID), url.QueryEscape(clientSecret))
-		req.SetBasicAuth(clientID, clientSecret)
+		if nonEscapableAuth {
+			req.SetBasicAuth(clientID, clientSecret)
+		} else {
+			req.SetBasicAuth(url.QueryEscape(clientID), url.QueryEscape(clientSecret))
+		}
 	}
 	r, err := ctxhttp.Do(ctx, ContextClient(ctx), req)
 	if err != nil {
