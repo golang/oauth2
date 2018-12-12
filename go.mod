@@ -1,1 +1,1 @@
-module github.com/golang/oauth2
+module golang.org/x/oauth2
