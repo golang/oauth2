@@ -137,6 +137,7 @@ var brokenAuthHeaderProviders = []string{
 	"https://gitter.im/login/oauth/token",
 	"https://openid-connect.onelogin.com/oidc",
 	"https://api.dailymotion.com/oauth/token",
+	"https://id.adform.com",
 }
 
 // brokenAuthHeaderDomains lists broken providers that issue dynamic endpoints.
