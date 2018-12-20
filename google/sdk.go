@@ -48,7 +48,7 @@ func NewSDKConfig(account string) (*SDKConfig, error) {
 		var out bytes.Buffer
 		cmd.Stdout = &out
 		if err := cmd.Run(); err != nil {
-			return nil, fmt.Errorf("failure looking up the active Cloud SDK account: %v", err)
+			return nil, fmt.Errorf("looking up the active Cloud SDK account: %v", err)
 		}
 		account = strings.TrimSpace(out.String())
 	}
@@ -57,11 +57,11 @@ func NewSDKConfig(account string) (*SDKConfig, error) {
 		var out bytes.Buffer
 		cmd.Stdout = &out
 		if err := cmd.Run(); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("running the config-helper command: %v", err)
 		}
 		var resp configHelperResp
 		if err := json.Unmarshal(out.Bytes(), &resp); err != nil {
-			return nil, fmt.Errorf("failure parsing the output from the Cloud SDK config helper: %v", err)
+			return nil, fmt.Errorf("parsing the config-helper output: %v", err)
 		}
 		return &resp, nil
 	}
@@ -101,11 +101,12 @@ func (c *SDKConfig) TokenSource(ctx context.Context) oauth2.TokenSource {
 func (c *SDKConfig) Token() (*oauth2.Token, error) {
 	resp, err := c.helper()
 	if err != nil {
-		return nil, fmt.Errorf("failure invoking the Cloud SDK config helper: %v", err)
+		return nil, err
 	}
-	expiry, err := time.Parse(time.RFC3339, resp.Credential.TokenExpiry)
+	expiryStr := resp.Credential.TokenExpiry
+	expiry, err := time.Parse(time.RFC3339, expiryStr)
 	if err != nil {
-		return nil, fmt.Errorf("failure parsing the access token expiration time: %v", err)
+		return nil, fmt.Errorf("parsing the access token expiry time %q: %v", expiryStr, err)
 	}
 	return &oauth2.Token{
 		AccessToken: resp.Credential.AccessToken,
