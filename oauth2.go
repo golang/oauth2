@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/oauth2/internal"
 )
@@ -70,8 +71,9 @@ type TokenSource interface {
 // Endpoint represents an OAuth 2.0 provider's authorization and token
 // endpoint URLs.
 type Endpoint struct {
-	AuthURL  string
-	TokenURL string
+	AuthURL       string
+	DeviceAuthURL string
+	TokenURL      string
 
 	// AuthStyle optionally specifies how the endpoint wants the
 	// client ID & client secret sent. The zero value means to
@@ -224,6 +226,62 @@ func (c *Config) Exchange(ctx context.Context, code string, opts ...AuthCodeOpti
 	return retrieveToken(ctx, c, v)
 }
 
+// AuthDevice returns a device auth struct which contains a device code
+// and authorization information provided for users to enter on another device.
+func (c *Config) AuthDevice(ctx context.Context, opts ...AuthCodeOption) (*DeviceAuth, error) {
+	v := url.Values{
+		"client_id": {c.ClientID},
+	}
+	if len(c.Scopes) > 0 {
+		v.Set("scope", strings.Join(c.Scopes, " "))
+	}
+	for _, opt := range opts {
+		opt.setValue(v)
+	}
+	return retrieveDeviceAuth(ctx, c, v)
+}
+
+// Poll does a polling to exchange an device code for a token.
+func (c *Config) Poll(ctx context.Context, da *DeviceAuth, opts ...AuthCodeOption) (*Token, error) {
+	v := url.Values{
+		"client_id":   {c.ClientID},
+		"grant_type":  {"urn:ietf:params:oauth:grant-type:device_code"},
+		"device_code": {da.DeviceCode},
+	}
+	if len(c.Scopes) > 0 {
+		v.Set("scope", strings.Join(c.Scopes, " "))
+	}
+	for _, opt := range opts {
+		opt.setValue(v)
+	}
+
+	// If no interval was provided, the client MUST use a reasonable default polling interval.
+	// See https://tools.ietf.org/html/draft-ietf-oauth-device-flow-07#section-3.5
+	interval := da.Interval
+	if interval == 0 {
+		interval = 5
+	}
+
+	for {
+		time.Sleep(time.Duration(interval) * time.Second)
+
+		tok, err := retrieveToken(ctx, c, v)
+		if err == nil {
+			return tok, nil
+		}
+
+		errTyp := parseError(err)
+		switch errTyp {
+		case errAccessDenied, errExpiredToken:
+			return tok, errors.New("oauth2: " + errTyp)
+		case errSlowDown:
+			interval += 1
+			fallthrough
+		case errAuthorizationPending:
+		}
+	}
+}
+
 // Client returns an HTTP client using the provided token.
 // The token will auto-refresh as necessary. The underlying
 // HTTP transport will be obtained using the provided context.
@@ -271,7 +329,6 @@ func (tf *tokenRefresher) Token() (*Token, error) {
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {tf.refreshToken},
 	})
-
 	if err != nil {
 		return nil, err
 	}
