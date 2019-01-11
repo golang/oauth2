@@ -20,6 +20,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// configHelperResp corresponds to the JSON output of the `gcloud config-helper` command.
 type configHelperResp struct {
 	Credential struct {
 		AccessToken string `json:"access_token"`
@@ -27,12 +28,10 @@ type configHelperResp struct {
 	} `json:"credential"`
 }
 
-type configHelper func() (*configHelperResp, error)
-
 // An SDKConfig provides access to tokens from an account already
 // authorized via the Google Cloud SDK.
 type SDKConfig struct {
-	helper configHelper
+	account string
 }
 
 // NewSDKConfig creates an SDKConfig for the given Google Cloud SDK
@@ -52,20 +51,7 @@ func NewSDKConfig(account string) (*SDKConfig, error) {
 		}
 		account = strings.TrimSpace(out.String())
 	}
-	helper := func() (*configHelperResp, error) {
-		cmd := exec.Command(gcloudCmd, "config", "config-helper", "--account", account, "--format=json")
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		if err := cmd.Run(); err != nil {
-			return nil, fmt.Errorf("running the config-helper command: %v", err)
-		}
-		var resp configHelperResp
-		if err := json.Unmarshal(out.Bytes(), &resp); err != nil {
-			return nil, fmt.Errorf("parsing the config-helper output: %v", err)
-		}
-		return &resp, nil
-	}
-	return &SDKConfig{helper}, nil
+	return &SDKConfig{account}, nil
 }
 
 func gcloudCommand() string {
@@ -97,21 +83,32 @@ func (c *SDKConfig) TokenSource(ctx context.Context) oauth2.TokenSource {
 	return c
 }
 
-// Token returns an oauth2.Token retrieved from the Google Cloud SDK.
-func (c *SDKConfig) Token() (*oauth2.Token, error) {
-	resp, err := c.helper()
-	if err != nil {
-		return nil, err
+func parseConfigHelperResp(b []byte) (*oauth2.Token, error) {
+	var r configHelperResp
+	if err := json.Unmarshal(b, &r); err != nil {
+		return nil, fmt.Errorf("parsing the config-helper output: %v", err)
 	}
-	expiryStr := resp.Credential.TokenExpiry
+	expiryStr := r.Credential.TokenExpiry
 	expiry, err := time.Parse(time.RFC3339, expiryStr)
 	if err != nil {
 		return nil, fmt.Errorf("parsing the access token expiry time %q: %v", expiryStr, err)
 	}
 	return &oauth2.Token{
-		AccessToken: resp.Credential.AccessToken,
+		AccessToken: r.Credential.AccessToken,
 		Expiry:      expiry,
 	}, nil
+}
+
+// Token returns an oauth2.Token retrieved from the Google Cloud SDK.
+func (c *SDKConfig) Token() (*oauth2.Token, error) {
+	gcloudCmd := gcloudCommand()
+	cmd := exec.Command(gcloudCmd, "config", "config-helper", "--account", c.account, "--format=json")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("running the config-helper command: %v", err)
+	}
+	return parseConfigHelperResp(out.Bytes())
 }
 
 func guessUnixHomeDir() string {
