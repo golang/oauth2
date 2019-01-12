@@ -5,7 +5,6 @@
 package google
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"runtime"
 	"strings"
 	"time"
 
@@ -31,6 +29,12 @@ type configHelperResp struct {
 // An SDKConfig provides access to tokens from an account already
 // authorized via the Google Cloud SDK.
 type SDKConfig struct {
+	// account is the name of the gcloud-authenticated account whose credentials should be used
+	// to generate OAuth tokens. This should be one of the accounts listed in the output of
+	// `gcloud auth list`.
+	//
+	// For instance, if the user logged in to gcloud with the account `user@example.com`, then
+	// they could use `user@example.com` as the value for this field.
 	account string
 }
 
@@ -41,24 +45,16 @@ type SDKConfig struct {
 // before using this function.
 // The Google Cloud SDK is available at https://cloud.google.com/sdk/.
 func NewSDKConfig(account string) (*SDKConfig, error) {
-	gcloudCmd := gcloudCommand()
-	if account == "" {
-		cmd := exec.Command(gcloudCmd, "auth", "list", "--filter=status=ACTIVE", "--format=value(account)")
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		if err := cmd.Run(); err != nil {
-			return nil, fmt.Errorf("looking up the active Cloud SDK account: %v", err)
-		}
-		account = strings.TrimSpace(out.String())
+	if account != "" {
+		return &SDKConfig{account}, nil
 	}
+	cmd := exec.Command("gcloud", "auth", "list", "--filter=status=ACTIVE", "--format=value(account)")
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("looking up the active Cloud SDK account: %v", err)
+	}
+	account = strings.TrimSpace(string(out))
 	return &SDKConfig{account}, nil
-}
-
-func gcloudCommand() string {
-	if runtime.GOOS == "windows" {
-		return "gcloud.cmd"
-	}
-	return "gcloud"
 }
 
 // Client returns an HTTP client using Google Cloud SDK credentials to
@@ -91,7 +87,7 @@ func parseConfigHelperResp(b []byte) (*oauth2.Token, error) {
 	expiryStr := r.Credential.TokenExpiry
 	expiry, err := time.Parse(time.RFC3339, expiryStr)
 	if err != nil {
-		return nil, fmt.Errorf("parsing the access token expiry time %q: %v", expiryStr, err)
+		return nil, fmt.Errorf("parsing the access token expiry time: %v", err)
 	}
 	return &oauth2.Token{
 		AccessToken: r.Credential.AccessToken,
@@ -101,14 +97,12 @@ func parseConfigHelperResp(b []byte) (*oauth2.Token, error) {
 
 // Token returns an oauth2.Token retrieved from the Google Cloud SDK.
 func (c *SDKConfig) Token() (*oauth2.Token, error) {
-	gcloudCmd := gcloudCommand()
-	cmd := exec.Command(gcloudCmd, "config", "config-helper", "--account", c.account, "--format=json")
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	if err := cmd.Run(); err != nil {
+	cmd := exec.Command("gcloud", "config", "config-helper", "--account", c.account, "--format=json")
+	out, err := cmd.Output()
+	if err != nil {
 		return nil, fmt.Errorf("running the config-helper command: %v", err)
 	}
-	return parseConfigHelperResp(out.Bytes())
+	return parseConfigHelperResp(out)
 }
 
 func guessUnixHomeDir() string {
