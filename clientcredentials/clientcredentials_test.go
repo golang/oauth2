@@ -6,11 +6,14 @@ package clientcredentials
 
 import (
 	"context"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	"golang.org/x/oauth2/internal"
 )
 
 func newConf(serverURL string) *Config {
@@ -111,21 +114,25 @@ func TestTokenRequest(t *testing.T) {
 }
 
 func TestTokenRefreshRequest(t *testing.T) {
+	internal.ResetAuthCache()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() == "/somethingelse" {
 			return
 		}
 		if r.URL.String() != "/token" {
-			t.Errorf("Unexpected token refresh request URL, %v is found.", r.URL)
+			t.Errorf("Unexpected token refresh request URL: %q", r.URL)
 		}
 		headerContentType := r.Header.Get("Content-Type")
-		if headerContentType != "application/x-www-form-urlencoded" {
-			t.Errorf("Unexpected Content-Type header, %v is found.", headerContentType)
+		if got, want := headerContentType, "application/x-www-form-urlencoded"; got != want {
+			t.Errorf("Content-Type = %q; want %q", got, want)
 		}
 		body, _ := ioutil.ReadAll(r.Body)
-		if string(body) != "audience=audience1&grant_type=client_credentials&scope=scope1+scope2" {
-			t.Errorf("Unexpected refresh token payload, %v is found.", string(body))
+		const want = "audience=audience1&grant_type=client_credentials&scope=scope1+scope2"
+		if string(body) != want {
+			t.Errorf("Unexpected refresh token payload.\n got: %s\nwant: %s\n", body, want)
 		}
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"access_token": "foo", "refresh_token": "bar"}`)
 	}))
 	defer ts.Close()
 	conf := newConf(ts.URL)

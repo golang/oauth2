@@ -8,12 +8,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
+
+	"golang.org/x/oauth2/internal"
 )
 
 type mockTransport struct {
@@ -93,22 +96,22 @@ func TestURLUnsafeClientConfig(t *testing.T) {
 func TestExchangeRequest(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() != "/token" {
-			t.Errorf("Unexpected exchange request URL, %v is found.", r.URL)
+			t.Errorf("Unexpected exchange request URL %q", r.URL)
 		}
 		headerAuth := r.Header.Get("Authorization")
-		if headerAuth != "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=" {
-			t.Errorf("Unexpected authorization header, %v is found.", headerAuth)
+		if want := "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ="; headerAuth != want {
+			t.Errorf("Unexpected authorization header %q, want %q", headerAuth, want)
 		}
 		headerContentType := r.Header.Get("Content-Type")
 		if headerContentType != "application/x-www-form-urlencoded" {
-			t.Errorf("Unexpected Content-Type header, %v is found.", headerContentType)
+			t.Errorf("Unexpected Content-Type header %q", headerContentType)
 		}
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			t.Errorf("Failed reading request body: %s.", err)
 		}
 		if string(body) != "code=exchange-code&grant_type=authorization_code&redirect_uri=REDIRECT_URL" {
-			t.Errorf("Unexpected exchange payload, %v is found.", string(body))
+			t.Errorf("Unexpected exchange payload; got %q", body)
 		}
 		w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
 		w.Write([]byte("access_token=90d64460d14870c08c81352a05dedd3465940a7c&scope=user&token_type=bearer"))
@@ -343,11 +346,12 @@ func TestExchangeRequest_BadResponseType(t *testing.T) {
 }
 
 func TestExchangeRequest_NonBasicAuth(t *testing.T) {
+	internal.ResetAuthCache()
 	tr := &mockTransport{
 		rt: func(r *http.Request) (w *http.Response, err error) {
 			headerAuth := r.Header.Get("Authorization")
 			if headerAuth != "" {
-				t.Errorf("Unexpected authorization header, %v is found.", headerAuth)
+				t.Errorf("Unexpected authorization header %q", headerAuth)
 			}
 			return nil, errors.New("no response")
 		},
@@ -356,8 +360,9 @@ func TestExchangeRequest_NonBasicAuth(t *testing.T) {
 	conf := &Config{
 		ClientID: "CLIENT_ID",
 		Endpoint: Endpoint{
-			AuthURL:  "https://accounts.google.com/auth",
-			TokenURL: "https://accounts.google.com/token",
+			AuthURL:   "https://accounts.google.com/auth",
+			TokenURL:  "https://accounts.google.com/token",
+			AuthStyle: AuthStyleInParams,
 		},
 	}
 
@@ -413,21 +418,24 @@ func TestPasswordCredentialsTokenRequest(t *testing.T) {
 }
 
 func TestTokenRefreshRequest(t *testing.T) {
+	internal.ResetAuthCache()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() == "/somethingelse" {
 			return
 		}
 		if r.URL.String() != "/token" {
-			t.Errorf("Unexpected token refresh request URL, %v is found.", r.URL)
+			t.Errorf("Unexpected token refresh request URL %q", r.URL)
 		}
 		headerContentType := r.Header.Get("Content-Type")
 		if headerContentType != "application/x-www-form-urlencoded" {
-			t.Errorf("Unexpected Content-Type header, %v is found.", headerContentType)
+			t.Errorf("Unexpected Content-Type header %q", headerContentType)
 		}
 		body, _ := ioutil.ReadAll(r.Body)
 		if string(body) != "grant_type=refresh_token&refresh_token=REFRESH_TOKEN" {
-			t.Errorf("Unexpected refresh token payload, %v is found.", string(body))
+			t.Errorf("Unexpected refresh token payload %q", body)
 		}
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"access_token": "foo", "refresh_token": "bar"}`)
 	}))
 	defer ts.Close()
 	conf := newConf(ts.URL)
@@ -478,7 +486,7 @@ func TestTokenRetrieveError(t *testing.T) {
 	}
 	_, ok := err.(*RetrieveError)
 	if !ok {
-		t.Fatalf("got %T error, expected *RetrieveError", err)
+		t.Fatalf("got %T error, expected *RetrieveError; error was: %v", err, err)
 	}
 	// Test error string for backwards compatibility
 	expected := fmt.Sprintf("oauth2: cannot fetch token: %v\nResponse: %s", "400 Bad Request", `{"error": "invalid_grant"}`)
