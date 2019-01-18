@@ -90,7 +90,9 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 		v.Set("scope", strings.Join(c.conf.Scopes, " "))
 	}
 	for k, p := range c.conf.EndpointParams {
-		if _, ok := v[k]; ok {
+		// Allow grant_type to be overridden to allow interoperability with
+		// non-compliant implementations.
+		if _, ok := v[k]; ok && k != "grant_type" {
 			return nil, fmt.Errorf("oauth2: cannot overwrite parameter %q", k)
 		}
 		v[k] = p
