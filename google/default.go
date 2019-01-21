@@ -89,7 +89,7 @@ func FindDefaultCredentials(ctx context.Context, scopes ...string) (*Credentials
 	filename := wellKnownFile()
 	if creds, err := readCredentialsFile(ctx, filename, scopes); err == nil {
 		return creds, nil
-	} else if !os.IsNotExist(err) {
+	} else if !(os.IsNotExist(err) || os.IsPermission(err)) {
 		return nil, fmt.Errorf("google: error getting credentials using well-known file (%v): %v", filename, err)
 	}
 
