@@ -75,6 +75,17 @@ func (c *Config) TokenSource(ctx context.Context) oauth2.TokenSource {
 	return oauth2.ReuseTokenSource(nil, source)
 }
 
+// TokenSourceWithToken returns a TokenSource that returns t until t expires or until t is set to nil or AccessToken to empty,
+// automatically refreshing it as necessary using the provided context and the
+// client ID and client secret.
+func (c *Config) TokenSourceWithToken(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {
+	source := &tokenSource{
+		ctx:  ctx,
+		conf: c,
+	}
+	return oauth2.ReuseTokenSource(t, source)
+}
+
 type tokenSource struct {
 	ctx  context.Context
 	conf *Config
