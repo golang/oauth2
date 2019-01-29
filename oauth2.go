@@ -63,8 +63,11 @@ type Config struct {
 	// Scope specifies optional requested permissions.
 	Scopes []string
 
-	// ClaimSet is optional requested parameter used to that
-	// specific Claims be returned.
+	// ClaimSet optionally enables requesting of individual Claims.
+	// It is the only way to request Claims outside the standard set.
+	// It is also the only way to request specific combinations
+	// of the standard Claims that cannot be specified using scope values.
+	// See https://openid.net/specs/openid-connect-core-1_0.html#ClaimsParameter.
 	ClaimSet *ClaimSet
 }
 
@@ -83,7 +86,7 @@ type Endpoint struct {
 	TokenURL string
 }
 
-// JSON keys for top-level member of the Claims request JSON.
+// JSON keys for top-level members of the "claims" request parameter value.
 const (
 	UserInfoClaim = "userinfo"
 	IdTokenClaim  = "id_token"
@@ -97,8 +100,7 @@ type claim struct {
 	Values    []string `json:"values,omitempty"`
 }
 
-// ClaimSet contains map with members of the Claims request.
-// It provides methods to add specific Claims.
+// ClaimSet contains all requested individual Claims.
 type ClaimSet struct {
 	claims map[string]map[string]*claim
 }
@@ -261,21 +263,22 @@ func (c *Config) TokenSource(ctx context.Context, t *Token) TokenSource {
 	}
 }
 
-// MarshalJSON is part of the json.Marshaler interface.
-// It's used to encode hidden map that contains Claims objects.
+// MarshalJSON is used to encode a private fields from ClaimSet.
+// Final output  represents actual value for "claims" request parameter.
 func (c *ClaimSet) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.claims)
 }
 
-// AddVoluntaryClaim adds the Claim being requested in default manner,
-// as a Voluntary Claim.
+// AddVoluntaryClaim adds the Claim being requested as a Voluntary Claim.
+// Authorization Server is not required to provide this Claim in its response.
 func (c *ClaimSet) AddVoluntaryClaim(topLevelName string, claimName string) {
 	c.initializeTopLevelMember(topLevelName)
 	c.claims[topLevelName][claimName] = nil
 }
 
 // AddClaimWithValue adds the Claim being requested to return a particular value.
-// The Claim can be defined as an Essential Claim.
+// If Claim is defined as an Essential Claim, the Authorization Server is required
+// to provide this Claim in its response.
 func (c *ClaimSet) AddClaimWithValue(topLevelName string, claimName string, essential bool, value string) {
 	c.initializeTopLevelMember(topLevelName)
 	c.claims[topLevelName][claimName] = &claim{
@@ -286,7 +289,8 @@ func (c *ClaimSet) AddClaimWithValue(topLevelName string, claimName string, esse
 
 // AddClaimWithValues adds the Claim being requested to return
 // one of a set of values, with the values appearing in order of preference.
-// The Claim can be defined as an Essential Claim.
+// If Claim is defined as an Essential Claim, the Authorization Server is required
+// to provide this Claim in its response.
 func (c *ClaimSet) AddClaimWithValues(topLevelName string, claimName string, essential bool, values ...string) {
 	c.initializeTopLevelMember(topLevelName)
 	c.claims[topLevelName][claimName] = &claim{
