@@ -6,7 +6,9 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -60,5 +62,16 @@ func TestRetrieveTokenWithContexts(t *testing.T) {
 	close(retrieved)
 	if err == nil {
 		t.Errorf("RetrieveToken (with cancelled context) = nil; want error")
+	}
+}
+
+func TestExpiresInUpperBound(t *testing.T) {
+	var e expirationTime
+	if err := e.UnmarshalJSON([]byte(fmt.Sprint(int64(math.MaxInt32) + 1))); err != nil {
+		t.Fatal(err)
+	}
+	const want = math.MaxInt32
+	if e != want {
+		t.Errorf("expiration time = %v; want %v", e, want)
 	}
 }
