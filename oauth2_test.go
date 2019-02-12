@@ -275,17 +275,22 @@ const day = 24 * time.Hour
 func TestExchangeRequest_JSONResponse_Expiry(t *testing.T) {
 	seconds := int32(day.Seconds())
 	for _, c := range []struct {
+		name    string
 		expires string
 		want    bool
 	}{
-		{fmt.Sprintf(`"expires_in": %d`, seconds), true},
-		{fmt.Sprintf(`"expires_in": "%d"`, seconds), true}, // PayPal case
-		{fmt.Sprintf(`"expires": %d`, seconds), true},      // Facebook case
-		{`"expires": false`, false},                        // wrong type
-		{`"expires": {}`, false},                           // wrong type
-		{`"expires": "zzz"`, false},                        // wrong value
+		{"normal", fmt.Sprintf(`"expires_in": %d`, seconds), true},
+		{"paypal", fmt.Sprintf(`"expires_in": "%d"`, seconds), true},
+		{"facebook", fmt.Sprintf(`"expires": %d`, seconds), true},
+		{"issue_239", fmt.Sprintf(`"expires_in": null, "expires": %d`, seconds), true},
+
+		{"wrong_type", `"expires": false`, false},
+		{"wrong_type2", `"expires": {}`, false},
+		{"wrong_value", `"expires": "zzz"`, false},
 	} {
-		testExchangeRequest_JSONResponse_expiry(t, c.expires, c.want)
+		t.Run(c.name, func(t *testing.T) {
+			testExchangeRequest_JSONResponse_expiry(t, c.expires, c.want)
+		})
 	}
 }
 

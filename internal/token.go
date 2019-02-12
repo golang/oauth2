@@ -78,6 +78,9 @@ func (e *tokenJSON) expiry() (t time.Time) {
 type expirationTime int32
 
 func (e *expirationTime) UnmarshalJSON(b []byte) error {
+	if len(b) == 0 || string(b) == "null" {
+		return nil
+	}
 	var n json.Number
 	err := json.Unmarshal(b, &n)
 	if err != nil {
@@ -257,7 +260,7 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 			Raw:          vals,
 		}
 		e := vals.Get("expires_in")
-		if e == "" {
+		if e == "" || e == "null" {
 			// TODO(jbd): Facebook's OAuth2 implementation is broken and
 			// returns expires_in field in expires. Remove the fallback to expires,
 			// when Facebook fixes their implementation.
