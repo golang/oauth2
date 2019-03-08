@@ -67,7 +67,8 @@ type Config struct {
 	// intended audience.
 	Audience string
 
-	// PrivateClaims optionally specifies private claims in the JWT.
+	// See http://tools.ietf.org/html/draft-jones-json-web-token-10#section-4.3
+	// PrivateClaims optionally specifies custome private claims in the JWT.
 	PrivateClaims map[string]interface{}
 
 	// UseIDToken optionally uses ID token instead of access token.
