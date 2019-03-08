@@ -66,9 +66,12 @@ type Config struct {
 	// request.  If empty, the value of TokenURL is used as the
 	// intended audience.
 	Audience string
-	
+
 	// PrivateClaims optionally specifies private claims in the JWT.
 	PrivateClaims map[string]interface{}
+
+	// UseIDToken optionally uses ID token instead of access token.
+	UseIDToken bool
 }
 
 // TokenSource returns a JWT TokenSource using the configuration
@@ -100,10 +103,10 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	}
 	hc := oauth2.NewClient(js.ctx, nil)
 	claimSet := &jws.ClaimSet{
-		Iss:   js.conf.Email,
-		Scope: strings.Join(js.conf.Scopes, " "),
-		Aud:   js.conf.TokenURL,
-		PrivateClaims:  js.conf.PrivateClaims,
+		Iss:           js.conf.Email,
+		Scope:         strings.Join(js.conf.Scopes, " "),
+		Aud:           js.conf.TokenURL,
+		PrivateClaims: js.conf.PrivateClaims,
 	}
 	if subject := js.conf.Subject; subject != "" {
 		claimSet.Sub = subject
@@ -167,6 +170,9 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 		claimSet, err := jws.Decode(v)
 		if err != nil {
 			return nil, fmt.Errorf("oauth2: error decoding JWT token: %v", err)
+		}
+		if js.conf.UseIDToken {
+			token.AccessToken = tokenRes.IDToken
 		}
 		token.Expiry = time.Unix(claimSet.Exp, 0)
 	}
