@@ -66,6 +66,9 @@ type Config struct {
 	// request.  If empty, the value of TokenURL is used as the
 	// intended audience.
 	Audience string
+	
+	// PrivateClaims optionally specifies private claims in the JWT.
+	PrivateClaims map[string]interface{}
 }
 
 // TokenSource returns a JWT TokenSource using the configuration
@@ -100,6 +103,7 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 		Iss:   js.conf.Email,
 		Scope: strings.Join(js.conf.Scopes, " "),
 		Aud:   js.conf.TokenURL,
+		PrivateClaims:  js.conf.PrivateClaims,
 	}
 	if subject := js.conf.Subject; subject != "" {
 		claimSet.Sub = subject
