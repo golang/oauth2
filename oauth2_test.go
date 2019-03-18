@@ -275,26 +275,26 @@ const day = 24 * time.Hour
 func TestExchangeRequest_JSONResponse_Expiry(t *testing.T) {
 	seconds := int32(day.Seconds())
 	for _, c := range []struct {
-		name    string
-		expires string
-		want    bool
+		name        string
+		expires     string
+		want        bool
+		nullExpires bool
 	}{
-		{"normal", fmt.Sprintf(`"expires_in": %d`, seconds), true},
-		{"paypal", fmt.Sprintf(`"expires_in": "%d"`, seconds), true},
-		{"facebook", fmt.Sprintf(`"expires": %d`, seconds), true},
-		{"issue_239", fmt.Sprintf(`"expires_in": null, "expires": %d`, seconds), true},
+		{"normal", fmt.Sprintf(`"expires_in": %d`, seconds), true, false},
+		{"paypal", fmt.Sprintf(`"expires_in": "%d"`, seconds), true, false},
+		{"issue_239", fmt.Sprintf(`"expires_in": null`), true, true},
 
-		{"wrong_type", `"expires": false`, false},
-		{"wrong_type2", `"expires": {}`, false},
-		{"wrong_value", `"expires": "zzz"`, false},
+		{"wrong_type", `"expires_in": false`, false, false},
+		{"wrong_type2", `"expires_in": {}`, false, false},
+		{"wrong_value", `"expires_in": "zzz"`, false, false},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			testExchangeRequest_JSONResponse_expiry(t, c.expires, c.want)
+			testExchangeRequest_JSONResponse_expiry(t, c.expires, c.want, c.nullExpires)
 		})
 	}
 }
 
-func testExchangeRequest_JSONResponse_expiry(t *testing.T, exp string, want bool) {
+func testExchangeRequest_JSONResponse_expiry(t *testing.T, exp string, want, nullExpires bool) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(fmt.Sprintf(`{"access_token": "90d", "scope": "user", "token_type": "bearer", %s}`, exp)))
@@ -303,7 +303,7 @@ func testExchangeRequest_JSONResponse_expiry(t *testing.T, exp string, want bool
 	conf := newConf(ts.URL)
 	t1 := time.Now().Add(day)
 	tok, err := conf.Exchange(context.Background(), "exchange-code")
-	t2 := time.Now().Add(day)
+	t2 := t1.Add(day)
 
 	if got := (err == nil); got != want {
 		if want {
@@ -319,8 +319,12 @@ func testExchangeRequest_JSONResponse_expiry(t *testing.T, exp string, want bool
 		t.Fatalf("Token invalid. Got: %#v", tok)
 	}
 	expiry := tok.Expiry
+
+	if nullExpires && expiry.IsZero() {
+		return
+	}
 	if expiry.Before(t1) || expiry.After(t2) {
-		t.Errorf("Unexpected value for Expiry: %v (shold be between %v and %v)", expiry, t1, t2)
+		t.Errorf("Unexpected value for Expiry: %v (should be between %v and %v)", expiry, t1, t2)
 	}
 }
 
