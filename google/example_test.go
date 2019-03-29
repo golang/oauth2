@@ -126,7 +126,9 @@ func ExampleComputeTokenSource() {
 			// Fetch from Google Compute Engine's metadata server to retrieve
 			// an access token for the provided account.
 			// If no account is specified, "default" is used.
-			Source: google.ComputeTokenSource(""),
+			// If no scopes are specified, a set of default scopes
+			// are automatically granted.
+			Source: google.ComputeTokenSource("", "https://www.googleapis.com/auth/bigquery"),
 		},
 	}
 	client.Get("...")
