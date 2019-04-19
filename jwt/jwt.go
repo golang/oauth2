@@ -124,12 +124,12 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	v.Set("assertion", payload)
 	resp, err := hc.PostForm(js.conf.TokenURL, v)
 	if err != nil {
-		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
+		return nil, &oauth2.RetrieveError{Err: err}
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
+		return nil, &oauth2.RetrieveError{Err: err}
 	}
 	if c := resp.StatusCode; c < 200 || c > 299 {
 		return nil, &oauth2.RetrieveError{
@@ -145,7 +145,7 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 		ExpiresIn   int64  `json:"expires_in"` // relative seconds from now
 	}
 	if err := json.Unmarshal(body, &tokenRes); err != nil {
-		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
+		return nil, &oauth2.RetrieveError{Err: err}
 	}
 	token := &oauth2.Token{
 		AccessToken: tokenRes.AccessToken,

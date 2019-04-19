@@ -165,8 +165,11 @@ func retrieveToken(ctx context.Context, c *Config, v url.Values) (*Token, error)
 }
 
 // RetrieveError is the error returned when the token endpoint returns a
-// non-2XX HTTP status code.
+// non-2XX HTTP status code or fails with non-HTTP error
 type RetrieveError struct {
+	// Err is the (net) error happened during HTTP request when response not received
+	Err error
+
 	Response *http.Response
 	// Body is the body that was consumed by reading Response.Body.
 	// It may be truncated.
@@ -174,5 +177,9 @@ type RetrieveError struct {
 }
 
 func (r *RetrieveError) Error() string {
-	return fmt.Sprintf("oauth2: cannot fetch token: %v\nResponse: %s", r.Response.Status, r.Body)
+	if r.Err != nil {
+		return fmt.Sprintf("oauth2: cannot fetch token: %v", r.Err)
+	} else {
+		return fmt.Sprintf("oauth2: cannot fetch token: %v\nResponse: %s", r.Response.Status, r.Body)
+	}
 }
