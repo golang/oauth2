@@ -69,13 +69,10 @@ type Config struct {
 
 	// PrivateClaims optionally specifies custom private claims in the JWT.
 	// See http://tools.ietf.org/html/draft-jones-json-web-token-10#section-4.3
-	//
-	// Private claim values can be different types, therefore interface{} is
-	// used and marshalled using custom code.
 	PrivateClaims map[string]interface{}
 
-	// UseIDToken optionally uses ID token instead of access token when
-	// server returns both 'access_token' and 'id_token'.
+	// UseIDToken optionally specifies whether ID token should be used instead
+	// of access token when the server returns both.
 	UseIDToken bool
 }
 
@@ -176,10 +173,13 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 		if err != nil {
 			return nil, fmt.Errorf("oauth2: error decoding JWT token: %v", err)
 		}
-		if js.conf.UseIDToken {
-			token.AccessToken = tokenRes.IDToken
-		}
 		token.Expiry = time.Unix(claimSet.Exp, 0)
+	}
+	if js.conf.UseIDToken {
+		if tokenRes.IDToken == "" {
+			return nil, fmt.Errorf("oauth2: response doesn't have JWT token")
+		}
+		token.AccessToken = tokenRes.IDToken
 	}
 	return token, nil
 }
