@@ -280,7 +280,7 @@ func TestJWTFetch_AssertionPayload(t *testing.T) {
 				m := got.(map[string]interface{})
 				for v, k := range conf.PrivateClaims {
 					if !reflect.DeepEqual(m[v], k) {
-						t.Errorf("payload private claims key = %q: got %q; want %q", v, m[v], k)
+						t.Errorf("payload private claims key = %q: got %#v; want %#v", v, m[v], k)
 					}
 				}
 			}
