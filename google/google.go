@@ -171,9 +171,27 @@ func ComputeTokenSource(account string, scope ...string) oauth2.TokenSource {
 	return oauth2.ReuseTokenSource(nil, computeSource{account: account, scopes: scope})
 }
 
+// IDComputeTokenSource returns a token source that fetches id tokens
+// from Google Compute Engine (GCE)'s metadata server. It's only valid to use
+// this token source if your program is running on a GCE instance.
+func IDComputeTokenSource(account string, opts IDTokenOpts) oauth2.TokenSource {
+	return oauth2.ReuseTokenSource(nil, computeSource{account: account, idTokenOpts: opts})
+}
+
+// IDTokenOpts includes options that can be used with IDComputeTokenSource
+// Audiences are the target audiences, that should be used in the 'aud' claim of the token payload
+// FullFormat determines whether extra details are included from the instance in the payload, the default is false (standard format)
+// Licenses is an optional string for any instance license codes to include in the payload https://cloud.google.com/compute/docs/reference/rest/v1/images/get#body.Image.FIELDS.license_code
+type IDTokenOpts struct {
+	Audiences  []string
+	FullFormat bool
+	Licenses   []string
+}
+
 type computeSource struct {
-	account string
-	scopes  []string
+	account     string
+	scopes      []string
+	idTokenOpts IDTokenOpts
 }
 
 func (cs computeSource) Token() (*oauth2.Token, error) {
@@ -184,12 +202,30 @@ func (cs computeSource) Token() (*oauth2.Token, error) {
 	if acct == "" {
 		acct = "default"
 	}
-	tokenURI := "instance/service-accounts/" + acct + "/token"
-	if len(cs.scopes) > 0 {
+	var tokenURI string
+	if len(cs.idTokenOpts.Audiences) > 0 {
 		v := url.Values{}
-		v.Set("scopes", strings.Join(cs.scopes, ","))
-		tokenURI = tokenURI + "?" + v.Encode()
+		v.Set("audience", strings.Join(cs.idTokenOpts.Audiences, ","))
+		tokenURI = fmt.Sprintf("instance/service-accounts/%s/identity?", acct) + v.Encode()
+		// tokenURI = fmt.Sprintf("instance/service-accounts/%s/identity?audience=%s&format=full", acct, cs.idTokenOpts.Audience)
+		if cs.idTokenOpts.FullFormat {
+			// standard format is default
+			tokenURI = tokenURI + "&format=full"
+		}
+		if len(cs.idTokenOpts.Licenses) > 0 {
+			l := url.Values{}
+			l.Set("licenses", strings.Join(cs.idTokenOpts.Licenses, ","))
+			tokenURI = tokenURI + "&" + l.Encode()
+		}
+	} else {
+		tokenURI = "instance/service-accounts/" + acct + "/token"
+		if len(cs.scopes) > 0 {
+			v := url.Values{}
+			v.Set("scopes", strings.Join(cs.scopes, ","))
+			tokenURI = tokenURI + "?" + v.Encode()
+		}
 	}
+
 	tokenJSON, err := metadata.Get(tokenURI)
 	if err != nil {
 		return nil, err
