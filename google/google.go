@@ -89,6 +89,18 @@ func JWTConfigFromJSON(jsonKey []byte, scope ...string) (*jwt.Config, error) {
 	return f.jwtConfig(scope), nil
 }
 
+// IDConfigFromJSON uses a Google Developers service account JSON key file to request
+// an id-token signed by Google for a specific target audience.
+func IDConfigFromJSON(jsonKey []byte, audience string) (*jwt.Config, error) {
+	cfg, err := JWTConfigFromJSON(jsonKey)
+	if err != nil {
+		return nil, err
+	}
+	cfg.PrivateClaims = map[string]interface{}{"target_audience": audience}
+	cfg.UseIDToken = true
+	return cfg, err
+}
+
 // JSON key file types.
 const (
 	serviceAccountKey  = "service_account"
