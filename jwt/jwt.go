@@ -71,6 +71,11 @@ type Config struct {
 	// See http://tools.ietf.org/html/draft-jones-json-web-token-10#section-4.3
 	PrivateClaims map[string]interface{}
 
+	// Query-string parameters in addition to ones already set ("grant_type"
+	// and "assertion"). "grant_type" and "assertion" should not be set through
+	// this parameter.
+	Querystring url.Values
+
 	// UseIDToken optionally specifies whether ID token should be used instead
 	// of access token when the server returns both.
 	UseIDToken bool
@@ -131,6 +136,12 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	v := url.Values{}
 	v.Set("grant_type", defaultGrantType)
 	v.Set("assertion", payload)
+	for qn, qv := range js.conf.Querystring {
+		if qn == "grant_type" || qn == "assertion" {
+			return nil, fmt.Errorf("oauth2: supplying param \"%v\" in Querystring is illegal", qn)
+		}
+		v[qn] = qv
+	}
 	resp, err := hc.PostForm(js.conf.TokenURL, v)
 	if err != nil {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)

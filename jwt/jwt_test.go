@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"strings"
 	"testing"
@@ -142,9 +143,12 @@ func TestJWTFetch_BadResponseType(t *testing.T) {
 
 func TestJWTFetch_Assertion(t *testing.T) {
 	var assertion string
+	var extra_querystring_param string
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		assertion = r.Form.Get("assertion")
+		extra_querystring_param = r.Form.Get("extra_querystring_param")
 
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{
@@ -161,11 +165,16 @@ func TestJWTFetch_Assertion(t *testing.T) {
 		PrivateKey:   dummyPrivateKey,
 		PrivateKeyID: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 		TokenURL:     ts.URL,
+		Querystring:  url.Values{"extra_querystring_param": []string{"example_value"}},
 	}
 
 	_, err := conf.TokenSource(context.Background()).Token()
 	if err != nil {
 		t.Fatalf("Failed to fetch token: %v", err)
+	}
+
+	if extra_querystring_param != "example_value" {
+		t.Fatalf("extra_querystring_param = %v; should be \"example_value\"", extra_querystring_param)
 	}
 
 	parts := strings.Split(assertion, ".")
@@ -314,5 +323,19 @@ func TestTokenRetrieveError(t *testing.T) {
 	expected := fmt.Sprintf("oauth2: cannot fetch token: %v\nResponse: %s", "400 Bad Request", `{"error": "invalid_grant"}`)
 	if errStr := err.Error(); errStr != expected {
 		t.Fatalf("got %#v, expected %#v", errStr, expected)
+	}
+}
+
+func TestInvalidConfigArgument(t *testing.T) {
+	conf := &Config{
+		Email:       "aaa@xxx.com",
+		PrivateKey:  dummyPrivateKey,
+		Audience:    "https://example.com",
+		Querystring: url.Values{"assertion": []string{"Trying to override assertion"}},
+	}
+
+	_, err := conf.TokenSource(context.Background()).Token()
+	if err == nil {
+		t.Fatalf("got no error, expected one")
 	}
 }
