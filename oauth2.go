@@ -244,10 +244,7 @@ func (c *Config) TokenSource(ctx context.Context, t *Token) TokenSource {
 	if t != nil {
 		tkr.refreshToken = t.RefreshToken
 	}
-	return &reuseTokenSource{
-		t:   t,
-		new: tkr,
-	}
+	return ReuseTokenSource(t, tkr)
 }
 
 // tokenRefresher is a TokenSource that makes "grant_type"=="refresh_token"
@@ -281,34 +278,6 @@ func (tf *tokenRefresher) Token() (*Token, error) {
 	return tk, err
 }
 
-// reuseTokenSource is a TokenSource that holds a single token in memory
-// and validates its expiry before each call to retrieve it with
-// Token. If it's expired, it will be auto-refreshed using the
-// new TokenSource.
-type reuseTokenSource struct {
-	new TokenSource // called when t is expired.
-
-	mu sync.Mutex // guards t
-	t  *Token
-}
-
-// Token returns the current token if it's still valid, else will
-// refresh the current token (using r.Context for HTTP client
-// information) and return the new one.
-func (s *reuseTokenSource) Token() (*Token, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.t.Valid() {
-		return s.t, nil
-	}
-	t, err := s.new.Token()
-	if err != nil {
-		return nil, err
-	}
-	s.t = t
-	return t, nil
-}
-
 // StaticTokenSource returns a TokenSource that always returns the same token.
 // Because the provided token t is never refreshed, StaticTokenSource is only
 // useful for tokens that never expire.
@@ -323,6 +292,58 @@ type staticTokenSource struct {
 
 func (s staticTokenSource) Token() (*Token, error) {
 	return s.t, nil
+}
+
+// ValidFunc should return false when the passed token is invalid and true when
+// the token is valid. ValidFunc should NOT modify the token passed to it.
+type ValidFunc func(t *Token) bool
+
+// CustomTokenSource returns a TokenSource which repeatedly returns the
+// same token as long as ValidFunc returns true, starting with t.
+// When ValidFunc returns false (the cached token is invalid), a new token
+// is obtained from src.
+func CustomTokenSource(t *Token, src TokenSource, validFunc ValidFunc) TokenSource {
+	// Don't wrap a customTokenSource in itself. That would work,
+	// but cause an unnecessary number of mutex operations.
+	// Just build the equivalent one.
+	if rt, ok := src.(*customTokenSource); ok {
+		if t == nil {
+			// Just use it directly.
+			return rt
+		}
+		src = rt.new
+	}
+	return &customTokenSource{
+		t:         t,
+		new:       src,
+		validFunc: validFunc,
+	}
+}
+
+type customTokenSource struct {
+	validFunc ValidFunc   // used for determining whether the token should be refreshed
+	new       TokenSource // called when validFunc returns invalid
+
+	mu sync.Mutex // guards t
+	t  *Token
+}
+
+// Token returns a TokenSource that will return the current token so long as
+// ValidFunc returns that the token is valid, otherwise it will refresh the
+// current token (using r.Context for HTTP client information) and return the
+// new one.
+func (s *customTokenSource) Token() (*Token, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.validFunc(s.t) {
+		return s.t, nil
+	}
+	t, err := s.new.Token()
+	if err != nil {
+		return nil, err
+	}
+	s.t = t
+	return t, nil
 }
 
 // HTTPClient is the context key to use with golang.org/x/net/context's
@@ -364,18 +385,7 @@ func NewClient(ctx context.Context, src TokenSource) *http.Client {
 // means it's always safe to wrap ReuseTokenSource around any other
 // TokenSource without adverse effects.
 func ReuseTokenSource(t *Token, src TokenSource) TokenSource {
-	// Don't wrap a reuseTokenSource in itself. That would work,
-	// but cause an unnecessary number of mutex operations.
-	// Just build the equivalent one.
-	if rt, ok := src.(*reuseTokenSource); ok {
-		if t == nil {
-			// Just use it directly.
-			return rt
-		}
-		src = rt.new
-	}
-	return &reuseTokenSource{
-		t:   t,
-		new: src,
-	}
+	return CustomTokenSource(t, src, func(t *Token) bool {
+		return t.Valid()
+	})
 }

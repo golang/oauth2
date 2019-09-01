@@ -565,3 +565,59 @@ func TestConfigClientWithToken(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+type mockTokenSource struct {
+	nextToken *Token
+}
+
+func (s mockTokenSource) Token() (*Token, error) {
+	return s.nextToken, nil
+}
+
+func TestCustomTokenSource(t *testing.T) {
+	foobarToken := &Token{AccessToken: "foobar"}
+	barbazToken := &Token{AccessToken: "barbaz"}
+
+	testCases := []struct {
+		name          string
+		t             *Token
+		src           TokenSource
+		validToken    bool
+		expectedToken *Token
+	}{
+		{
+			name:          "invalid token",
+			t:             foobarToken,
+			src:           mockTokenSource{nextToken: barbazToken},
+			validToken:    false,
+			expectedToken: barbazToken,
+		},
+		{
+			name:          "valid token",
+			t:             foobarToken,
+			src:           mockTokenSource{nextToken: barbazToken},
+			validToken:    true,
+			expectedToken: foobarToken,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			validFunc := func(t *Token) bool { return tt.validToken }
+			ts := CustomTokenSource(tt.t, tt.src, validFunc)
+
+			// the same expected token should always be returned no matter how many iterations
+			// we go through since the validfunc returns a constant value
+			for i := 0; i < 3; i++ {
+				newToken, err := ts.Token()
+				if err != nil {
+					t.Errorf("did not expect an error but got: %v", err)
+				}
+
+				if tt.expectedToken != newToken {
+					t.Errorf("expected token %v, but got %v", tt.expectedToken, newToken)
+				}
+			}
+		})
+	}
+}
