@@ -24,7 +24,7 @@ func ShopEndpoint(shop string) oauth2.Endpoint {
 }
 
 // VerifyRequest validates that the requested params come from shopify as signed
-// with an hmac sha256 string - returns true/false
+// with an hmac sha256 string against your api secret key - returns true/false
 func VerifyRequest(r *http.Request, secret string) bool {
 	values := r.URL.Query()
 
