@@ -10,7 +10,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func TestCognitoEndpoint(t *testing.T) {
+func TestAWSCognitoEndpoint(t *testing.T) {
 
 	var endpointTests = []struct {
 		in  string
@@ -34,7 +34,7 @@ func TestCognitoEndpoint(t *testing.T) {
 
 	for _, tt := range endpointTests {
 		t.Run(tt.in, func(t *testing.T) {
-			endpoint := Cognito(tt.in)
+			endpoint := AWSCognito(tt.in)
 			if endpoint != tt.out {
 				t.Errorf("got %q, want %q", endpoint, tt.out)
 			}
