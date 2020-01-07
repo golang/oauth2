@@ -11,187 +11,187 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// Amazon provides endpoint for using OAuth2 to access Amazon.
+// Amazon is the endpoint for Amazon.
 var Amazon = oauth2.Endpoint{
 	AuthURL:  "https://www.amazon.com/ap/oa",
 	TokenURL: "https://api.amazon.com/auth/o2/token",
 }
 
-// Bitbucket provides endpoint for using OAuth2 to access Bitbucket.
+// Bitbucket is the endpoint for Bitbucket.
 var Bitbucket = oauth2.Endpoint{
 	AuthURL:  "https://bitbucket.org/site/oauth2/authorize",
 	TokenURL: "https://bitbucket.org/site/oauth2/access_token",
 }
 
-// Cern provides endpoint for using OAuth2 to access Cern.
+// Cern is the endpoint for CERN.
 var Cern = oauth2.Endpoint{
 	AuthURL:  "https://oauth.web.cern.ch/OAuth/Authorize",
 	TokenURL: "https://oauth.web.cern.ch/OAuth/Token",
 }
 
-// Facebook provides endpoint for using OAuth2 to access Facebook.
+// Facebook is the endpoint for Facebook.
 var Facebook = oauth2.Endpoint{
 	AuthURL:  "https://www.facebook.com/v3.2/dialog/oauth",
 	TokenURL: "https://graph.facebook.com/v3.2/oauth/access_token",
 }
 
-// Foursquare provides endpoint for using OAuth2 to access Foursquare.
+// Foursquare is the endpoint for Foursquare.
 var Foursquare = oauth2.Endpoint{
 	AuthURL:  "https://foursquare.com/oauth2/authorize",
 	TokenURL: "https://foursquare.com/oauth2/access_token",
 }
 
-// Fitbit provides endpoint for using OAuth2 to access Fitbit.
+// Fitbit is the endpoint for Fitbit.
 var Fitbit = oauth2.Endpoint{
 	AuthURL:  "https://www.fitbit.com/oauth2/authorize",
 	TokenURL: "https://api.fitbit.com/oauth2/token",
 }
 
-// GitHub provides endpoint for using OAuth2 to access Github.
+// GitHub is the endpoint for Github.
 var GitHub = oauth2.Endpoint{
 	AuthURL:  "https://github.com/login/oauth/authorize",
 	TokenURL: "https://github.com/login/oauth/access_token",
 }
 
-// GitLab provides endpoint for using OAuth2 to access Gitlab.
+// GitLab is the endpoint for GitLab.
 var GitLab = oauth2.Endpoint{
 	AuthURL:  "https://gitlab.com/oauth/authorize",
 	TokenURL: "https://gitlab.com/oauth/token",
 }
 
-// Google provides endpoint for using OAuth2 to access Google.
+// Google is the endpoint for Google.
 var Google = oauth2.Endpoint{
 	AuthURL:  "https://accounts.google.com/o/oauth2/auth",
 	TokenURL: "https://oauth2.googleapis.com/token",
 }
 
-// Heroku provides endpoint for using OAuth2 to access Heroku.
+// Heroku is the endpoint for Heroku.
 var Heroku = oauth2.Endpoint{
 	AuthURL:  "https://id.heroku.com/oauth/authorize",
 	TokenURL: "https://id.heroku.com/oauth/token",
 }
 
-// HipChat provides endpoint for using OAuth2 to access HipChat.
+// HipChat is the endpoint for HipChat.
 var HipChat = oauth2.Endpoint{
 	AuthURL:  "https://www.hipchat.com/users/authorize",
 	TokenURL: "https://api.hipchat.com/v2/oauth/token",
 }
 
-// Instagram provides endpoint for using OAuth2 to access Instagram.
+// Instagram is the endpoint for Instagram.
 var Instagram = oauth2.Endpoint{
 	AuthURL:  "https://api.instagram.com/oauth/authorize",
 	TokenURL: "https://api.instagram.com/oauth/access_token",
 }
 
-// Kakao provides endpoint for using OAuth2 to access Kakao.
-var Kakao = oauth2.Endpoint{
+// KaKao is the endpoint for KaKao.
+var KaKao = oauth2.Endpoint{
 	AuthURL:  "https://kauth.kakao.com/oauth/authorize",
 	TokenURL: "https://kauth.kakao.com/oauth/token",
 }
 
-// Linkedin provides endpoint for using OAuth2 to access Linkedin.
-var Linkedin = oauth2.Endpoint{
+// LinkedIn is the endpoint for LinkedIn.
+var LinkedIn = oauth2.Endpoint{
 	AuthURL:  "https://www.linkedin.com/oauth/v2/authorization",
 	TokenURL: "https://www.linkedin.com/oauth/v2/accessToken",
 }
 
-// Mailchimp provides endpoint for using OAuth2 to access Mailchimp.
+// Mailchimp is the endpoint for Mailchimp.
 var Mailchimp = oauth2.Endpoint{
 	AuthURL:  "https://login.mailchimp.com/oauth2/authorize",
 	TokenURL: "https://login.mailchimp.com/oauth2/token",
 }
 
-// Mailru provides endpoint for using OAuth2 to access Mailru.
+// Mailru is the endpoint for Mail.Ru.
 var Mailru = oauth2.Endpoint{
 	AuthURL:  "https://o2.mail.ru/login",
 	TokenURL: "https://o2.mail.ru/token",
 }
 
-// MediaMath provides endpoint for using OAuth2 to access MediaMath.
+// MediaMath is the endpoint for MediaMath.
 var MediaMath = oauth2.Endpoint{
 	AuthURL:  "https://api.mediamath.com/oauth2/v1.0/authorize",
 	TokenURL: "https://api.mediamath.com/oauth2/v1.0/token",
 }
 
-// MediamathSandbox provides endpoint for using OAuth2 to access Mediamath Sandbox.
-var MediamathSandbox = oauth2.Endpoint{
+// MediaMathSandbox is the endpoint for MediaMath Sandbox.
+var MediaMathSandbox = oauth2.Endpoint{
 	AuthURL:  "https://t1sandbox.mediamath.com/oauth2/v1.0/authorize",
 	TokenURL: "https://t1sandbox.mediamath.com/oauth2/v1.0/token",
 }
 
-// Microsoft provides endpoint for using OAuth2 to access Microsoft.
+// Microsoft is the endpoint for Microsoft.
 var Microsoft = oauth2.Endpoint{
 	AuthURL:  "https://login.live.com/oauth20_authorize.srf",
 	TokenURL: "https://login.live.com/oauth20_token.srf",
 }
 
-// Nokiahealth provides endpoint for using OAuth2 to access Nokiahealth.
-var Nokiahealth = oauth2.Endpoint{
+// NokiaHealth is the endpoint for Nokia Health.
+var NokiaHealth = oauth2.Endpoint{
 	AuthURL:  "https://account.health.nokia.com/oauth2_user/authorize2",
 	TokenURL: "https://account.health.nokia.com/oauth2/token",
 }
 
-// Odnoklassniki provides endpoint for using OAuth2 to access Odnoklassniki.
+// Odnoklassniki is the endpoint for Odnoklassniki.
 var Odnoklassniki = oauth2.Endpoint{
 	AuthURL:  "https://www.odnoklassniki.ru/oauth/authorize",
 	TokenURL: "https://api.odnoklassniki.ru/oauth/token.do",
 }
 
-// Paypal provides endpoint for using OAuth2 to access Paypal.
-var Paypal = oauth2.Endpoint{
+// PayPal is the endpoint for PayPal.
+var PayPal = oauth2.Endpoint{
 	AuthURL:  "https://www.paypal.com/webapps/auth/protocol/openidconnect/v1/authorize",
 	TokenURL: "https://api.paypal.com/v1/identity/openidconnect/tokenservice",
 }
 
-// PaypalSandbox provides endpoint for using OAuth2 to access Paypal Sandbox.
-var PaypalSandbox = oauth2.Endpoint{
+// PayPalSandbox is the endpoint for PayPal Sandbox.
+var PayPalSandbox = oauth2.Endpoint{
 	AuthURL:  "https://www.sandbox.paypal.com/webapps/auth/protocol/openidconnect/v1/authorize",
 	TokenURL: "https://api.sandbox.paypal.com/v1/identity/openidconnect/tokenservice",
 }
 
-// Slack provides endpoint for using OAuth2 to access Slack.
+// Slack is the endpoint for Slack.
 var Slack = oauth2.Endpoint{
 	AuthURL:  "https://slack.com/oauth/authorize",
 	TokenURL: "https://slack.com/api/oauth.access",
 }
 
-// Spotify provides endpoint for using OAuth2 to access Spotify.
+// Spotify is the endpoint for Spotify.
 var Spotify = oauth2.Endpoint{
 	AuthURL:  "https://accounts.spotify.com/authorize",
 	TokenURL: "https://accounts.spotify.com/api/token",
 }
 
-// Stackoverflow provides endpoint for using OAuth2 to access Stackoverflow.
-var Stackoverflow = oauth2.Endpoint{
+// StackOverflow is the endpoint for Stack Overflow.
+var StackOverflow = oauth2.Endpoint{
 	AuthURL:  "https://stackoverflow.com/oauth",
 	TokenURL: "https://stackoverflow.com/oauth/access_token",
 }
 
-// Twitch provides endpoint for using OAuth2 to access Twitch.
+// Twitch is the endpoint for Twitch.
 var Twitch = oauth2.Endpoint{
 	AuthURL:  "https://id.twitch.tv/oauth2/authorize",
 	TokenURL: "https://id.twitch.tv/oauth2/token",
 }
 
-// Uber provides endpoint for using OAuth2 to access Uber.
+// Uber is the endpoint for Uber.
 var Uber = oauth2.Endpoint{
 	AuthURL:  "https://login.uber.com/oauth/v2/authorize",
 	TokenURL: "https://login.uber.com/oauth/v2/token",
 }
 
-// Vk provides endpoint for using OAuth2 to access Vk.
+// Vk is the endpoint for Vk.
 var Vk = oauth2.Endpoint{
 	AuthURL:  "https://oauth.vk.com/authorize",
 	TokenURL: "https://oauth.vk.com/access_token",
 }
 
-// Yahoo provides endpoint for using OAuth2 to access Yahoo.
+// Yahoo is the endpoint for Yahoo.
 var Yahoo = oauth2.Endpoint{
 	AuthURL:  "https://api.login.yahoo.com/oauth2/request_auth",
 	TokenURL: "https://api.login.yahoo.com/oauth2/get_token",
 }
 
-// Yandex provides endpoint for using OAuth2 to access Yandex.
+// Yandex is the endpoint for Yandex.
 var Yandex = oauth2.Endpoint{
 	AuthURL:  "https://oauth.yandex.com/authorize",
 	TokenURL: "https://oauth.yandex.com/token",
