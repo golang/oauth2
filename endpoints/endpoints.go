@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package endpoints provides constants for using OAuth2 to access various service.
+// Package endpoints provides constants for using OAuth2 to access various services.
 package endpoints
 
 import (
