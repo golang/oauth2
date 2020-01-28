@@ -89,6 +89,12 @@ var KaKao = oauth2.Endpoint{
 	TokenURL: "https://kauth.kakao.com/oauth/token",
 }
 
+// Line is the endpoint for LINE.
+var Line = oauth2.Endpoint{
+	AuthURL:  "https://access.line.me/oauth2/v2.1/authorize",
+	TokenURL: "https://api.line.me/oauth2/v2.1/token",
+}
+
 // LinkedIn is the endpoint for LinkedIn.
 var LinkedIn = oauth2.Endpoint{
 	AuthURL:  "https://www.linkedin.com/oauth/v2/authorization",
