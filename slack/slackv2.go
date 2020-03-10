@@ -3,15 +3,15 @@
 // license that can be found in the LICENSE file.
 
 // Package slack provides constants for using OAuth2 to access Slack.
-// For Classic Slack Apps - https://api.slack.com/docs/oauth
-package slack // import "golang.org/x/oauth2/slack"
+// For Granular Scoped Apps - https://api.slack.com/authentication/oauth-v2
+package slackv2 // import "golang.org/x/oauth2/slackv2"
 
 import (
 	"golang.org/x/oauth2"
 )
 
-// Endpoint is Slack's classic OAuth 2.0 endpoint.
+// Endpoint is Slack's new OAuth 2.0 endpoint.
 var Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://slack.com/oauth/authorize",
-	TokenURL: "https://slack.com/api/oauth.access",
+	AuthURL:  "https://slack.com/oauth/v2/authorize",
+	TokenURL: "https://slack.com/api/oauth.v2.access",
 }
