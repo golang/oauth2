@@ -4,7 +4,7 @@
 
 // Package slack provides constants for using OAuth2 to access Slack.
 // For Granular Scoped Apps - https://api.slack.com/authentication/oauth-v2
-package slackv2 // import "golang.org/x/oauth2/slackv2"
+package slack // import "golang.org/x/oauth2/slackv2"
 
 import (
 	"golang.org/x/oauth2"
