@@ -207,3 +207,38 @@ func (cs computeSource) Token() (*oauth2.Token, error) {
 		"oauth2.google.serviceAccount": acct,
 	}), nil
 }
+
+// AuthorizationHandler is a 3-legged-OAuth helper that
+// prompts the user for OAuth consent at the specified Auth URL
+// and returns an auth code and state upon approval.
+type AuthorizationHandler func(string) (string, string, error)
+
+// OAuthClientTokenSource returns an oauth2.TokenSource that fetches access tokens
+// using 3-legged-OAuth workflow.
+// The provided oauth2.Config should be a full configuration containing AuthURL,
+// TokenURL, and scope.
+// An environment-specific AuthorizationHandler is used to obtain user consent.
+// Per OAuth protocol, a unique "state" string should be sent and verified
+// before token exchange to prevent CSRF attacks.
+func OAuthClientTokenSource(config oauth2.Config, ctx context.Context, authHandler AuthorizationHandler, state string) oauth2.TokenSource {
+	return oauth2.ReuseTokenSource(nil, oauthClientSource{config: config, ctx: ctx, authHandler: authHandler, state: state})
+}
+
+type oauthClientSource struct {
+	config      oauth2.Config
+	ctx         context.Context
+	authHandler AuthorizationHandler
+	state       string
+}
+
+func (ocs oauthClientSource) Token() (*oauth2.Token, error) {
+	url := ocs.config.AuthCodeURL(ocs.state)
+	code, state, err := ocs.authHandler(url)
+	if err != nil {
+		return nil, err
+	}
+	if state == ocs.state {
+		return ocs.config.Exchange(ocs.ctx, code)
+	}
+	return nil, errors.New("State mismatch in OAuth workflow.")
+}
