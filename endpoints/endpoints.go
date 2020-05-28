@@ -125,12 +125,6 @@ var Microsoft = oauth2.Endpoint{
 	TokenURL: "https://login.live.com/oauth20_token.srf",
 }
 
-// NokiaHealth is the endpoint for Nokia Health.
-var NokiaHealth = oauth2.Endpoint{
-	AuthURL:  "https://account.health.nokia.com/oauth2_user/authorize2",
-	TokenURL: "https://account.health.nokia.com/oauth2/token",
-}
-
 // Odnoklassniki is the endpoint for Odnoklassniki.
 var Odnoklassniki = oauth2.Endpoint{
 	AuthURL:  "https://www.odnoklassniki.ru/oauth/authorize",
@@ -185,6 +179,12 @@ var Vk = oauth2.Endpoint{
 	TokenURL: "https://oauth.vk.com/access_token",
 }
 
+// Withings is the endpoint for Withings Health Mate.
+var Withings = oauth2.Endpoint{
+	AuthURL:  "https://account.withings.com/oauth2_user/authorize2",
+	TokenURL: "https://account.withings.com/oauth2/token",
+}
+
 // Yahoo is the endpoint for Yahoo.
 var Yahoo = oauth2.Endpoint{
 	AuthURL:  "https://api.login.yahoo.com/oauth2/request_auth",
@@ -196,6 +196,9 @@ var Yandex = oauth2.Endpoint{
 	AuthURL:  "https://oauth.yandex.com/authorize",
 	TokenURL: "https://oauth.yandex.com/token",
 }
+
+// NokiaHealth is an alias to the endpoint for Withings.
+var NokiaHealth = Withings
 
 // AzureAD returns a new oauth2.Endpoint for the given tenant at Azure Active Directory.
 // If tenant is empty, it uses the tenant called `common`.
