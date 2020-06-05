@@ -220,13 +220,13 @@ type AuthorizationHandler func(string) (string, string, error)
 // An environment-specific AuthorizationHandler is used to obtain user consent.
 // Per OAuth protocol, a unique "state" string should be sent and verified
 // before token exchange to prevent CSRF attacks.
-func OAuthClientTokenSource(config oauth2.Config, ctx context.Context, authHandler AuthorizationHandler, state string) oauth2.TokenSource {
+func OAuthClientTokenSource(ctx context.Context, config *oauth2.Config, authHandler AuthorizationHandler, state string) oauth2.TokenSource {
 	return oauth2.ReuseTokenSource(nil, oauthClientSource{config: config, ctx: ctx, authHandler: authHandler, state: state})
 }
 
 type oauthClientSource struct {
-	config      oauth2.Config
 	ctx         context.Context
+	config      *oauth2.Config
 	authHandler AuthorizationHandler
 	state       string
 }
