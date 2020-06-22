@@ -17,6 +17,12 @@ var Amazon = oauth2.Endpoint{
 	TokenURL: "https://api.amazon.com/auth/o2/token",
 }
 
+// Apple is the endpoint for Sign in with Apple.
+var AppleSignIn = oauth2.Endpoint{
+	AuthURL:  "https://appleid.apple.com/auth/authorize",
+	TokenURL: "https://appleid.apple.com/auth/token",
+}
+
 // Bitbucket is the endpoint for Bitbucket.
 var Bitbucket = oauth2.Endpoint{
 	AuthURL:  "https://bitbucket.org/site/oauth2/authorize",
