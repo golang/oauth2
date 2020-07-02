@@ -155,6 +155,12 @@ var Slack = oauth2.Endpoint{
 	TokenURL: "https://slack.com/api/oauth.access",
 }
 
+// Splitwise is the endpoint for Splitwise.
+var Splitwise = oauth2.Endpoint{
+	AuthURL:  "https://www.splitwise.com/oauth/authorize",
+	TokenURL: "https://www.splitwise.com/oauth/token",
+}
+
 // Spotify is the endpoint for Spotify.
 var Spotify = oauth2.Endpoint{
 	AuthURL:  "https://accounts.spotify.com/authorize",
