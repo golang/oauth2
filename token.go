@@ -49,6 +49,10 @@ type Token struct {
 	// mechanisms for that TokenSource will not be used.
 	Expiry time.Time `json:"expiry,omitempty"`
 
+	// RawBody provides access to the raw body response from
+	// the oauth2 authorize flow
+	RawBody []byte `json:"-"`
+
 	// raw optionally contains extra metadata from the server
 	// when updating a token.
 	raw interface{}
@@ -146,6 +150,7 @@ func tokenFromInternal(t *internal.Token) *Token {
 		TokenType:    t.TokenType,
 		RefreshToken: t.RefreshToken,
 		Expiry:       t.Expiry,
+		RawBody:      t.RawBody,
 		raw:          t.Raw,
 	}
 }
