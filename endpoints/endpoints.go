@@ -236,3 +236,9 @@ func AWSCognito(domain string) oauth2.Endpoint {
 		TokenURL: domain + "/oauth2/token",
 	}
 }
+
+// Twitter is the endpoint for Twitter.
+var Twitter = oauth2.Endpoint{
+	AuthURL:  "https://api.twitter.com/oauth2/authorize",
+	TokenURL: "https://api.twitter.com/oauth2/token",
+}
