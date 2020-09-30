@@ -12,7 +12,6 @@ import (
 	"strings"
 )
 
-
 func ExchangeToken(ctx context.Context, endpoint string, request *STSTokenExchangeRequest, authentication ClientAuthentication, headers http.Header, options map[string]interface{}) (*STSTokenExchangeResponse, error) {
 
 	client := &http.Client{}
@@ -36,7 +35,7 @@ func ExchangeToken(ctx context.Context, endpoint string, request *STSTokenExchan
 	}
 	if authentication.ClientID != "" && authentication.ClientSecret != "" {
 		plainHeader := authentication.ClientID + ":" + authentication.ClientSecret
-		req.Header.Add("Authorization", "Basic " + base64.StdEncoding.EncodeToString([]byte(plainHeader)))
+		req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(plainHeader)))
 	}
 	req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
 
@@ -62,23 +61,23 @@ func ExchangeToken(ctx context.Context, endpoint string, request *STSTokenExchan
 
 type STSTokenExchangeRequest struct {
 	ActingParty struct {
-		ActorToken string
+		ActorToken     string
 		ActorTokenType string
 	}
-	GrantType string
-	Resource string
-	Audience string
-	Scope []string
+	GrantType          string
+	Resource           string
+	Audience           string
+	Scope              []string
 	RequestedTokenType string
-	SubjectToken string
-	SubjectTokenType string
+	SubjectToken       string
+	SubjectTokenType   string
 }
 
 type STSTokenExchangeResponse struct {
-	AccessToken string `json:"access_token"`
+	AccessToken     string `json:"access_token"`
 	IssuedTokenType string `json:"issued_token_type"`
-	TokenType string `json:"token_type"`
-	ExpiresIn int `json:"expires_in"`
-	Scope string `json:"scope"` //TODO: do I need to parse a possible space-delimited list of scopes?
-	RefreshToken string `json:"refresh_token"`
+	TokenType       string `json:"token_type"`
+	ExpiresIn       int    `json:"expires_in"`
+	Scope           string `json:"scope"` //TODO: do I need to parse a possible space-delimited list of scopes?
+	RefreshToken    string `json:"refresh_token"`
 }
