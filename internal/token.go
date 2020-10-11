@@ -57,12 +57,15 @@ type Token struct {
 }
 
 // tokenJSON is the struct representing the HTTP response from OAuth2
-// providers returning a token in JSON form.
+// providers returning a token or error in JSON form.
 type tokenJSON struct {
-	AccessToken  string         `json:"access_token"`
-	TokenType    string         `json:"token_type"`
-	RefreshToken string         `json:"refresh_token"`
-	ExpiresIn    expirationTime `json:"expires_in"` // at least PayPal returns string, while most return number
+	AccessToken      string         `json:"access_token"`
+	TokenType        string         `json:"token_type"`
+	RefreshToken     string         `json:"refresh_token"`
+	ExpiresIn        expirationTime `json:"expires_in"` // at least PayPal returns string, while most return number
+	Error            string         `json:"error"`
+	ErrorDescription string         `json:"error_description"`
+	ErrorURI         string         `json:"error_uri"`
 }
 
 func (e *tokenJSON) expiry() (t time.Time) {
@@ -253,6 +256,13 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 		if err != nil {
 			return nil, err
 		}
+		if tokenError := vals.Get("error"); tokenError != "" {
+			return nil, &TokenError{
+				Err:              tokenError,
+				ErrorDescription: vals.Get("error_description"),
+				ErrorURI:         vals.Get("error_uri"),
+			}
+		}
 		token = &Token{
 			AccessToken:  vals.Get("access_token"),
 			TokenType:    vals.Get("token_type"),
@@ -268,6 +278,13 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 		var tj tokenJSON
 		if err = json.Unmarshal(body, &tj); err != nil {
 			return nil, err
+		}
+		if tj.Error != "" {
+			return nil, &TokenError{
+				Err:              tj.Error,
+				ErrorDescription: tj.ErrorDescription,
+				ErrorURI:         tj.ErrorURI,
+			}
 		}
 		token = &Token{
 			AccessToken:  tj.AccessToken,
@@ -291,4 +308,14 @@ type RetrieveError struct {
 
 func (r *RetrieveError) Error() string {
 	return fmt.Sprintf("oauth2: cannot fetch token: %v\nResponse: %s", r.Response.Status, r.Body)
+}
+
+type TokenError struct {
+	Err              string
+	ErrorDescription string
+	ErrorURI         string
+}
+
+func (t *TokenError) Error() string {
+	return fmt.Sprintf("oauth2: error in token fetch repsonse: %s\nerror_description: %s\nerror_uri: %s", t.Err, t.ErrorDescription, t.ErrorURI)
 }
