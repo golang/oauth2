@@ -51,7 +51,7 @@ var serverReq = http.Request{
 		"Content-Type": []string{"application/x-www-form-urlencoded"},
 		"User-Agent": []string{"Go-http-client/1.1"},
 	},
-	Body:             nil, //TODO: Oh god how do I get this...
+	Body:             nil, //TODO: Construct this struct
 	ContentLength:    1192,
 	Close:            false,
 	Host:             "127.0.0.1:41147", //TODO: Does this conflict due to separate addresses?
@@ -64,7 +64,6 @@ var serverReq = http.Request{
 	TLS:              nil,
 	Cancel:           nil,
 	Response:         nil,
-	//TODO: I hope to God that I don't need to set ctx for the comparison...
 }
 
 var serverResp = http.Response{
