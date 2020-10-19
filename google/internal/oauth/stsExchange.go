@@ -22,20 +22,6 @@ func ExchangeToken(endpoint string, request *STSTokenExchangeRequest, authentica
 	data.Set("subject_token", request.SubjectToken)
 	data.Set("scope", strings.Join(request.Scope, " "))
 
-	//req, err := http.NewRequest("POST", endpoint, strings.NewReader(data.Encode()))
-	//if err != nil {
-	//	fmt.Errorf("oauth2/google: failed to properly build http request")
-	//}
-	//for key, _ := range headers {
-	//	for _, val := range headers.Values(key) {
-	//		req.Header.Add(key, val)
-	//	}
-	//}
-	//if authentication.ClientID != "" && authentication.ClientSecret != "" {
-	//	plainHeader := authentication.ClientID + ":" + authentication.ClientSecret
-	//	req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(plainHeader)))
-	//}
-	//req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
 	authentication.InjectAuthentication(&data, &headers)
 	req, err := http.NewRequest("POST", endpoint, strings.NewReader(data.Encode()))
 	if err != nil {

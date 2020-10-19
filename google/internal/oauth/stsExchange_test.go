@@ -1,16 +1,6 @@
 package externalaccount
 
 import (
-	"net/http"
-	"net/http/httptest"
-	"testing"
-)
-
-stsExchange_test.go
-
-package externalaccount
-
-import (
 "github.com/google/go-cmp/cmp"
 "golang.org/x/oauth2"
 "net/http"
@@ -97,6 +87,7 @@ func TestExchangeToken(t *testing.T) {
 		if diff := cmp.Diff(*r, serverReq); diff != "" {
 			t.Errorf("mismatched messages received by mock server (-want +got): \n%s", diff)
 		}
+		if r.URL.String() !=
 
 		return
 	}))
