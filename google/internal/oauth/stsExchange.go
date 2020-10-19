@@ -34,7 +34,6 @@ func ExchangeToken(endpoint string, request *STSTokenExchangeRequest, authentica
 	}
 	req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
 
-
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Errorf("oauth2/google: invalid response from Secure Token Server: #{err}")
