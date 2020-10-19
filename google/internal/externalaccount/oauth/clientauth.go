@@ -7,7 +7,7 @@ import (
 	"net/url"
 )
 
-// ClientAuthentication represents an OAuth client ID and secret and the mechanism for passing these credentials as stated in rfc6749#2.3.1
+// ClientAuthentication represents an OAuth client ID and secret and the mechanism for passing these credentials as stated in rfc6749#2.3.1.
 type ClientAuthentication struct {
 	//Can be either basic or request-body
 	AuthStyle    oauth2.AuthStyle
@@ -15,7 +15,7 @@ type ClientAuthentication struct {
 	ClientSecret string
 }
 
-func (c *ClientAuthentication) InjectAuthentication(values *url.Values, headers *http.Header) {
+func (c *ClientAuthentication) InjectAuthentication(values url.Values, headers http.Header) {
 	if c.ClientID == "" || c.ClientSecret == "" || values == nil || headers == nil {
 		return
 	}
