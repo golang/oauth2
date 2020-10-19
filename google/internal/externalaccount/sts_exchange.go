@@ -22,7 +22,7 @@ func ExchangeToken(endpoint string, request *STSTokenExchangeRequest, authentica
 	data.Set("subject_token", request.SubjectToken)
 	data.Set("scope", strings.Join(request.Scope, " "))
 
-	authentication.InjectAuthentication(&data, &headers)
+	authentication.InjectAuthentication(data, headers)
 	req, err := http.NewRequest("POST", endpoint, strings.NewReader(data.Encode()))
 	if err != nil {
 		fmt.Errorf("oauth2/google: failed to properly build http request")
