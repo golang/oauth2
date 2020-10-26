@@ -42,7 +42,7 @@ func TestClientAuthentication_InjectHeaderAuthentication(t *testing.T) {
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 	}
-	headerAuthentication.InjectAuthentication(&valuesH, &headerH)
+	headerAuthentication.InjectAuthentication(valuesH, headerH)
 
 	if got, want := valuesH["audience"], []string{"32555940559.apps.googleusercontent.com"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("audience = %q, want %q", got, want)
@@ -73,7 +73,7 @@ func TestClientAuthentication_ParamsAuthentication(t *testing.T) {
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 	}
-	paramsAuthentication.InjectAuthentication(&valuesP, &headerP)
+	paramsAuthentication.InjectAuthentication(valuesP, headerP)
 
 	if got, want := valuesP["audience"], []string{"32555940559.apps.googleusercontent.com"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("audience = %q, want %q", got, want)
