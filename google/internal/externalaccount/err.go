@@ -2,7 +2,7 @@ package externalaccount
 
 import "fmt"
 
-//Error for handling OAuth related error responses as stated in rfc6749#5.2.
+// Error for handling OAuth related error responses as stated in rfc6749#5.2.
 type Error struct {
 	Code        string
 	URI         string

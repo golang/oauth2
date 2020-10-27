@@ -2,7 +2,7 @@ package externalaccount
 
 import "testing"
 
-func TestError_Generator(t *testing.T) {
+func TestError(t *testing.T) {
 	e := Error{
 		"42",
 		"http:thisIsAPlaceholder",
