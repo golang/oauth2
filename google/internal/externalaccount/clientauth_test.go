@@ -1,3 +1,7 @@
+// Copyright 2020 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package externalaccount
 
 import (
@@ -10,7 +14,7 @@ import (
 
 var clientID = "rbrgnognrhongo3bi4gb9ghg9g"
 var clientSecret = "notsosecret"
-var valuesH = url.Values{
+var valuesData = url.Values{
 	"audience":             []string{"32555940559.apps.googleusercontent.com"},
 	"grant_type":           []string{"urn:ietf:params:oauth:grant-type:token-exchange"},
 	"requested_token_type": []string{"urn:ietf:params:oauth:token-type:access_token"},
@@ -19,24 +23,32 @@ var valuesH = url.Values{
 	"scope":                []string{"https://www.googleapis.com/auth/devstorage.full_control"},
 }
 
-var headerH = http.Header{
+var headerData = http.Header{
 	"Content-Type": []string{"application/x-www-form-urlencoded"},
 }
 
-var valuesP = url.Values{
+var sharedWant = map[string][]string{
 	"audience":             []string{"32555940559.apps.googleusercontent.com"},
 	"grant_type":           []string{"urn:ietf:params:oauth:grant-type:token-exchange"},
 	"requested_token_type": []string{"urn:ietf:params:oauth:token-type:access_token"},
 	"subject_token_type":   []string{"urn:ietf:params:oauth:token-type:jwt"},
 	"subject_token":        []string{"eyJhbGciOiJSUzI1NiIsImtpZCI6IjJjNmZhNmY1OTUwYTdjZTQ2NWZjZjI0N2FhMGIwOTQ4MjhhYzk1MmMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIzMjU1NTk0MDU1OS5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbSIsImF1ZCI6IjMyNTU1OTQwNTU5LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTEzMzE4NTQxMDA5MDU3Mzc4MzI4IiwiaGQiOiJnb29nbGUuY29tIiwiZW1haWwiOiJpdGh1cmllbEBnb29nbGUuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF0X2hhc2giOiI5OVJVYVFrRHJsVDFZOUV0SzdiYXJnIiwiaWF0IjoxNjAxNTgxMzQ5LCJleHAiOjE2MDE1ODQ5NDl9.SZ-4DyDcogDh_CDUKHqPCiT8AKLg4zLMpPhGQzmcmHQ6cJiV0WRVMf5Lq911qsvuekgxfQpIdKNXlD6yk3FqvC2rjBbuEztMF-OD_2B8CEIYFlMLGuTQimJlUQksLKM-3B2ITRDCxnyEdaZik0OVssiy1CBTsllS5MgTFqic7w8w0Cd6diqNkfPFZRWyRYsrRDRlHHbH5_TUnv2wnLVHBHlNvU4wU2yyjDIoqOvTRp8jtXdq7K31CDhXd47-hXsVFQn2ZgzuUEAkH2Q6NIXACcVyZOrjBcZiOQI9IRWz-g03LzbzPSecO7I8dDrhqUSqMrdNUz_f8Kr8JFhuVMfVug"},
 	"scope":                []string{"https://www.googleapis.com/auth/devstorage.full_control"},
-}
-
-var headerP = http.Header{
-	"Content-Type": []string{"application/x-www-form-urlencoded"},
 }
 
 func TestClientAuthentication_InjectHeaderAuthentication(t *testing.T) {
+	valuesH := url.Values{
+		"audience":             valuesData["audience"],
+		"grant_type":           valuesData["grant_type"],
+		"requested_token_type": valuesData["requested_token_type"],
+		"subject_token_type":   valuesData["subject_token_type"],
+		"subject_token":        valuesData["subject_token"],
+		"scope":                valuesData["scope"],
+	}
+	headerH := http.Header{
+		"Content-Type": headerData["Content-Type"],
+	}
+
 	headerAuthentication := ClientAuthentication{
 		AuthStyle:    oauth2.AuthStyleInHeader,
 		ClientID:     clientID,
@@ -44,22 +56,22 @@ func TestClientAuthentication_InjectHeaderAuthentication(t *testing.T) {
 	}
 	headerAuthentication.InjectAuthentication(valuesH, headerH)
 
-	if got, want := valuesH["audience"], []string{"32555940559.apps.googleusercontent.com"}; !reflect.DeepEqual(got, want) {
+	if got, want := valuesH["audience"], sharedWant["audience"]; !reflect.DeepEqual(got, want) {
 		t.Errorf("audience = %q, want %q", got, want)
 	}
-	if got, want := valuesH["grant_type"], []string{"urn:ietf:params:oauth:grant-type:token-exchange"}; !reflect.DeepEqual(got, want) {
+	if got, want := valuesH["grant_type"], sharedWant["grant_type"]; !reflect.DeepEqual(got, want) {
 		t.Errorf("grant_type = %q, want %q", got, want)
 	}
-	if got, want := valuesH["requested_token_type"], []string{"urn:ietf:params:oauth:token-type:access_token"}; !reflect.DeepEqual(got, want) {
+	if got, want := valuesH["requested_token_type"], sharedWant["requested_token_type"]; !reflect.DeepEqual(got, want) {
 		t.Errorf("requested_token_type = %q, want %q", got, want)
 	}
-	if got, want := valuesH["subject_token_type"], []string{"urn:ietf:params:oauth:token-type:jwt"}; !reflect.DeepEqual(got, want) {
+	if got, want := valuesH["subject_token_type"], sharedWant["subject_token_type"]; !reflect.DeepEqual(got, want) {
 		t.Errorf("subject_token_type = %q, want %q", got, want)
 	}
-	if got, want := valuesH["subject_token"], []string{"eyJhbGciOiJSUzI1NiIsImtpZCI6IjJjNmZhNmY1OTUwYTdjZTQ2NWZjZjI0N2FhMGIwOTQ4MjhhYzk1MmMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIzMjU1NTk0MDU1OS5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbSIsImF1ZCI6IjMyNTU1OTQwNTU5LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTEzMzE4NTQxMDA5MDU3Mzc4MzI4IiwiaGQiOiJnb29nbGUuY29tIiwiZW1haWwiOiJpdGh1cmllbEBnb29nbGUuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF0X2hhc2giOiI5OVJVYVFrRHJsVDFZOUV0SzdiYXJnIiwiaWF0IjoxNjAxNTgxMzQ5LCJleHAiOjE2MDE1ODQ5NDl9.SZ-4DyDcogDh_CDUKHqPCiT8AKLg4zLMpPhGQzmcmHQ6cJiV0WRVMf5Lq911qsvuekgxfQpIdKNXlD6yk3FqvC2rjBbuEztMF-OD_2B8CEIYFlMLGuTQimJlUQksLKM-3B2ITRDCxnyEdaZik0OVssiy1CBTsllS5MgTFqic7w8w0Cd6diqNkfPFZRWyRYsrRDRlHHbH5_TUnv2wnLVHBHlNvU4wU2yyjDIoqOvTRp8jtXdq7K31CDhXd47-hXsVFQn2ZgzuUEAkH2Q6NIXACcVyZOrjBcZiOQI9IRWz-g03LzbzPSecO7I8dDrhqUSqMrdNUz_f8Kr8JFhuVMfVug"}; !reflect.DeepEqual(got, want) {
+	if got, want := valuesH["subject_token"], sharedWant["subject_token"]; !reflect.DeepEqual(got, want) {
 		t.Errorf("subject_token = %q, want %q", got, want)
 	}
-	if got, want := valuesH["scope"], []string{"https://www.googleapis.com/auth/devstorage.full_control"}; !reflect.DeepEqual(got, want) {
+	if got, want := valuesH["scope"], sharedWant["scope"]; !reflect.DeepEqual(got, want) {
 		t.Errorf("scope = %q, want %q", got, want)
 	}
 	if got, want := headerH["Authorization"], []string{"Basic cmJyZ25vZ25yaG9uZ28zYmk0Z2I5Z2hnOWc6bm90c29zZWNyZXQ="}; !reflect.DeepEqual(got, want) {
@@ -68,6 +80,17 @@ func TestClientAuthentication_InjectHeaderAuthentication(t *testing.T) {
 }
 
 func TestClientAuthentication_ParamsAuthentication(t *testing.T) {
+	valuesP := url.Values{
+		"audience":             valuesData["audience"],
+		"grant_type":           valuesData["grant_type"],
+		"requested_token_type": valuesData["requested_token_type"],
+		"subject_token_type":   valuesData["subject_token_type"],
+		"subject_token":        valuesData["subject_token"],
+		"scope":                valuesData["scope"],
+	}
+	headerP := http.Header{
+		"Content-Type": headerData["Content-Type"],
+	}
 	paramsAuthentication := ClientAuthentication{
 		AuthStyle:    oauth2.AuthStyleInParams,
 		ClientID:     clientID,
@@ -75,28 +98,28 @@ func TestClientAuthentication_ParamsAuthentication(t *testing.T) {
 	}
 	paramsAuthentication.InjectAuthentication(valuesP, headerP)
 
-	if got, want := valuesP["audience"], []string{"32555940559.apps.googleusercontent.com"}; !reflect.DeepEqual(got, want) {
+	if got, want := valuesP["audience"], sharedWant["audience"]; !reflect.DeepEqual(got, want) {
 		t.Errorf("audience = %q, want %q", got, want)
 	}
-	if got, want := valuesP["grant_type"], []string{"urn:ietf:params:oauth:grant-type:token-exchange"}; !reflect.DeepEqual(got, want) {
+	if got, want := valuesP["grant_type"], sharedWant["grant_type"]; !reflect.DeepEqual(got, want) {
 		t.Errorf("grant_type = %q, want %q", got, want)
 	}
-	if got, want := valuesP["requested_token_type"], []string{"urn:ietf:params:oauth:token-type:access_token"}; !reflect.DeepEqual(got, want) {
+	if got, want := valuesP["requested_token_type"], sharedWant["requested_token_type"]; !reflect.DeepEqual(got, want) {
 		t.Errorf("requested_token_type = %q, want %q", got, want)
 	}
-	if got, want := valuesP["subject_token_type"], []string{"urn:ietf:params:oauth:token-type:jwt"}; !reflect.DeepEqual(got, want) {
+	if got, want := valuesP["subject_token_type"], sharedWant["subject_token_type"]; !reflect.DeepEqual(got, want) {
 		t.Errorf("subject_token_type = %q, want %q", got, want)
 	}
-	if got, want := valuesP["subject_token"], []string{"eyJhbGciOiJSUzI1NiIsImtpZCI6IjJjNmZhNmY1OTUwYTdjZTQ2NWZjZjI0N2FhMGIwOTQ4MjhhYzk1MmMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIzMjU1NTk0MDU1OS5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbSIsImF1ZCI6IjMyNTU1OTQwNTU5LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTEzMzE4NTQxMDA5MDU3Mzc4MzI4IiwiaGQiOiJnb29nbGUuY29tIiwiZW1haWwiOiJpdGh1cmllbEBnb29nbGUuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF0X2hhc2giOiI5OVJVYVFrRHJsVDFZOUV0SzdiYXJnIiwiaWF0IjoxNjAxNTgxMzQ5LCJleHAiOjE2MDE1ODQ5NDl9.SZ-4DyDcogDh_CDUKHqPCiT8AKLg4zLMpPhGQzmcmHQ6cJiV0WRVMf5Lq911qsvuekgxfQpIdKNXlD6yk3FqvC2rjBbuEztMF-OD_2B8CEIYFlMLGuTQimJlUQksLKM-3B2ITRDCxnyEdaZik0OVssiy1CBTsllS5MgTFqic7w8w0Cd6diqNkfPFZRWyRYsrRDRlHHbH5_TUnv2wnLVHBHlNvU4wU2yyjDIoqOvTRp8jtXdq7K31CDhXd47-hXsVFQn2ZgzuUEAkH2Q6NIXACcVyZOrjBcZiOQI9IRWz-g03LzbzPSecO7I8dDrhqUSqMrdNUz_f8Kr8JFhuVMfVug"}; !reflect.DeepEqual(got, want) {
+	if got, want := valuesP["subject_token"], sharedWant["subject_token"]; !reflect.DeepEqual(got, want) {
 		t.Errorf("subject_token = %q, want %q", got, want)
+	}
+	if got, want := valuesP["scope"], sharedWant["scope"]; !reflect.DeepEqual(got, want) {
+		t.Errorf("scope = %q, want %q", got, want)
 	}
 	if got, want := valuesP["client_id"], []string{clientID}; !reflect.DeepEqual(got, want) {
 		t.Errorf("client_id = %q, want %q", got, want)
 	}
 	if got, want := valuesP["client_secret"], []string{clientSecret}; !reflect.DeepEqual(got, want) {
 		t.Errorf("client_secret = %q, want %q", got, want)
-	}
-	if got, want := valuesP["scope"], []string{"https://www.googleapis.com/auth/devstorage.full_control"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("scope = %q, want %q", got, want)
 	}
 }

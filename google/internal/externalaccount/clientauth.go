@@ -1,3 +1,7 @@
+// Copyright 2020 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package externalaccount
 
 import (
@@ -21,10 +25,10 @@ func (c *ClientAuthentication) InjectAuthentication(values url.Values, headers h
 	}
 
 	switch c.AuthStyle {
-	case oauth2.AuthStyleInHeader:
+	case oauth2.AuthStyleInHeader: // AuthStyleInHeader corresponds to basic authentication as defined in rfc7617#2
 		plainHeader := c.ClientID + ":" + c.ClientSecret
 		headers.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(plainHeader)))
-	case oauth2.AuthStyleInParams:
+	case oauth2.AuthStyleInParams: // AuthStyleInParams corresponds to request-body authentication with ClientID and ClientSecret in the message body.
 		values.Set("client_id", c.ClientID)
 		values.Set("client_secret", c.ClientSecret)
 	case oauth2.AuthStyleAutoDetect:
