@@ -78,3 +78,11 @@ func TestExchangeToken(t *testing.T) {
 	}
 
 }
+
+func TestExchangeToken_Err(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("what's wrong with this response?"))
+	}))
+	
+}
