@@ -1,4 +1,4 @@
-// Copyright 2015 The Go Authors. All rights reserved.
+// Copyright 2020 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -75,7 +75,7 @@ func TestExchangeToken(t *testing.T) {
 
 	resp, err := ExchangeToken(context.Background(), ts.URL, &tokenRequest, auth, headers, nil)
 	if err != nil {
-		t.Errorf("ExchangeToken failed with error: %s", err)
+		t.Fatalf("ExchangeToken failed with error: %s", err)
 	}
 
 	if diff := cmp.Diff(expectedToken, *resp); diff != "" {

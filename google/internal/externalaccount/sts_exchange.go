@@ -1,4 +1,4 @@
-// Copyright 2015 The Go Authors. All rights reserved.
+// Copyright 2020 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -29,15 +29,15 @@ func ExchangeToken(ctx context.Context, endpoint string, request *STSTokenExchan
 	data.Set("subject_token", request.SubjectToken)
 	data.Set("scope", strings.Join(request.Scope, " "))
 	opts, err := json.Marshal(options)
-	if err == nil {
-		data.Set("options", string(opts))
-	} else {
+	if err != nil {
 		fmt.Errorf("oauth2/google: failed to marshal additional options: %v", err)
+		return nil, err
 	}
+	data.Set("options", string(opts))
 
 	authentication.InjectAuthentication(data, headers)
 	encodedData := data.Encode()
-	req, err := http.NewRequest("POST", endpoint, strings.NewReader(encodedData))
+	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, strings.NewReader(encodedData))
 	if err != nil {
 		fmt.Errorf("oauth2/google: failed to properly build http request: %v", err)
 	}
@@ -60,7 +60,7 @@ func ExchangeToken(ctx context.Context, endpoint string, request *STSTokenExchan
 	var stsResp STSTokenExchangeResponse
 	err = json.Unmarshal(body, &stsResp)
 	if err != nil {
-		fmt.Errorf("oauth2/google: failed to unmarshal response body from STS server: %v", err)
+		fmt.Errorf("oauth2/google: failed to unmarshal response body from Secure Token Server: %v", err)
 	}
 	return &stsResp, nil
 }
