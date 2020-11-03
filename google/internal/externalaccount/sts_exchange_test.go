@@ -1,6 +1,11 @@
+// Copyright 2015 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package externalaccount
 
 import (
+	"context"
 	"github.com/google/go-cmp/cmp"
 	"golang.org/x/oauth2"
 	"io/ioutil"
@@ -68,7 +73,7 @@ func TestExchangeToken(t *testing.T) {
 	headers := make(map[string][]string)
 	headers["Content-Type"] = []string{"application/x-www-form-urlencoded"}
 
-	resp, err := ExchangeToken(ts.URL, &tokenRequest, auth, headers, nil)
+	resp, err := ExchangeToken(context.Background(), ts.URL, &tokenRequest, auth, headers, nil)
 	if err != nil {
 		t.Errorf("ExchangeToken failed with error: %s", err)
 	}
@@ -84,5 +89,11 @@ func TestExchangeToken_Err(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte("what's wrong with this response?"))
 	}))
-	
+
+	headers := make(map[string][]string)
+	headers["Content-Type"] = []string{"application/x-www-form-urlencoded"}
+	_, err := ExchangeToken(context.Background(), ts.URL, &tokenRequest, auth, headers, nil)
+	if err == nil {
+		t.Errorf("Expected handled error; instead got nil.")
+	}
 }
