@@ -63,7 +63,6 @@ func ExchangeToken(ctx context.Context, endpoint string, request *STSTokenExchan
 
 	}
 
-
 	return &stsResp, nil
 }
 
