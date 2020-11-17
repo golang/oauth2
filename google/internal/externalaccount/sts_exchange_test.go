@@ -6,11 +6,12 @@ package externalaccount
 
 import (
 	"context"
-	"github.com/google/go-cmp/cmp"
+	"encoding/json"
 	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -85,6 +86,8 @@ func TestExchangeToken(t *testing.T) {
 		t.Errorf("mismatched messages received by mock server.  \nWant: \n%v\n\nGot:\n%v", expectedToken, *resp)
 	}
 
+
+
 }
 
 func TestExchangeToken_Err(t *testing.T) {
@@ -99,4 +102,81 @@ func TestExchangeToken_Err(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected handled error; instead got nil.")
 	}
+}
+/* Lean test specifically for options, as the other features are tested earlier. */
+type testOpts struct {
+	First string `json:"first"`
+	Second string `json:"second"`
+}
+var optsValues = [][]string{{"foo", "bar"},{"cat", "pan"}}
+func TestExchangeToken_Opts(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("Failed reading request body: %v.", err)
+		}
+		data, err := url.ParseQuery(string(body))
+		if err != nil {
+			t.Fatalf("Failed to parse request body: %v", err)
+		}
+		strOpts, ok := data["options"]
+		if !ok {
+			t.Errorf("Server didn't recieve an \"options\" field.")
+		} else if len(strOpts) < 1 {
+			t.Errorf("\"options\" field has length 0.")
+		}
+		var opts map[string]interface{}
+		err = json.Unmarshal([]byte(strOpts[0]), &opts)
+		if len(opts) < 2 {
+			t.Errorf("Too few options recieved.")
+		}
+
+		val, ok := opts["one"]
+		if !ok {
+			t.Errorf("Couldn't find first option parameter.")
+		} else {
+			tOpts1, ok := val.(map[string]interface{})
+			if !ok {
+				t.Errorf("Failed to assert the first option parameter as type testOpts.")
+			} else {
+				if tOpts1["first"].(string) != optsValues[0][0] {
+					t.Errorf("First value in first options field is incorrect; want %v but got %v", tOpts1["first"].(string), optsValues[0][0])
+				}
+				if tOpts1["second"].(string) != optsValues[0][1] {
+					t.Errorf("Second value in first options field is incorrect; want %v but got %v", tOpts1["second"].(string), optsValues[0][1])
+				}
+			}
+		}
+
+		val2, ok := opts["two"]
+		if !ok {
+			t.Errorf("Couldn't find second option parameter.")
+		} else {
+			tOpts2, ok := val2.(map[string]interface{})
+			if !ok {
+				t.Errorf("Failed to assert the second option parameter as type testOpts.")
+			} else {
+				if tOpts2["first"].(string) != optsValues[1][0] {
+					t.Errorf("First value in second options field is incorrect; want %v but got %v", tOpts2["first"].(string), optsValues[1][0])
+				}
+				if tOpts2["second"].(string) != optsValues[1][1] {
+					t.Errorf("Second value in second options field is incorrect; want %v but got %v", tOpts2["second"].(string), optsValues[1][1])
+				}
+			}
+		}
+
+		// Send a proper reply so that no other errors crop up.
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(responseBody))
+
+	}))
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	firstOption := testOpts{optsValues[0][0], optsValues[0][1]}
+	secondOption := testOpts{optsValues[1][0], optsValues[1][1]}
+	inputOpts := make(map[string]interface{})
+	inputOpts["one"] = firstOption
+	inputOpts["two"] = secondOption
+	ExchangeToken(context.Background(), ts.URL, &tokenRequest, auth, headers, inputOpts)
 }
