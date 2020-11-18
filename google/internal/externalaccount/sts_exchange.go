@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-// ExchangeToken preforms a oauth2 token exchange with the provided endpoint.
+// ExchangeToken performs an oauth2 token exchange with the provided endpoint.
 // The first 4 fields are all mandatory.  headers can be used to pass additional
 // headers beyond the bare minimum required by the token exchange.  options can
 // be used to pass additional JSON-structured options to the remote server.
@@ -66,7 +66,6 @@ func ExchangeToken(ctx context.Context, endpoint string, request *STSTokenExchan
 		return nil, fmt.Errorf("oauth2/google: failed to unmarshal response body from Secure Token Server: %v", err)
 
 	}
-
 
 	return &stsResp, nil
 }
