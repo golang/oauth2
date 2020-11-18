@@ -57,7 +57,7 @@ func TestExchangeToken(t *testing.T) {
 		if got, want := r.Header.Get("Authorization"), "Basic cmJyZ25vZ25yaG9uZ28zYmk0Z2I5Z2hnOWc6bm90c29zZWNyZXQ="; got != want {
 			t.Errorf("Unexpected authorization header, got %v, want %v", got, want)
 		}
-		if got, want := r.Header.Get("Content-Type"), "application/x-www-form-urlencoded"; got != want{
+		if got, want := r.Header.Get("Content-Type"), "application/x-www-form-urlencoded"; got != want {
 			t.Errorf("Unexpected Content-Type header, got %v, want %v", got, want)
 		}
 		body, err := ioutil.ReadAll(r.Body)
@@ -84,8 +84,6 @@ func TestExchangeToken(t *testing.T) {
 		t.Errorf("mismatched messages received by mock server.  \nWant: \n%v\n\nGot:\n%v", expectedToken, *resp)
 	}
 
-
-
 }
 
 func TestExchangeToken_Err(t *testing.T) {
@@ -102,12 +100,15 @@ func TestExchangeToken_Err(t *testing.T) {
 		t.Errorf("Expected handled error; instead got nil.")
 	}
 }
+
 /* Lean test specifically for options, as the other features are tested earlier. */
 type testOpts struct {
-	First string `json:"first"`
+	First  string `json:"first"`
 	Second string `json:"second"`
 }
-var optsValues = [][]string{{"foo", "bar"},{"cat", "pan"}}
+
+var optsValues = [][]string{{"foo", "bar"}, {"cat", "pan"}}
+
 func TestExchangeToken_Opts(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
