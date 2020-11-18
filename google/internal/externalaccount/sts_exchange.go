@@ -16,6 +16,10 @@ import (
 	"strings"
 )
 
+// ExchangeToken preforms a oauth2 token exchange with the provided endpoint.
+// The first 4 fields are all mandatory.  headers can be used to pass additional
+// headers beyond the bare minimum required by the token exchange.  options can
+// be used to pass additional JSON-structured options to the remote server.
 func ExchangeToken(ctx context.Context, endpoint string, request *STSTokenExchangeRequest, authentication ClientAuthentication, headers http.Header, options map[string]interface{}) (*STSTokenExchangeResponse, error) {
 
 	client := oauth2.NewClient(ctx, nil)
@@ -63,9 +67,11 @@ func ExchangeToken(ctx context.Context, endpoint string, request *STSTokenExchan
 
 	}
 
+
 	return &stsResp, nil
 }
 
+// STSTokenExchangeRequest contains fields necessary to make an oauth2 token exchange.
 type STSTokenExchangeRequest struct {
 	ActingParty struct {
 		ActorToken     string
@@ -80,6 +86,7 @@ type STSTokenExchangeRequest struct {
 	SubjectTokenType   string
 }
 
+// STSTokenExchangeResponse is used to decode the remote server's response during an oauth2 token exchange.
 type STSTokenExchangeResponse struct {
 	AccessToken     string `json:"access_token"`
 	IssuedTokenType string `json:"issued_token_type"`
