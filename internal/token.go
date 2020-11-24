@@ -253,6 +253,8 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 		if err != nil {
 			return nil, err
 		}
+		fmt.Println(fmt.Sprintf("Debug11 access token: %s", vals.Get("access_token")))
+		fmt.Println(fmt.Sprintf("Debug11 refresh token: %s", vals.Get("refresh_token")))
 		token = &Token{
 			AccessToken:  vals.Get("access_token"),
 			TokenType:    vals.Get("token_type"),
@@ -269,6 +271,8 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 		if err = json.Unmarshal(body, &tj); err != nil {
 			return nil, err
 		}
+		fmt.Println(fmt.Sprintf("Debug22 access token: %s", tj.AccessToken))
+		fmt.Println(fmt.Sprintf("Debug22 refresh token: %s", tj.TokenType))
 		token = &Token{
 			AccessToken:  tj.AccessToken,
 			TokenType:    tj.TokenType,
@@ -281,6 +285,7 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 	if token.AccessToken == "" {
 		return nil, errors.New("oauth2: server response missing access_token")
 	}
+	fmt.Println(fmt.Sprintf("Debug33 :s", (string(body))))
 	return token, nil
 }
 
