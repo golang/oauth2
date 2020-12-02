@@ -85,7 +85,7 @@ type STSTokenExchangeRequest struct {
 	SubjectTokenType   string
 }
 
-// STSTokenExchangeResponse is used to decode the remote server's response during an oauth2 token exchange.
+// STSTokenExchangeResponse is used to decode the remote server response during an oauth2 token exchange.
 type STSTokenExchangeResponse struct {
 	AccessToken     string `json:"access_token"`
 	IssuedTokenType string `json:"issued_token_type"`
