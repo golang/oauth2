@@ -137,7 +137,7 @@ var Odnoklassniki = oauth2.Endpoint{
 	TokenURL: "https://api.odnoklassniki.ru/oauth/token.do",
 }
 
-// Patreon is the endpoint for Patreon
+// Patreon is the endpoint for Patreon.
 var Patreon = oauth2.Endpoint{
 	AuthURL:  "https://patreon.com/oauth2/authorize",
 	TokenURL: "https://patreon.com/api/oauth2/token",
