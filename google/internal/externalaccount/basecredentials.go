@@ -1,3 +1,7 @@
+// Copyright 2020 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package externalaccount
 
 import (
@@ -8,7 +12,7 @@ import (
 	"time"
 )
 
-// The configuration for fetching tokens with external credentials.
+// Config stores the configuration for fetching tokens with external credentials.
 type Config struct {
 	Audience                       string
 	SubjectTokenType               string
@@ -19,11 +23,10 @@ type Config struct {
 	ClientID                       string
 	CredentialSource               CredentialSource
 	QuotaProjectID                 string
-
-	Scopes []string
+	Scopes                         []string
 }
 
-// Returns an external account TokenSource. This is to be called by package google to construct a google.Credentials.
+// TokenSource Returns an external account TokenSource struct. This is to be called by package google to construct a google.Credentials.
 func (c *Config) TokenSource(ctx context.Context) oauth2.TokenSource {
 	ts := tokenSource{
 		ctx:  ctx,
@@ -32,7 +35,7 @@ func (c *Config) TokenSource(ctx context.Context) oauth2.TokenSource {
 	return oauth2.ReuseTokenSource(nil, ts)
 }
 
-//Subject token file types
+// Subject token file types
 const (
 	fileTypeText = "text"
 	fileTypeJSON = "json"
@@ -41,11 +44,12 @@ const (
 type format struct {
 	// Either "text" or "json".  When not provided "text" type is assumed.
 	Type string `json:"type"`
-	// Only required for JSON.
+	// SubjectTokenFieldName is only required for JSON format.
 	// This would be "access_token" for azure.
 	SubjectTokenFieldName string `json:"subject_token_field_name"`
 }
 
+// CredentialSource stores the information necessary to retrieve the credentials for the STS exchange
 type CredentialSource struct {
 	File string `json:"file"`
 
@@ -59,39 +63,37 @@ type CredentialSource struct {
 	Format                      format `json:"format"`
 }
 
+// instance determines the type of CredentialSource needed
 func (cs CredentialSource) instance() baseCredentialSource {
 	if cs.EnvironmentID == "awsX" {
 		return nil
-		//return awsCredentialSource{EnvironmentID:cs.EnvironmentID, RegionURL:cs.RegionURL, RegionalCredVerificationURL: cs.RegionalCredVerificationURL, CredVerificationURL:cs.CredVerificationURL}
 	} else if cs.File == "internalTestingFile" {
 		return testCredentialSource{}
 	} else if cs.File != "" {
 		return fileCredentialSource{File: cs.File}
 	} else if cs.URL != "" {
-		//return urlCredentialSource{URL:cs.URL, Headers:cs.Headers}
-		return nil
-	} else {
 		return nil
 	}
+	return nil
 }
 
 type baseCredentialSource interface {
 	retrieveSubjectToken(c *Config) (string, error)
 }
 
-// tokenSource is the source that handles 3PI credentials.
+// tokenSource is the source that handles external credentials.
 type tokenSource struct {
 	ctx  context.Context
 	conf *Config
 }
 
-// This method is implemented so that tokenSource conforms to oauth2.TokenSource.
+// Token allows tokenSource to conform to the oauth2.TokenSource interface.
 func (ts tokenSource) Token() (*oauth2.Token, error) {
 	conf := ts.conf
 
 	subjectToken, err := conf.CredentialSource.instance().retrieveSubjectToken(conf)
 	if err != nil {
-		return &oauth2.Token{}, err
+		return nil, err
 	}
 	stsRequest := STSTokenExchangeRequest{
 		GrantType:          "urn:ietf:params:oauth:grant-type:token-exchange",
@@ -110,8 +112,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 	}
 	stsResp, err := ExchangeToken(ts.ctx, conf.TokenURL, &stsRequest, clientAuth, header, nil)
 	if err != nil {
-		fmt.Errorf("oauth2/google: %s", err.Error())
-		return &oauth2.Token{}, err
+		return nil, err
 	}
 
 	accessToken := &oauth2.Token{
@@ -119,10 +120,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 		TokenType:   stsResp.TokenType,
 	}
 	if stsResp.ExpiresIn < 0 {
-		fmt.Errorf("google/oauth2: got invalid expiry from security token service")
-		// REVIEWERS: Should I return the Token that I actually got back here so that people could inspect the result even with a improper ExpiresIn response?
-		// Or is it more appropriate to still return an empty token: &oauth2.Token{} so that anybody who checks for an empty token as a sign of failure doesn't get confused.
-		return accessToken, nil
+		return nil, fmt.Errorf("google/oauth2: got invalid expiry from security token service")
 	} else if stsResp.ExpiresIn > 0 {
 		accessToken.Expiry = time.Now().Add(time.Duration(stsResp.ExpiresIn) * time.Second)
 	}
