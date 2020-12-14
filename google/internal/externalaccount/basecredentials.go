@@ -12,6 +12,9 @@ import (
 	"time"
 )
 
+// now aliases time.Now for testing
+var now = time.Now
+
 // Config stores the configuration for fetching tokens with external credentials.
 type Config struct {
 	Audience                       string
@@ -64,15 +67,9 @@ type CredentialSource struct {
 }
 
 // instance determines the type of CredentialSource needed
-func (cs CredentialSource) instance() baseCredentialSource {
-	if cs.EnvironmentID == "awsX" {
-		return nil
-	} else if cs.File == "internalTestingFile" {
-		return testCredentialSource{}
-	} else if cs.File != "" {
-		return fileCredentialSource{File: cs.File}
-	} else if cs.URL != "" {
-		return nil
+func (c *Config) parse() baseCredentialSource {
+	if c.CredentialSource.File != "" {
+		return fileCredentialSource{File: c.CredentialSource.File}
 	}
 	return nil
 }
@@ -91,7 +88,7 @@ type tokenSource struct {
 func (ts tokenSource) Token() (*oauth2.Token, error) {
 	conf := ts.conf
 
-	subjectToken, err := conf.CredentialSource.instance().retrieveSubjectToken(conf)
+	subjectToken, err := conf.parse().retrieveSubjectToken(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -122,8 +119,9 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 	if stsResp.ExpiresIn < 0 {
 		return nil, fmt.Errorf("google/oauth2: got invalid expiry from security token service")
 	} else if stsResp.ExpiresIn > 0 {
-		accessToken.Expiry = time.Now().Add(time.Duration(stsResp.ExpiresIn) * time.Second)
+		accessToken.Expiry = now().Add(time.Duration(stsResp.ExpiresIn) * time.Second)
 	}
+	// TODO: For reviewers- what should I do if ExpiresIn is equal to 0?  Would that correspond to a one-use token, or something else?
 
 	if stsResp.RefreshToken != "" {
 		accessToken.RefreshToken = stsResp.RefreshToken
@@ -134,12 +132,3 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 
 // NOTE: this method doesn't exist yet. It is being investigated to add this method to oauth2.TokenSource.
 //func (ts tokenSource) TokenInfo() (*oauth2.TokenInfo, error)
-
-// testCredentialSource is only used for testing, but must be defined here in order to avoid undefined errors when testing.
-type testCredentialSource struct {
-	File string
-}
-
-func (cs testCredentialSource) retrieveSubjectToken(c *Config) (string, error) {
-	return "Sample.Subject.Token", nil
-}

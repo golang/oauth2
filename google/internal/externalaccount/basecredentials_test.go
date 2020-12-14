@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 var testBaseCredSource = CredentialSource{
@@ -24,10 +25,15 @@ var testConfig = Config{
 	Scopes:                         []string{"https://www.googleapis.com/auth/devstorage.full_control"},
 }
 
-var baseCredsRequestBody = "audience=32555940559.apps.googleusercontent.com&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&options=null&requested_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdevstorage.full_control&subject_token=Sample.Subject.Token&subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Ajwt"
-var baseCredsResponseBody = `{"access_token":"Sample.Access.Token","issued_token_type":"urn:ietf:params:oauth:token-type:access_token","token_type":"Bearer","expires_in":3600,"scope":"https://www.googleapis.com/auth/cloud-platform"}`
-
-var correctAT = "Sample.Access.Token"
+var (
+	baseCredsRequestBody        = "audience=32555940559.apps.googleusercontent.com&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&options=null&requested_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdevstorage.full_control&subject_token=Sample.Subject.Token&subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Ajwt"
+	baseCredsResponseBody       = `{"access_token":"Sample.Access.Token","issued_token_type":"urn:ietf:params:oauth:token-type:access_token","token_type":"Bearer","expires_in":3600,"scope":"https://www.googleapis.com/auth/cloud-platform"}`
+	correctAT                   = "Sample.Access.Token"
+	expiry                int64 = 234852
+)
+var (
+	testNow = func() time.Time { return time.Unix(expiry, 0) }
+)
 
 func TestToken_Func(t *testing.T) {
 
@@ -63,16 +69,25 @@ func TestToken_Func(t *testing.T) {
 		conf: &testConfig,
 	}
 
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = testNow
+
 	tok, err := ourTS.Token()
 	if err != nil {
 		t.Errorf("Unexpected error: %e", err)
 	}
-	if tok.AccessToken != correctAT {
-		t.Errorf("Unexpected access token: got %v, but wanted %v", tok.AccessToken, correctAT)
+	if got, want := tok.AccessToken, correctAT; got != want {
+		t.Errorf("Unexpected access token: got %v, but wanted %v", got, want)
 	}
-	if tok.TokenType != "Bearer" {
-		t.Errorf("Unexpected TokenType: got %v, but wanted \"Bearer\"", tok.TokenType)
+	if got, want := tok.TokenType, "Bearer"; got != want {
+		t.Errorf("Unexpected TokenType: got %v, but wanted %v", got, want)
 	}
+
+	if got, want := tok.Expiry, now().Add(time.Duration(3600)*time.Second); got != want {
+		t.Errorf("Unexpected Expiry: got %v, but wanted %v", got, want)
+	}
+
 	//We don't check the correct expiry here because that's dependent on the current time.
 
 }
