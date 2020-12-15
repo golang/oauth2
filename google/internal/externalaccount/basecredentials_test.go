@@ -75,7 +75,7 @@ func TestToken_Func(t *testing.T) {
 
 	tok, err := ourTS.Token()
 	if err != nil {
-		t.Errorf("Unexpected error: %e", err)
+		t.Fatalf("Unexpected error: %e", err)
 	}
 	if got, want := tok.AccessToken, correctAT; got != want {
 		t.Errorf("Unexpected access token: got %v, but wanted %v", got, want)

@@ -23,14 +23,14 @@ type fsTest struct {
 var testFsUntyped = fsTest{
 	name: "UntypedFileSource",
 	cs: CredentialSource{
-		File: "../../testdata/externalaccount/3pi_cred.txt",
+		File: "./testdata/3pi_cred.txt",
 	},
 	want: "street123",
 }
 var testFsTypeText = fsTest{
 	name: "TextFileSource",
 	cs: CredentialSource{
-		File:   "../../testdata/externalaccount/3pi_cred.txt",
+		File:   "./testdata/3pi_cred.txt",
 		Format: format{Type: fileTypeText},
 	},
 	want: "street123",
@@ -38,7 +38,7 @@ var testFsTypeText = fsTest{
 var testFsTypeJSON = fsTest{
 	name: "JSONFileSource",
 	cs: CredentialSource{
-		File:   "../../testdata/externalaccount/3pi_cred.json",
+		File:   "./testdata/3pi_cred.json",
 		Format: format{Type: fileTypeJSON, SubjectTokenFieldName: "SubjToken"},
 	},
 	want: "321road",

@@ -88,7 +88,11 @@ type tokenSource struct {
 func (ts tokenSource) Token() (*oauth2.Token, error) {
 	conf := ts.conf
 
-	subjectToken, err := conf.parse().retrieveSubjectToken(conf)
+	typedCredSource := conf.parse()
+	if typedCredSource == nil {
+		return nil, fmt.Errorf("google: unable to parse credential source")
+	}
+	subjectToken, err := typedCredSource.retrieveSubjectToken(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -118,10 +122,9 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 	}
 	if stsResp.ExpiresIn < 0 {
 		return nil, fmt.Errorf("google/oauth2: got invalid expiry from security token service")
-	} else if stsResp.ExpiresIn > 0 {
+	} else if stsResp.ExpiresIn >= 0 {
 		accessToken.Expiry = now().Add(time.Duration(stsResp.ExpiresIn) * time.Second)
 	}
-	// TODO: For reviewers- what should I do if ExpiresIn is equal to 0?  Would that correspond to a one-use token, or something else?
 
 	if stsResp.RefreshToken != "" {
 		accessToken.RefreshToken = stsResp.RefreshToken
