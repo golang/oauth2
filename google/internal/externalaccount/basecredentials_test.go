@@ -1,3 +1,7 @@
+// Copyright 2020 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package externalaccount
 
 import (
@@ -14,9 +18,8 @@ var testBaseCredSource = CredentialSource{
 }
 
 var testConfig = Config{
-	Audience:         "32555940559.apps.googleusercontent.com",
-	SubjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
-	//TokenURL: "http://localhost:8080/v1/token",
+	Audience:                       "32555940559.apps.googleusercontent.com",
+	SubjectTokenType:               "urn:ietf:params:oauth:token-type:jwt",
 	TokenInfoURL:                   "http://localhost:8080/v1/tokeninfo",
 	ServiceAccountImpersonationURL: "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/service-gcs-admin@$PROJECT_ID.iam.gserviceaccount.com:generateAccessToken",
 	ClientSecret:                   "notsosecret",
@@ -38,9 +41,6 @@ var (
 func TestToken_Func(t *testing.T) {
 
 	targetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		/*I'm not sure whether this testing is necessary or not.  There's an argument that it should be here for completeness,
-		but it's also just mimicking similar testing done in sts_exchange_test.go
-		*/
 		if got, want := r.URL.String(), "/"; got != want {
 			t.Errorf("Unexpected request URL: got %v but want %v", got, want)
 		}
@@ -62,6 +62,7 @@ func TestToken_Func(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(baseCredsResponseBody))
 	}))
+	defer targetServer.Close()
 
 	testConfig.TokenURL = targetServer.URL
 	ourTS := tokenSource{
@@ -87,7 +88,5 @@ func TestToken_Func(t *testing.T) {
 	if got, want := tok.Expiry, now().Add(time.Duration(3600)*time.Second); got != want {
 		t.Errorf("Unexpected Expiry: got %v, but wanted %v", got, want)
 	}
-
-	//We don't check the correct expiry here because that's dependent on the current time.
 
 }

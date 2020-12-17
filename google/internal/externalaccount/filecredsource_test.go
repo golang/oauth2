@@ -1,3 +1,7 @@
+// Copyright 2020 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package externalaccount
 
 import (
@@ -14,38 +18,37 @@ var testFileConfig = Config{
 	ClientID:                       "rbrgnognrhongo3bi4gb9ghg9g",
 }
 
-type fsTest struct {
-	name string
-	cs   CredentialSource
-	want string
-}
-
-var testFsUntyped = fsTest{
-	name: "UntypedFileSource",
-	cs: CredentialSource{
-		File: "./testdata/3pi_cred.txt",
-	},
-	want: "street123",
-}
-var testFsTypeText = fsTest{
-	name: "TextFileSource",
-	cs: CredentialSource{
-		File:   "./testdata/3pi_cred.txt",
-		Format: format{Type: fileTypeText},
-	},
-	want: "street123",
-}
-var testFsTypeJSON = fsTest{
-	name: "JSONFileSource",
-	cs: CredentialSource{
-		File:   "./testdata/3pi_cred.json",
-		Format: format{Type: fileTypeJSON, SubjectTokenFieldName: "SubjToken"},
-	},
-	want: "321road",
-}
-var fileSourceTests = []fsTest{testFsUntyped, testFsTypeText, testFsTypeJSON}
-
 func TestRetrieveFileSubjectToken(t *testing.T) {
+	var fileSourceTests = []struct {
+		name string
+		cs   CredentialSource
+		want string
+	}{
+		{
+			name: "UntypedFileSource",
+			cs: CredentialSource{
+				File: "./testdata/3pi_cred.txt",
+			},
+			want: "street123",
+		},
+		{
+			name: "TextFileSource",
+			cs: CredentialSource{
+				File:   "./testdata/3pi_cred.txt",
+				Format: format{Type: fileTypeText},
+			},
+			want: "street123",
+		},
+		{
+			name: "JSONFileSource",
+			cs: CredentialSource{
+				File:   "./testdata/3pi_cred.json",
+				Format: format{Type: fileTypeJSON, SubjectTokenFieldName: "SubjToken"},
+			},
+			want: "321road",
+		},
+	}
+
 	for _, test := range fileSourceTests {
 		tfc := testFileConfig
 		tfc.CredentialSource = test.cs

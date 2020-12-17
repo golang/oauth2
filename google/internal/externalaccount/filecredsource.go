@@ -1,6 +1,11 @@
+// Copyright 2020 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package externalaccount
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,25 +20,30 @@ type fileCredentialSource struct {
 func (cs fileCredentialSource) retrieveSubjectToken(c *Config) (string, error) {
 	tokenFile, err := os.Open(cs.File)
 	if err != nil {
-		return "", fmt.Errorf("Failed to open credential file %s\n", cs.File)
+		return "", fmt.Errorf("oauth2/google: failed to open credential file %q\n", cs.File)
 	}
-	tokenBytes, _ := ioutil.ReadAll(tokenFile)
-	if string(tokenBytes[len(tokenBytes)-1]) == "\n" { //Deals with a possible trailing newline character
-		tokenBytes = tokenBytes[0 : len(tokenBytes)-1]
+	defer tokenFile.Close()
+	tokenBytes, err := ioutil.ReadAll(tokenFile)
+	if err != nil {
+		return "", fmt.Errorf("oauth2/google: failed to read credential file; %q", err)
 	}
+	tokenBytes = bytes.TrimSpace(tokenBytes)
 	var output string
 	switch c.CredentialSource.Format.Type {
 	case "json":
 		jsonData := make(map[string]interface{})
-		json.Unmarshal(tokenBytes, &jsonData)
+		err = json.Unmarshal(tokenBytes, &jsonData)
+		if err != nil {
+			return "", fmt.Errorf("oauth2/google: failed to unmarshal subject token file; %q", err)
+		}
 		if val, ok := jsonData[c.CredentialSource.Format.SubjectTokenFieldName]; !ok {
 			return "", errors.New("oauth2/google: provided subject_token_field_name not found in credentials")
 		} else {
-			if token, ok := val.(string); !ok {
+			token, ok := val.(string)
+			if ok {
 				return "", errors.New("oauth2/google: improperly formatted subject token")
-			} else {
-				output = token
 			}
+			output = token
 
 		}
 	case "text":

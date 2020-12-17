@@ -45,10 +45,9 @@ const (
 )
 
 type format struct {
-	// Either "text" or "json".  When not provided "text" type is assumed.
+	// Type is either "text" or "json".  When not provided "text" type is assumed.
 	Type string `json:"type"`
-	// SubjectTokenFieldName is only required for JSON format.
-	// This would be "access_token" for azure.
+	// SubjectTokenFieldName is only required for JSON format.  This would be "access_token" for azure.
 	SubjectTokenFieldName string `json:"subject_token_field_name"`
 }
 
@@ -88,11 +87,11 @@ type tokenSource struct {
 func (ts tokenSource) Token() (*oauth2.Token, error) {
 	conf := ts.conf
 
-	typedCredSource := conf.parse()
-	if typedCredSource == nil {
-		return nil, fmt.Errorf("google: unable to parse credential source")
+	credSource := conf.parse()
+	if credSource == nil {
+		return nil, fmt.Errorf("oauth2/google: unable to parse credential source")
 	}
-	subjectToken, err := typedCredSource.retrieveSubjectToken(conf)
+	subjectToken, err := credSource.retrieveSubjectToken(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +120,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 		TokenType:   stsResp.TokenType,
 	}
 	if stsResp.ExpiresIn < 0 {
-		return nil, fmt.Errorf("google/oauth2: got invalid expiry from security token service")
+		return nil, fmt.Errorf("oauth2/google: got invalid expiry from security token service")
 	} else if stsResp.ExpiresIn >= 0 {
 		accessToken.Expiry = now().Add(time.Duration(stsResp.ExpiresIn) * time.Second)
 	}
@@ -132,6 +131,3 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 
 	return accessToken, nil
 }
-
-// NOTE: this method doesn't exist yet. It is being investigated to add this method to oauth2.TokenSource.
-//func (ts tokenSource) TokenInfo() (*oauth2.TokenInfo, error)
