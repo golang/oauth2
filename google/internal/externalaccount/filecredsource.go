@@ -14,33 +14,34 @@ import (
 )
 
 type fileCredentialSource struct {
-	File string
+	File   string
+	Format format
 }
 
-func (cs fileCredentialSource) retrieveSubjectToken(c *Config) (string, error) {
+func (cs fileCredentialSource) subjectToken() (string, error) {
 	tokenFile, err := os.Open(cs.File)
 	if err != nil {
-		return "", fmt.Errorf("oauth2/google: failed to open credential file %q\n", cs.File)
+		return "", fmt.Errorf("oauth2/google: failed to open credential file %q", cs.File)
 	}
 	defer tokenFile.Close()
 	tokenBytes, err := ioutil.ReadAll(tokenFile)
 	if err != nil {
-		return "", fmt.Errorf("oauth2/google: failed to read credential file; %q", err)
+		return "", fmt.Errorf("oauth2/google: failed to read credential file: %v", err)
 	}
 	tokenBytes = bytes.TrimSpace(tokenBytes)
 	var output string
-	switch c.CredentialSource.Format.Type {
+	switch cs.Format.Type {
 	case "json":
 		jsonData := make(map[string]interface{})
 		err = json.Unmarshal(tokenBytes, &jsonData)
 		if err != nil {
-			return "", fmt.Errorf("oauth2/google: failed to unmarshal subject token file; %q", err)
+			return "", fmt.Errorf("oauth2/google: failed to unmarshal subject token file: %v", err)
 		}
-		if val, ok := jsonData[c.CredentialSource.Format.SubjectTokenFieldName]; !ok {
+		if val, ok := jsonData[cs.Format.SubjectTokenFieldName]; !ok {
 			return "", errors.New("oauth2/google: provided subject_token_field_name not found in credentials")
 		} else {
 			token, ok := val.(string)
-			if ok {
+			if !ok {
 				return "", errors.New("oauth2/google: improperly formatted subject token")
 			}
 			output = token

@@ -68,13 +68,13 @@ type CredentialSource struct {
 // instance determines the type of CredentialSource needed
 func (c *Config) parse() baseCredentialSource {
 	if c.CredentialSource.File != "" {
-		return fileCredentialSource{File: c.CredentialSource.File}
+		return fileCredentialSource{File: c.CredentialSource.File, Format: c.CredentialSource.Format}
 	}
 	return nil
 }
 
 type baseCredentialSource interface {
-	retrieveSubjectToken(c *Config) (string, error)
+	subjectToken() (string, error)
 }
 
 // tokenSource is the source that handles external credentials.
@@ -91,7 +91,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 	if credSource == nil {
 		return nil, fmt.Errorf("oauth2/google: unable to parse credential source")
 	}
-	subjectToken, err := credSource.retrieveSubjectToken(conf)
+	subjectToken, err := credSource.subjectToken()
 	if err != nil {
 		return nil, err
 	}
