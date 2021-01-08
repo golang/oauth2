@@ -37,16 +37,15 @@ func (cs fileCredentialSource) subjectToken() (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("oauth2/google: failed to unmarshal subject token file: %v", err)
 		}
-		if val, ok := jsonData[cs.Format.SubjectTokenFieldName]; !ok {
+		val, ok := jsonData[cs.Format.SubjectTokenFieldName]
+		if !ok {
 			return "", errors.New("oauth2/google: provided subject_token_field_name not found in credentials")
-		} else {
-			token, ok := val.(string)
-			if !ok {
-				return "", errors.New("oauth2/google: improperly formatted subject token")
-			}
-			output = token
-
 		}
+		token, ok := val.(string)
+		if !ok {
+			return "", errors.New("oauth2/google: improperly formatted subject token")
+		}
+		output = token
 	case "text":
 		output = string(tokenBytes)
 	case "":
