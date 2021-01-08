@@ -53,7 +53,7 @@ func TestRetrieveFileSubjectToken(t *testing.T) {
 		tfc := testFileConfig
 		tfc.CredentialSource = test.cs
 
-		out, err := tfc.parse().retrieveSubjectToken(&tfc)
+		out, err := tfc.parse().subjectToken()
 		if err != nil {
 			t.Errorf("Method retrieveSubjectToken for type fileCredentialSource in test %v failed; %e", test.name, err)
 		}
