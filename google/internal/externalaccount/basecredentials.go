@@ -38,7 +38,7 @@ func (c *Config) TokenSource(ctx context.Context) oauth2.TokenSource {
 	return oauth2.ReuseTokenSource(nil, ts)
 }
 
-// Subject token file types
+// Subject token file types.
 const (
 	fileTypeText = "text"
 	fileTypeJSON = "json"
@@ -51,7 +51,7 @@ type format struct {
 	SubjectTokenFieldName string `json:"subject_token_field_name"`
 }
 
-// CredentialSource stores the information necessary to retrieve the credentials for the STS exchange
+// CredentialSource stores the information necessary to retrieve the credentials for the STS exchange.
 type CredentialSource struct {
 	File string `json:"file"`
 
@@ -65,7 +65,7 @@ type CredentialSource struct {
 	Format                      format `json:"format"`
 }
 
-// instance determines the type of CredentialSource needed
+// parse determines the type of CredentialSource needed
 func (c *Config) parse() baseCredentialSource {
 	if c.CredentialSource.File != "" {
 		return fileCredentialSource{File: c.CredentialSource.File, Format: c.CredentialSource.Format}
