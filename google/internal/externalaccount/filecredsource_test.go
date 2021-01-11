@@ -55,7 +55,7 @@ func TestRetrieveFileSubjectToken(t *testing.T) {
 
 		out, err := tfc.parse().subjectToken()
 		if err != nil {
-			t.Errorf("Method retrieveSubjectToken for type fileCredentialSource in test %v failed; %e", test.name, err)
+			t.Fatalf("Method retrieveSubjectToken for type fileCredentialSource in test %v failed; %e", test.name, err)
 		}
 		if out != test.want {
 			t.Errorf("Test %v for method retrieveSubjectToken for type fileCredentialSouce failed: expected %v but got %v", test.name, test.want, out)
