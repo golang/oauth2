@@ -43,15 +43,15 @@ func TestToken_Func(t *testing.T) {
 
 	targetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got, want := r.URL.String(), "/"; got != want {
-			t.Errorf("Unexpected request URL: got %v but want %v", got, want)
+			t.Errorf("URL.String(): got %v but want %v", got, want)
 		}
 		headerAuth := r.Header.Get("Authorization")
 		if got, want := headerAuth, "Basic cmJyZ25vZ25yaG9uZ28zYmk0Z2I5Z2hnOWc6bm90c29zZWNyZXQ="; got != want {
-			t.Errorf("Unexpected autohrization header: got %v but want %v", got, want)
+			t.Errorf("got %v but want %v", got, want)
 		}
 		headerContentType := r.Header.Get("Content-Type")
 		if got, want := headerContentType, "application/x-www-form-urlencoded"; got != want {
-			t.Errorf("Unexpected Content-Type header: got %v but want %v", got, want)
+			t.Errorf("got %v but want %v", got, want)
 		}
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {

@@ -50,15 +50,18 @@ func TestRetrieveFileSubjectToken(t *testing.T) {
 	}
 
 	for _, test := range fileSourceTests {
+		test := test
 		tfc := testFileConfig
 		tfc.CredentialSource = test.cs
 
-		out, err := tfc.parse().subjectToken()
-		if err != nil {
-			t.Fatalf("Method retrieveSubjectToken for type fileCredentialSource in test %v failed; %e", test.name, err)
-		}
-		if out != test.want {
-			t.Errorf("Test %v for method retrieveSubjectToken for type fileCredentialSouce failed: expected %v but got %v", test.name, test.want, out)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			out, err := tfc.parse().subjectToken()
+			if err != nil {
+				t.Errorf("Method subjectToken() errored.")
+			} else if test.want != out {
+				t.Errorf("got %v but want %v", out, test.want)
+			}
+
+		})
 	}
 }
