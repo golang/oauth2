@@ -69,6 +69,8 @@ type CredentialSource struct {
 func (c *Config) parse() baseCredentialSource {
 	if c.CredentialSource.File != "" {
 		return fileCredentialSource{File: c.CredentialSource.File, Format: c.CredentialSource.Format}
+	} else if c.CredentialSource.URL != "" {
+		return urlCredentialSource{URL: c.CredentialSource.URL, Format: c.CredentialSource.Format}
 	}
 	return nil
 }
