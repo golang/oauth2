@@ -13,8 +13,6 @@ import (
 
 var myURLToken = "testTokenValue"
 
-
-
 func TestRetrieveURLSubjectToken_Text(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -24,7 +22,7 @@ func TestRetrieveURLSubjectToken_Text(t *testing.T) {
 		w.Write([]byte("testTokenValue"))
 	}))
 	cs := CredentialSource{
-		URL: ts.URL,
+		URL:    ts.URL,
 		Format: format{Type: fileTypeText},
 	}
 	tfc := testFileConfig
@@ -81,14 +79,13 @@ func TestRetrieveURLSubjectToken_JSON(t *testing.T) {
 		w.Write(jsonResp)
 	}))
 	cs := CredentialSource{
-		URL: ts.URL,
+		URL:    ts.URL,
 		Format: format{Type: fileTypeJSON, SubjectTokenFieldName: "SubjToken"},
 	}
 	tfc := testFileConfig
 	tfc.CredentialSource = cs
 
 	out, err := tfc.parse().subjectToken()
-
 
 	if err != nil {
 		t.Fatalf("%v", err)

@@ -15,9 +15,9 @@ import (
 )
 
 type urlCredentialSource struct {
-	URL string
+	URL     string
 	Headers map[string]string
-	Format format
+	Format  format
 }
 
 func (cs urlCredentialSource) subjectToken() (string, error) {
