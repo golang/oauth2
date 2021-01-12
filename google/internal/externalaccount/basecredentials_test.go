@@ -39,7 +39,7 @@ var (
 	testNow = func() time.Time { return time.Unix(expiry, 0) }
 )
 
-func TestToken_Func(t *testing.T) {
+func TestToken(t *testing.T) {
 
 	targetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got, want := r.URL.String(), "/"; got != want {

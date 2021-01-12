@@ -30,7 +30,6 @@ func (cs fileCredentialSource) subjectToken() (string, error) {
 		return "", fmt.Errorf("oauth2/google: failed to read credential file: %v", err)
 	}
 	tokenBytes = bytes.TrimSpace(tokenBytes)
-	var output string
 	switch cs.Format.Type {
 	case "json":
 		jsonData := make(map[string]interface{})
@@ -46,15 +45,13 @@ func (cs fileCredentialSource) subjectToken() (string, error) {
 		if !ok {
 			return "", errors.New("oauth2/google: improperly formatted subject token")
 		}
-		output = token
+		return token, nil
 	case "text":
-		output = string(tokenBytes)
+		return string(tokenBytes), nil
 	case "":
-		output = string(tokenBytes)
+		return string(tokenBytes), nil
 	default:
 		return "", errors.New("oauth2/google: invalid credential_source file format type")
 	}
-
-	return output, nil
 
 }

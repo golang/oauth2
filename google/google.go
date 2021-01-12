@@ -9,13 +9,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/oauth2/google/internal/externalaccount"
 	"net/url"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google/internal/externalaccount"
 	"golang.org/x/oauth2/jwt"
 )
 
