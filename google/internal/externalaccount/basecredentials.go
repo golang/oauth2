@@ -66,9 +66,11 @@ type CredentialSource struct {
 }
 
 // parse determines the type of CredentialSource needed
-func (c *Config) parse() baseCredentialSource {
+func (c *Config) parse(ctx context.Context) baseCredentialSource {
 	if c.CredentialSource.File != "" {
 		return fileCredentialSource{File: c.CredentialSource.File, Format: c.CredentialSource.Format}
+	} else if c.CredentialSource.URL != "" {
+		return urlCredentialSource{URL: c.CredentialSource.URL, Format: c.CredentialSource.Format, ctx: ctx}
 	}
 	return nil
 }
@@ -87,7 +89,7 @@ type tokenSource struct {
 func (ts tokenSource) Token() (*oauth2.Token, error) {
 	conf := ts.conf
 
-	credSource := conf.parse()
+	credSource := conf.parse(ts.ctx)
 	if credSource == nil {
 		return nil, fmt.Errorf("oauth2/google: unable to parse credential source")
 	}
