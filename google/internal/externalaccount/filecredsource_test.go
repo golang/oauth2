@@ -5,6 +5,7 @@
 package externalaccount
 
 import (
+	"context"
 	"testing"
 )
 
@@ -55,7 +56,7 @@ func TestRetrieveFileSubjectToken(t *testing.T) {
 		tfc.CredentialSource = test.cs
 
 		t.Run(test.name, func(t *testing.T) {
-			out, err := tfc.parse().subjectToken()
+			out, err := tfc.parse(context.Background()).subjectToken()
 			if err != nil {
 				t.Errorf("Method subjectToken() errored.")
 			} else if test.want != out {

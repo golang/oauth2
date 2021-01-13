@@ -14,7 +14,6 @@ import (
 var myURLToken = "testTokenValue"
 
 func TestRetrieveURLSubjectToken_Text(t *testing.T) {
-
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			t.Errorf("Unexpected request method, %v is found", r.Method)
@@ -35,12 +34,10 @@ func TestRetrieveURLSubjectToken_Text(t *testing.T) {
 	if out != myURLToken {
 		t.Errorf("got %v but want %v", out, myURLToken)
 	}
-
 }
 
 // Checking that retrieveSubjectToken properly defaults to type text
 func TestRetrieveURLSubjectToken_Untyped(t *testing.T) {
-
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			t.Errorf("Unexpected request method, %v is found", r.Method)
@@ -55,12 +52,11 @@ func TestRetrieveURLSubjectToken_Untyped(t *testing.T) {
 
 	out, err := tfc.parse().subjectToken()
 	if err != nil {
-		t.Fatalf("Failed to retrieve USRL subject token: %v", err)
+		t.Fatalf("Failed to retrieve URL subject token: %v", err)
 	}
 	if out != myURLToken {
 		t.Errorf("got %v but want %v", out, myURLToken)
 	}
-
 }
 
 func TestRetrieveURLSubjectToken_JSON(t *testing.T) {
@@ -86,12 +82,10 @@ func TestRetrieveURLSubjectToken_JSON(t *testing.T) {
 	tfc.CredentialSource = cs
 
 	out, err := tfc.parse().subjectToken()
-
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
 	if out != myURLToken {
 		t.Errorf("got %v but want %v", out, myURLToken)
 	}
-
 }
