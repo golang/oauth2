@@ -25,6 +25,10 @@ type urlCredentialSource struct {
 func (cs urlCredentialSource) subjectToken() (string, error) {
 	client := oauth2.NewClient(cs.ctx, nil)
 	req, err := http.NewRequest("GET", cs.URL, nil)
+	if err != nil {
+		return "", fmt.Errorf("oauth2/google: HTTP request for URL-sourced credential failed: %v", err)
+	}
+	req = req.WithContext(cs.ctx)
 
 	for key, val := range cs.Headers {
 		req.Header.Add(key, val)
