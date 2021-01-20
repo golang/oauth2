@@ -14,7 +14,8 @@ import (
 
 var defaultTime = time.Date(2011, 9, 9, 23, 36, 0, 0, time.UTC)
 var secondDefaultTime = time.Date(2020, 8, 11, 6, 55, 22, 0, time.UTC)
-func setTime(testTime time.Time) (func() time.Time) {
+
+func setTime(testTime time.Time) func() time.Time {
 	return func() time.Time {
 		return testTime
 	}
@@ -72,7 +73,7 @@ func TestAwsV4Signature_GetRequest(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
@@ -90,7 +91,7 @@ func TestAwsV4Signature_GetRequestWithRelativePath(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
@@ -108,7 +109,7 @@ func TestAwsV4Signature_GetRequestWithDotPath(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
@@ -126,7 +127,7 @@ func TestAwsV4Signature_GetRequestWithPointlessDotPath(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
@@ -144,7 +145,7 @@ func TestAwsV4Signature_GetRequestWithUtf8Path(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
@@ -162,7 +163,7 @@ func TestAwsV4Signature_GetRequestWithDuplicateQuery(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
@@ -180,7 +181,7 @@ func TestAwsV4Signature_GetRequestWithMisorderedQuery(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
@@ -198,7 +199,7 @@ func TestAwsV4Signature_GetRequestWithUtf8Query(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
@@ -218,7 +219,7 @@ func TestAwsV4Signature_PostRequest(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
@@ -238,7 +239,7 @@ func TestAwsV4Signature_PostRequestWithCapitalizedHeaderValue(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
@@ -258,7 +259,7 @@ func TestAwsV4Signature_PostRequestPhfft(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
@@ -278,7 +279,7 @@ func TestAwsV4Signature_PostRequestWithBody(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
@@ -296,7 +297,7 @@ func TestAwsV4Signature_PostRequestWithQueryString(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
@@ -314,7 +315,7 @@ func TestAwsV4Signature_GetRequestWithSecurityToken(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(secondDefaultTime)
 
 	testRequestSigner(t, requestSignerWithToken, input, output)
@@ -332,7 +333,7 @@ func TestAwsV4Signature_PostRequestWithSecurityToken(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(secondDefaultTime)
 
 	testRequestSigner(t, requestSignerWithToken, input, output)
@@ -355,7 +356,7 @@ func TestAwsV4Signature_PostRequestWithSecurityTokenAndAdditionalHeaders(t *test
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(secondDefaultTime)
 
 	testRequestSigner(t, requestSignerWithToken, input, output)
@@ -377,7 +378,7 @@ func TestAwsV4Signature_PostRequestWithAmzDateButNoSecurityToken(t *testing.T) {
 	}
 
 	oldNow := now
-	defer func() {now = oldNow}()
+	defer func() { now = oldNow }()
 	now = setTime(secondDefaultTime)
 
 	testRequestSigner(t, requestSigner, input, output)

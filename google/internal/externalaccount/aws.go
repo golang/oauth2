@@ -34,20 +34,20 @@ func NewRequestSigner(regionName string, awsSecurityCredentials map[string]strin
 }
 
 const (
-// AWS Signature Version 4 signing algorithm identifier.
+	// AWS Signature Version 4 signing algorithm identifier.
 	awsAlgorithm = "AWS4-HMAC-SHA256"
 
-// The termination string for the AWS credential scope value as defined in
-// https://docs.aws.amazon.com/general/latest/gr/sigv4-create-string-to-sign.html
+	// The termination string for the AWS credential scope value as defined in
+	// https://docs.aws.amazon.com/general/latest/gr/sigv4-create-string-to-sign.html
 	awsRequestType = "aws4_request"
 
-// The AWS authorization header name for the security session token if available.
+	// The AWS authorization header name for the security session token if available.
 	awsSecurityTokenHeader = "x-amz-security-token"
 
-// The AWS authorization header name for the auto-generated date.
+	// The AWS authorization header name for the auto-generated date.
 	awsDateHeader = "x-amz-date"
 
-	awsTimeFormatLong = "20060102T150405Z"
+	awsTimeFormatLong  = "20060102T150405Z"
 	awsTimeFormatShort = "20060102"
 )
 
@@ -218,14 +218,14 @@ func (rs *RequestSigner) generateAuthentication(req *http.Request, timestamp tim
 		serviceName = splitHost[0]
 	}
 
-	credentialScope := fmt.Sprintf("%s/%s/%s/%s",dateStamp, rs.RegionName, serviceName, awsRequestType)
+	credentialScope := fmt.Sprintf("%s/%s/%s/%s", dateStamp, rs.RegionName, serviceName, awsRequestType)
 
 	requestString, err := canonicalRequest(req, canonicalHeaderColumns, canonicalHeaderData)
 	if err != nil {
 		return "", err
 	}
 	requestHash, err := getSha256([]byte(requestString))
-	if err != nil{
+	if err != nil {
 		return "", err
 	}
 
@@ -241,7 +241,7 @@ func (rs *RequestSigner) generateAuthentication(req *http.Request, timestamp tim
 		dateStamp, rs.RegionName, serviceName, awsRequestType, stringToSign,
 	} {
 		signingKey, err = getHmacSha256(signingKey, []byte(signingInput))
-		if err != nil{
+		if err != nil {
 			return "", err
 		}
 	}
