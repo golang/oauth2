@@ -14,6 +14,12 @@ import (
 var defaultTime = time.Date(2011, 9, 9, 23, 36, 0, 0, time.UTC)
 var secondDefaultTime = time.Date(2020, 8, 11, 6, 55, 22, 0, time.UTC)
 
+func setTime(testTime time.Time) func() time.Time {
+	return func() time.Time {
+		return testTime
+	}
+}
+
 var defaultRequestSigner = NewRequestSigner("us-east-1", map[string]string{
 	"access_key_id":     "AKIDEXAMPLE",
 	"secret_access_key": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
@@ -36,16 +42,19 @@ func setDefaultTime(req *http.Request) {
 }
 
 func testRequestSigner(t *testing.T, rs *RequestSigner, input, expectedOutput *http.Request) {
-	actualOutput := rs.SignedRequest(input)
+	err := rs.SignRequest(input)
+	if err != nil {
+		t.Errorf("unexpected error: %q", err.Error())
+	}
 
-	if got, want := actualOutput.URL.String(), expectedOutput.URL.String(); !reflect.DeepEqual(got, want) {
+	if got, want := input.URL.String(), expectedOutput.URL.String(); !reflect.DeepEqual(got, want) {
 		t.Errorf("url = %q, want %q", got, want)
 	}
-	if got, want := actualOutput.Method, expectedOutput.Method; !reflect.DeepEqual(got, want) {
+	if got, want := input.Method, expectedOutput.Method; !reflect.DeepEqual(got, want) {
 		t.Errorf("method = %q, want %q", got, want)
 	}
 	for header := range expectedOutput.Header {
-		if got, want := actualOutput.Header[header], expectedOutput.Header[header]; !reflect.DeepEqual(got, want) {
+		if got, want := input.Header[header], expectedOutput.Header[header]; !reflect.DeepEqual(got, want) {
 			t.Errorf("header[%q] = %q, want %q", header, got, want)
 		}
 	}
@@ -62,6 +71,10 @@ func TestAwsV4Signature_GetRequest(t *testing.T) {
 		"Authorization": []string{"AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470"},
 	}
 
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
+
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
@@ -75,6 +88,10 @@ func TestAwsV4Signature_GetRequestWithRelativePath(t *testing.T) {
 		"Date":          []string{"Mon, 09 Sep 2011 23:36:00 GMT"},
 		"Authorization": []string{"AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470"},
 	}
+
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
@@ -90,6 +107,10 @@ func TestAwsV4Signature_GetRequestWithDotPath(t *testing.T) {
 		"Authorization": []string{"AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=b27ccfbfa7df52a200ff74193ca6e32d4b48b8856fab7ebf1c595d0670a7e470"},
 	}
 
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
+
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
@@ -103,6 +124,10 @@ func TestAwsV4Signature_GetRequestWithPointlessDotPath(t *testing.T) {
 		"Date":          []string{"Mon, 09 Sep 2011 23:36:00 GMT"},
 		"Authorization": []string{"AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=910e4d6c9abafaf87898e1eb4c929135782ea25bb0279703146455745391e63a"},
 	}
+
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
@@ -118,6 +143,10 @@ func TestAwsV4Signature_GetRequestWithUtf8Path(t *testing.T) {
 		"Authorization": []string{"AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=8d6634c189aa8c75c2e51e106b6b5121bed103fdb351f7d7d4381c738823af74"},
 	}
 
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
+
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
@@ -131,6 +160,10 @@ func TestAwsV4Signature_GetRequestWithDuplicateQuery(t *testing.T) {
 		"Date":          []string{"Mon, 09 Sep 2011 23:36:00 GMT"},
 		"Authorization": []string{"AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=be7148d34ebccdc6423b19085378aa0bee970bdc61d144bd1a8c48c33079ab09"},
 	}
+
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
@@ -146,6 +179,10 @@ func TestAwsV4Signature_GetRequestWithMisorderedQuery(t *testing.T) {
 		"Authorization": []string{"AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=feb926e49e382bec75c9d7dcb2a1b6dc8aa50ca43c25d2bc51143768c0875acc"},
 	}
 
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
+
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
@@ -159,6 +196,10 @@ func TestAwsV4Signature_GetRequestWithUtf8Query(t *testing.T) {
 		"Date":          []string{"Mon, 09 Sep 2011 23:36:00 GMT"},
 		"Authorization": []string{"AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=6fb359e9a05394cc7074e0feb42573a2601abc0c869a953e8c5c12e4e01f1a8c"},
 	}
+
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
@@ -176,6 +217,10 @@ func TestAwsV4Signature_PostRequest(t *testing.T) {
 		"Zoo":           []string{"zoobar"},
 	}
 
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
+
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
@@ -191,6 +236,10 @@ func TestAwsV4Signature_PostRequestWithCapitalizedHeaderValue(t *testing.T) {
 		"Authorization": []string{"AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host;zoo, Signature=273313af9d0c265c531e11db70bbd653f3ba074c1009239e8559d3987039cad7"},
 		"Zoo":           []string{"ZOOBAR"},
 	}
+
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
@@ -208,6 +257,10 @@ func TestAwsV4Signature_PostRequestPhfft(t *testing.T) {
 		"P":             []string{"phfft"},
 	}
 
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
+
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
@@ -224,6 +277,10 @@ func TestAwsV4Signature_PostRequestWithBody(t *testing.T) {
 		"Authorization": []string{"AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=content-type;date;host, Signature=5a15b22cf462f047318703b92e6f4f38884e4a7ab7b1d6426ca46a8bd1c26cbc"},
 	}
 
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
+
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
@@ -237,6 +294,10 @@ func TestAwsV4Signature_PostRequestWithQueryString(t *testing.T) {
 		"Date":          []string{"Mon, 09 Sep 2011 23:36:00 GMT"},
 		"Authorization": []string{"AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20110909/us-east-1/host/aws4_request, SignedHeaders=date;host, Signature=b6e3b79003ce0743a491606ba1035a804593b0efb1e20a11cba83f8c25a57a92"},
 	}
+
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
 
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
@@ -252,6 +313,10 @@ func TestAwsV4Signature_GetRequestWithSecurityToken(t *testing.T) {
 		"X-Amz-Security-Token": []string{securityToken},
 	}
 
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(secondDefaultTime)
+
 	testRequestSigner(t, requestSignerWithToken, input, output)
 }
 
@@ -265,6 +330,10 @@ func TestAwsV4Signature_PostRequestWithSecurityToken(t *testing.T) {
 		"X-Amz-Date":           []string{"20200811T065522Z"},
 		"X-Amz-Security-Token": []string{securityToken},
 	}
+
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(secondDefaultTime)
 
 	testRequestSigner(t, requestSignerWithToken, input, output)
 }
@@ -285,6 +354,10 @@ func TestAwsV4Signature_PostRequestWithSecurityTokenAndAdditionalHeaders(t *test
 		"X-Amz-Security-Token": []string{securityToken},
 	}
 
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(secondDefaultTime)
+
 	testRequestSigner(t, requestSignerWithToken, input, output)
 }
 
@@ -293,7 +366,6 @@ func TestAwsV4Signature_PostRequestWithAmzDateButNoSecurityToken(t *testing.T) {
 		"access_key_id":     accessKeyId,
 		"secret_access_key": secretAccessKey,
 	})
-	requestSigner.debugTimestamp = secondDefaultTime
 
 	input, _ := http.NewRequest("POST", "https://sts.us-east-2.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15", nil)
 
@@ -304,10 +376,9 @@ func TestAwsV4Signature_PostRequestWithAmzDateButNoSecurityToken(t *testing.T) {
 		"X-Amz-Date":    []string{"20200811T065522Z"},
 	}
 
-	testRequestSigner(t, requestSigner, input, output)
-}
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(secondDefaultTime)
 
-func init() {
-	defaultRequestSigner.debugTimestamp = defaultTime
-	requestSignerWithToken.debugTimestamp = secondDefaultTime
+	testRequestSigner(t, requestSigner, input, output)
 }
