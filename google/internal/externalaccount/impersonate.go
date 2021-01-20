@@ -27,6 +27,7 @@ type impersonateTokenResponse struct {
 	ExpireTime  string `json:"expireTime"`
 }
 
+// impersonate performs the exchange to get a temporary service account
 func (ts tokenSource) impersonate() (*oauth2.Token, error) {
 	reqBody := generateAccessTokenReq{
 		Lifetime: "3600s",
