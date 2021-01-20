@@ -89,6 +89,14 @@ type tokenSource struct {
 func (ts tokenSource) Token() (*oauth2.Token, error) {
 	conf := ts.conf
 
+	if conf.ServiceAccountImpersonationURL != "" {
+		token, err := ts.impersonate()
+		if err != nil {
+			return nil, err
+		}
+		return token, err
+	}
+
 	credSource := conf.parse(ts.ctx)
 	if credSource == nil {
 		return nil, fmt.Errorf("oauth2/google: unable to parse credential source")
@@ -130,6 +138,5 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 	if stsResp.RefreshToken != "" {
 		accessToken.RefreshToken = stsResp.RefreshToken
 	}
-
 	return accessToken, nil
 }
