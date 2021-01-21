@@ -21,20 +21,26 @@ func setTime(testTime time.Time) func() time.Time {
 	}
 }
 
-var defaultRequestSigner = NewRequestSigner("us-east-1", map[string]string{
-	"access_key_id":     "AKIDEXAMPLE",
-	"secret_access_key": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
-})
+var defaultRequestSigner = &awsRequestSigner{
+	RegionName: "us-east-1",
+	AwsSecurityCredentials: map[string]string{
+		"access_key_id":     "AKIDEXAMPLE",
+		"secret_access_key": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+	},
+}
 
 const accessKeyId = "ASIARD4OQDT6A77FR3CL"
 const secretAccessKey = "Y8AfSaucF37G4PpvfguKZ3/l7Id4uocLXxX0+VTx"
 const securityToken = "IQoJb3JpZ2luX2VjEIz//////////wEaCXVzLWVhc3QtMiJGMEQCIH7MHX/Oy/OB8OlLQa9GrqU1B914+iMikqWQW7vPCKlgAiA/Lsv8Jcafn14owfxXn95FURZNKaaphj0ykpmS+Ki+CSq0AwhlEAAaDDA3NzA3MTM5MTk5NiIMx9sAeP1ovlMTMKLjKpEDwuJQg41/QUKx0laTZYjPlQvjwSqS3OB9P1KAXPWSLkliVMMqaHqelvMF/WO/glv3KwuTfQsavRNs3v5pcSEm4SPO3l7mCs7KrQUHwGP0neZhIKxEXy+Ls//1C/Bqt53NL+LSbaGv6RPHaX82laz2qElphg95aVLdYgIFY6JWV5fzyjgnhz0DQmy62/Vi8pNcM2/VnxeCQ8CC8dRDSt52ry2v+nc77vstuI9xV5k8mPtnaPoJDRANh0bjwY5Sdwkbp+mGRUJBAQRlNgHUJusefXQgVKBCiyJY4w3Csd8Bgj9IyDV+Azuy1jQqfFZWgP68LSz5bURyIjlWDQunO82stZ0BgplKKAa/KJHBPCp8Qi6i99uy7qh76FQAqgVTsnDuU6fGpHDcsDSGoCls2HgZjZFPeOj8mmRhFk1Xqvkbjuz8V1cJk54d3gIJvQt8gD2D6yJQZecnuGWd5K2e2HohvCc8Fc9kBl1300nUJPV+k4tr/A5R/0QfEKOZL1/k5lf1g9CREnrM8LVkGxCgdYMxLQow1uTL+QU67AHRRSp5PhhGX4Rek+01vdYSnJCMaPhSEgcLqDlQkhk6MPsyT91QMXcWmyO+cAZwUPwnRamFepuP4K8k2KVXs/LIJHLELwAZ0ekyaS7CptgOqS7uaSTFG3U+vzFZLEnGvWQ7y9IPNQZ+Dffgh4p3vF4J68y9049sI6Sr5d5wbKkcbm8hdCDHZcv4lnqohquPirLiFQ3q7B17V9krMPu3mz1cg4Ekgcrn/E09NTsxAqD8NcZ7C7ECom9r+X3zkDOxaajW6hu3Az8hGlyylDaMiFfRbBJpTIlxp7jfa7CxikNgNtEKLH9iCzvuSg2vhA=="
 
-var requestSignerWithToken = NewRequestSigner("us-east-2", map[string]string{
-	"access_key_id":     accessKeyId,
-	"secret_access_key": secretAccessKey,
-	"security_token":    securityToken,
-})
+var requestSignerWithToken = &awsRequestSigner{
+	RegionName: "us-east-2",
+	AwsSecurityCredentials: map[string]string{
+		"access_key_id":     accessKeyId,
+		"secret_access_key": secretAccessKey,
+		"security_token":    securityToken,
+	},
+}
 
 func setDefaultTime(req *http.Request) {
 	// Don't use time.Format for this
@@ -42,7 +48,9 @@ func setDefaultTime(req *http.Request) {
 	req.Header.Add("date", "Mon, 09 Sep 2011 23:36:00 GMT")
 }
 
-func testRequestSigner(t *testing.T, rs *RequestSigner, input, expectedOutput *http.Request) {
+func testRequestSigner(t *testing.T, rs *awsRequestSigner, input, expectedOutput *http.Request) {
+	t.Helper()
+
 	err := rs.SignRequest(input)
 	if err != nil {
 		t.Errorf("unexpected error: %q", err.Error())
@@ -363,10 +371,13 @@ func TestAwsV4Signature_PostRequestWithSecurityTokenAndAdditionalHeaders(t *test
 }
 
 func TestAwsV4Signature_PostRequestWithAmzDateButNoSecurityToken(t *testing.T) {
-	var requestSigner = NewRequestSigner("us-east-2", map[string]string{
-		"access_key_id":     accessKeyId,
-		"secret_access_key": secretAccessKey,
-	})
+	var requestSigner = &awsRequestSigner{
+		RegionName: "us-east-2",
+		AwsSecurityCredentials: map[string]string{
+			"access_key_id":     accessKeyId,
+			"secret_access_key": secretAccessKey,
+		},
+	}
 
 	input, _ := http.NewRequest("POST", "https://sts.us-east-2.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15", nil)
 

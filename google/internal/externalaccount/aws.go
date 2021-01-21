@@ -20,17 +20,9 @@ import (
 )
 
 // RequestSigner is a utility class to sign http requests using a AWS V4 signature.
-type RequestSigner struct {
+type awsRequestSigner struct {
 	RegionName             string
 	AwsSecurityCredentials map[string]string
-}
-
-// NewRequestSigner is a method to create a RequestSigner with the appropriately filled out fields.
-func NewRequestSigner(regionName string, awsSecurityCredentials map[string]string) *RequestSigner {
-	return &RequestSigner{
-		RegionName:             regionName,
-		AwsSecurityCredentials: awsSecurityCredentials,
-	}
 }
 
 const (
@@ -164,19 +156,12 @@ func canonicalRequest(req *http.Request, canonicalHeaderColumns, canonicalHeader
 		return "", err
 	}
 
-	return strings.Join([]string{
-		req.Method,
-		canonicalPath(req),
-		canonicalQuery(req),
-		canonicalHeaderData,
-		canonicalHeaderColumns,
-		dataHash,
-	}, "\n"), nil
+	return fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", req.Method, canonicalPath(req), canonicalQuery(req), canonicalHeaderData, canonicalHeaderColumns, dataHash), nil
 }
 
 // SignRequest adds the appropriate headers to an http.Request
 // or returns an error if something prevented this.
-func (rs *RequestSigner) SignRequest(req *http.Request) error {
+func (rs *awsRequestSigner) SignRequest(req *http.Request) error {
 	signedRequest := cloneRequest(req)
 	timestamp := now()
 
@@ -200,14 +185,14 @@ func (rs *RequestSigner) SignRequest(req *http.Request) error {
 	return nil
 }
 
-func (rs *RequestSigner) generateAuthentication(req *http.Request, timestamp time.Time) (string, error) {
+func (rs *awsRequestSigner) generateAuthentication(req *http.Request, timestamp time.Time) (string, error) {
 	secretAccessKey, ok := rs.AwsSecurityCredentials["secret_access_key"]
 	if !ok {
-		return "", errors.New("Missing Secret Access Key")
+		return "", errors.New("oauth2/google: missing secret_access_key header")
 	}
 	accessKeyId, ok := rs.AwsSecurityCredentials["access_key_id"]
 	if !ok {
-		return "", errors.New("Missing Access Key Id")
+		return "", errors.New("oauth2/google: missing access_key_id header")
 	}
 
 	canonicalHeaderColumns, canonicalHeaderData := canonicalHeaders(req)
@@ -229,12 +214,7 @@ func (rs *RequestSigner) generateAuthentication(req *http.Request, timestamp tim
 		return "", err
 	}
 
-	stringToSign := strings.Join([]string{
-		awsAlgorithm,
-		timestamp.Format(awsTimeFormatLong),
-		credentialScope,
-		requestHash,
-	}, "\n")
+	stringToSign := fmt.Sprintf("%s\n%s\n%s\n%s", awsAlgorithm, timestamp.Format(awsTimeFormatLong), credentialScope, requestHash)
 
 	signingKey := []byte("AWS4" + secretAccessKey)
 	for _, signingInput := range []string{
