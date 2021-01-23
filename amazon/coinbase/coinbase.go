@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package amazon provides constants for using OAuth2 to access Amazon.
+// Package coinbase provides constants for using OAuth2 to access Coinbase.
 package coinbase
 
 import (
