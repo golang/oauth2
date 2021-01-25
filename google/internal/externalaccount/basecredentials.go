@@ -38,11 +38,12 @@ func (c *Config) TokenSource(ctx context.Context) oauth2.TokenSource {
 	if c.ServiceAccountImpersonationURL == "" {
 		return oauth2.ReuseTokenSource(nil, ts)
 	}
+	scopes := c.Scopes
 	ts.conf.Scopes = []string{"https://www.googleapis.com/auth/cloud-platform"}
 	imp := impersonateTokenSource{
 		ctx:    ctx,
 		url:    c.ServiceAccountImpersonationURL,
-		scopes: c.Scopes,
+		scopes: scopes,
 		ts: oauth2.ReuseTokenSource(nil, ts),
 	}
 	return oauth2.ReuseTokenSource(nil, imp)

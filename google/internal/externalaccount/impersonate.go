@@ -43,11 +43,10 @@ func (its impersonateTokenSource) Token() (*oauth2.Token, error) {
 		Scope:    its.scopes,
 	}
 	b, err := json.Marshal(reqBody)
-
-	client := oauth2.NewClient(its.ctx, its.ts)
 	if err != nil {
 		return nil, fmt.Errorf("oauth2/google: unable to marshal request: %v", err)
 	}
+	client := oauth2.NewClient(its.ctx, its.ts)
 	req, err := http.NewRequest("POST", its.url, bytes.NewReader(b))
 	if err != nil {
 		return nil, fmt.Errorf("oauth2/google: unable to create impersonation request: %v", err)
