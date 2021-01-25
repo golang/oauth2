@@ -77,10 +77,7 @@ func TestImpersonation(t *testing.T) {
 	defer targetServer.Close()
 
 	testImpersonateConfig.TokenURL = targetServer.URL
-	ourTS := tokenSource{
-		ctx:  context.Background(),
-		conf: &testImpersonateConfig,
-	}
+	ourTS := testImpersonateConfig.TokenSource(context.Background())
 
 	oldNow := now
 	defer func() { now = oldNow }()

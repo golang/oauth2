@@ -6,6 +6,7 @@ package externalaccount
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"golang.org/x/oauth2"
@@ -27,49 +28,53 @@ type impersonateTokenResponse struct {
 	ExpireTime  string `json:"expireTime"`
 }
 
+type impersonateTokenSource struct {
+	ctx context.Context
+	ts  oauth2.TokenSource
+
+	url    string
+	scopes []string
+}
+
 // impersonate performs the exchange to get a temporary service account
-func (ts tokenSource) impersonate() (*oauth2.Token, error) {
+func (its impersonateTokenSource) Token() (*oauth2.Token, error) {
 	reqBody := generateAccessTokenReq{
 		Lifetime: "3600s",
-		Scope:    ts.conf.Scopes,
+		Scope:    its.scopes,
 	}
 	b, err := json.Marshal(reqBody)
 
-	serviceAccountImpersonationURL := ts.conf.ServiceAccountImpersonationURL
-	ts.conf.ServiceAccountImpersonationURL = ""
-	ts.conf.Scopes = []string{"https://www.googleapis.com/auth/cloud-platform"}
-
-	client := oauth2.NewClient(ts.ctx, ts)
+	client := oauth2.NewClient(its.ctx, its.ts)
 	if err != nil {
-		return &oauth2.Token{}, fmt.Errorf("google: unable to marshal request: %v", err)
+		return nil, fmt.Errorf("oauth2/google: unable to marshal request: %v", err)
 	}
-	req, err := http.NewRequest("POST", serviceAccountImpersonationURL, bytes.NewReader(b))
+	req, err := http.NewRequest("POST", its.url, bytes.NewReader(b))
 	if err != nil {
-		return nil, fmt.Errorf("impersonate: unable to create request: %v", err)
+		return nil, fmt.Errorf("oauth2/google: unable to create impersonation request: %v", err)
 	}
-	req = req.WithContext(ts.ctx)
+	req = req.WithContext(its.ctx)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("impersonate: unable to generate access token: %v", err)
+		return nil, fmt.Errorf("oauth2/google: unable to generate access token: %v", err)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		return nil, fmt.Errorf("impersonate: unable to read body: %v", err)
+		return nil, fmt.Errorf("oauth2/google: unable to read body: %v", err)
 	}
 	if c := resp.StatusCode; c < 200 || c > 299 {
-		return nil, fmt.Errorf("impersonate: status code %d: %s", c, body)
+		return nil, fmt.Errorf("oauth2/google: status code %d: %s", c, body)
 	}
 
 	var accessTokenResp impersonateTokenResponse
 	if err := json.Unmarshal(body, &accessTokenResp); err != nil {
-		return nil, fmt.Errorf("impersonate: unable to parse response: %v", err)
+		return nil, fmt.Errorf("oauth2/google: unable to parse response: %v", err)
 	}
 	expiry, err := time.Parse(time.RFC3339, accessTokenResp.ExpireTime)
 	if err != nil {
-		return nil, fmt.Errorf("impersonate: unable to parse expiry: %v", err)
+		return nil, fmt.Errorf("oauth2/google: unable to parse expiry: %v", err)
 	}
 	return &oauth2.Token{
 		AccessToken: accessTokenResp.AccessToken,
