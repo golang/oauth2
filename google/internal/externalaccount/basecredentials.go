@@ -31,25 +31,20 @@ type Config struct {
 
 // TokenSource Returns an external account TokenSource struct. This is to be called by package google to construct a google.Credentials.
 func (c *Config) TokenSource(ctx context.Context) oauth2.TokenSource {
-	if c.ServiceAccountImpersonationURL == "" {
-		ts := tokenSource{
-			ctx:  ctx,
-			conf: c,
-		}
-		return oauth2.ReuseTokenSource(nil, ts)
-	}
-	imp := impersonateTokenSource{
-		ctx:    ctx,
-		url:    c.ServiceAccountImpersonationURL,
-		scopes: c.Scopes,
-	}
 	ts := tokenSource{
 		ctx:  ctx,
 		conf: c,
 	}
-	ts.conf.ServiceAccountImpersonationURL = ""
+	if c.ServiceAccountImpersonationURL == "" {
+		return oauth2.ReuseTokenSource(nil, ts)
+	}
 	ts.conf.Scopes = []string{"https://www.googleapis.com/auth/cloud-platform"}
-	imp.ts = oauth2.ReuseTokenSource(nil, ts)
+	imp := impersonateTokenSource{
+		ctx:    ctx,
+		url:    c.ServiceAccountImpersonationURL,
+		scopes: c.Scopes,
+		ts: oauth2.ReuseTokenSource(nil, ts),
+	}
 	return oauth2.ReuseTokenSource(nil, imp)
 }
 
