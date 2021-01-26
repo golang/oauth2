@@ -19,14 +19,13 @@ var testBaseCredSource = CredentialSource{
 }
 
 var testConfig = Config{
-	Audience:                       "32555940559.apps.googleusercontent.com",
-	SubjectTokenType:               "urn:ietf:params:oauth:token-type:jwt",
-	TokenInfoURL:                   "http://localhost:8080/v1/tokeninfo",
-	ServiceAccountImpersonationURL: "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/service-gcs-admin@$PROJECT_ID.iam.gserviceaccount.com:generateAccessToken",
-	ClientSecret:                   "notsosecret",
-	ClientID:                       "rbrgnognrhongo3bi4gb9ghg9g",
-	CredentialSource:               testBaseCredSource,
-	Scopes:                         []string{"https://www.googleapis.com/auth/devstorage.full_control"},
+	Audience:         "32555940559.apps.googleusercontent.com",
+	SubjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
+	TokenInfoURL:     "http://localhost:8080/v1/tokeninfo",
+	ClientSecret:     "notsosecret",
+	ClientID:         "rbrgnognrhongo3bi4gb9ghg9g",
+	CredentialSource: testBaseCredSource,
+	Scopes:           []string{"https://www.googleapis.com/auth/devstorage.full_control"},
 }
 
 var (
@@ -55,7 +54,7 @@ func TestToken(t *testing.T) {
 		}
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			t.Errorf("Failed reading request body: %s.", err)
+			t.Fatalf("Failed reading request body: %s.", err)
 		}
 		if got, want := string(body), baseCredsRequestBody; got != want {
 			t.Errorf("Unexpected exchange payload: got %v but want %v", got, want)

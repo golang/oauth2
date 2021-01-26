@@ -35,7 +35,18 @@ func (c *Config) TokenSource(ctx context.Context) oauth2.TokenSource {
 		ctx:  ctx,
 		conf: c,
 	}
-	return oauth2.ReuseTokenSource(nil, ts)
+	if c.ServiceAccountImpersonationURL == "" {
+		return oauth2.ReuseTokenSource(nil, ts)
+	}
+	scopes := c.Scopes
+	ts.conf.Scopes = []string{"https://www.googleapis.com/auth/cloud-platform"}
+	imp := impersonateTokenSource{
+		ctx:    ctx,
+		url:    c.ServiceAccountImpersonationURL,
+		scopes: scopes,
+		ts: oauth2.ReuseTokenSource(nil, ts),
+	}
+	return oauth2.ReuseTokenSource(nil, imp)
 }
 
 // Subject token file types.
@@ -130,6 +141,5 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 	if stsResp.RefreshToken != "" {
 		accessToken.RefreshToken = stsResp.RefreshToken
 	}
-
 	return accessToken, nil
 }
