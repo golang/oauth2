@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"golang.org/x/oauth2"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -67,6 +68,17 @@ type CredentialSource struct {
 
 // parse determines the type of CredentialSource needed
 func (c *Config) parse(ctx context.Context) baseCredentialSource {
+	if len(c.CredentialSource.EnvironmentID) > 3 && c.CredentialSource.EnvironmentID[:3] == "aws" {
+		if _, err := strconv.Atoi(c.CredentialSource.EnvironmentID[3:]); err == nil {
+			return awsCredentialSource{
+				EnvironmentID:               c.CredentialSource.EnvironmentID,
+				RegionURL:                   c.CredentialSource.RegionURL,
+				RegionalCredVerificationURL: c.CredentialSource.RegionalCredVerificationURL,
+				CredVerificationURL:         c.CredentialSource.URL,
+				TargetResource:              c.Audience,
+			}
+		}
+	}
 	if c.CredentialSource.File != "" {
 		return fileCredentialSource{File: c.CredentialSource.File, Format: c.CredentialSource.Format}
 	} else if c.CredentialSource.URL != "" {
