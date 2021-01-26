@@ -80,5 +80,4 @@ func (its impersonateTokenSource) Token() (*oauth2.Token, error) {
 		Expiry:      expiry,
 		TokenType:   "Bearer",
 	}, nil
-
 }

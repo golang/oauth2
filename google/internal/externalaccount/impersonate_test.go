@@ -29,7 +29,6 @@ var (
 
 func TestImpersonation(t *testing.T) {
 	impersonateServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		if got, want := r.URL.String(), "/"; got != want {
 			t.Errorf("URL.String(): got %v but want %v", got, want)
 		}
@@ -93,5 +92,4 @@ func TestImpersonation(t *testing.T) {
 	if got, want := tok.TokenType, "Bearer"; got != want {
 		t.Errorf("Unexpected TokenType: got %v, but wanted %v", got, want)
 	}
-
 }
