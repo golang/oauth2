@@ -29,6 +29,12 @@ var Cern = oauth2.Endpoint{
 	TokenURL: "https://oauth.web.cern.ch/OAuth/Token",
 }
 
+// Coinbase is the endpoint for Amazon.
+var Coinbase = oauth2.Endpoint{
+	AuthURL:  "https://www.coinbase.com/oauth/authorize",
+	TokenURL: "http://www.coinbase.com/oauth/token",
+}
+
 // Facebook is the endpoint for Facebook.
 var Facebook = oauth2.Endpoint{
 	AuthURL:  "https://www.facebook.com/v3.2/dialog/oauth",
@@ -195,12 +201,6 @@ var Yahoo = oauth2.Endpoint{
 var Yandex = oauth2.Endpoint{
 	AuthURL:  "https://oauth.yandex.com/authorize",
 	TokenURL: "https://oauth.yandex.com/token",
-}
-
-// Coinbase is the endpoint for Amazon.
-var Coinbase = oauth2.Endpoint{
-	AuthURL:  "https://www.coinbase.com/oauth/authorize",
-	TokenURL: "http://www.coinbase.com/oauth/token",
 }
 
 // AzureAD returns a new oauth2.Endpoint for the given tenant at Azure Active Directory.
