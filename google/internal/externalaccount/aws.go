@@ -256,7 +256,7 @@ type awsRequest struct {
 	Headers []awsRequestHeader `json:"headers"`
 }
 
-func (cs awsCredentialSource) request(req *http.Request) (*http.Response, error) {
+func (cs awsCredentialSource) doRequest(req *http.Request) (*http.Response, error) {
 	if cs.client == nil {
 		cs.client = oauth2.NewClient(cs.ctx, nil)
 	}
@@ -351,7 +351,7 @@ func (cs *awsCredentialSource) getRegion() (string, error) {
 		return "", err
 	}
 
-	resp, err := cs.request(req)
+	resp, err := cs.doRequest(req)
 	if err != nil {
 		return "", err
 	}
@@ -416,7 +416,7 @@ func (cs *awsCredentialSource) getMetadataSecurityCredentials(roleName string) (
 	}
 	req.Header.Add("Content-Type", "application/json")
 
-	resp, err := cs.request(req)
+	resp, err := cs.doRequest(req)
 	if err != nil {
 		return result, err
 	}
@@ -445,7 +445,7 @@ func (cs *awsCredentialSource) getMetadataRoleName() (string, error) {
 		return "", err
 	}
 
-	resp, err := cs.request(req)
+	resp, err := cs.doRequest(req)
 	if err != nil {
 		return "", err
 	}
