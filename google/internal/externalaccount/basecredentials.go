@@ -82,8 +82,7 @@ func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 				ctx:                         ctx,
 			}, nil
 		}
-	}
-	if c.CredentialSource.File != "" {
+	} else if c.CredentialSource.File != "" {
 		return fileCredentialSource{File: c.CredentialSource.File, Format: c.CredentialSource.Format}, nil
 	} else if c.CredentialSource.URL != "" {
 		return urlCredentialSource{URL: c.CredentialSource.URL, Format: c.CredentialSource.Format, ctx: ctx}, nil
