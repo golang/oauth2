@@ -56,7 +56,12 @@ func TestRetrieveFileSubjectToken(t *testing.T) {
 		tfc.CredentialSource = test.cs
 
 		t.Run(test.name, func(t *testing.T) {
-			out, err := tfc.parse(context.Background()).subjectToken()
+			base, err := tfc.parse(context.Background())
+			if err != nil {
+				t.Fatalf("parse() failed %v", err)
+			}
+
+			out, err := base.subjectToken()
 			if err != nil {
 				t.Errorf("Method subjectToken() errored.")
 			} else if test.want != out {

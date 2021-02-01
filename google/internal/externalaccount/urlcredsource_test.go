@@ -28,7 +28,12 @@ func TestRetrieveURLSubjectToken_Text(t *testing.T) {
 	tfc := testFileConfig
 	tfc.CredentialSource = cs
 
-	out, err := tfc.parse(context.Background()).subjectToken()
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
 	if err != nil {
 		t.Fatalf("retrieveSubjectToken() failed: %v", err)
 	}
@@ -51,7 +56,12 @@ func TestRetrieveURLSubjectToken_Untyped(t *testing.T) {
 	tfc := testFileConfig
 	tfc.CredentialSource = cs
 
-	out, err := tfc.parse(context.Background()).subjectToken()
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
 	if err != nil {
 		t.Fatalf("Failed to retrieve URL subject token: %v", err)
 	}
@@ -82,7 +92,12 @@ func TestRetrieveURLSubjectToken_JSON(t *testing.T) {
 	tfc := testFileConfig
 	tfc.CredentialSource = cs
 
-	out, err := tfc.parse(context.Background()).subjectToken()
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
 	if err != nil {
 		t.Fatalf("%v", err)
 	}

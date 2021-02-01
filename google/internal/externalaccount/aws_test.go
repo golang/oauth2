@@ -5,7 +5,11 @@
 package externalaccount
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
@@ -21,24 +25,33 @@ func setTime(testTime time.Time) func() time.Time {
 	}
 }
 
+func setEnvironment(env map[string]string) func(string) string {
+	return func(key string) string {
+		value, _ := env[key]
+		return value
+	}
+}
+
 var defaultRequestSigner = &awsRequestSigner{
 	RegionName: "us-east-1",
-	AwsSecurityCredentials: map[string]string{
-		"access_key_id":     "AKIDEXAMPLE",
-		"secret_access_key": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+	AwsSecurityCredentials: awsSecurityCredentials{
+		AccessKeyID:     "AKIDEXAMPLE",
+		SecretAccessKey: "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
 	},
 }
 
-const accessKeyId = "ASIARD4OQDT6A77FR3CL"
-const secretAccessKey = "Y8AfSaucF37G4PpvfguKZ3/l7Id4uocLXxX0+VTx"
-const securityToken = "IQoJb3JpZ2luX2VjEIz//////////wEaCXVzLWVhc3QtMiJGMEQCIH7MHX/Oy/OB8OlLQa9GrqU1B914+iMikqWQW7vPCKlgAiA/Lsv8Jcafn14owfxXn95FURZNKaaphj0ykpmS+Ki+CSq0AwhlEAAaDDA3NzA3MTM5MTk5NiIMx9sAeP1ovlMTMKLjKpEDwuJQg41/QUKx0laTZYjPlQvjwSqS3OB9P1KAXPWSLkliVMMqaHqelvMF/WO/glv3KwuTfQsavRNs3v5pcSEm4SPO3l7mCs7KrQUHwGP0neZhIKxEXy+Ls//1C/Bqt53NL+LSbaGv6RPHaX82laz2qElphg95aVLdYgIFY6JWV5fzyjgnhz0DQmy62/Vi8pNcM2/VnxeCQ8CC8dRDSt52ry2v+nc77vstuI9xV5k8mPtnaPoJDRANh0bjwY5Sdwkbp+mGRUJBAQRlNgHUJusefXQgVKBCiyJY4w3Csd8Bgj9IyDV+Azuy1jQqfFZWgP68LSz5bURyIjlWDQunO82stZ0BgplKKAa/KJHBPCp8Qi6i99uy7qh76FQAqgVTsnDuU6fGpHDcsDSGoCls2HgZjZFPeOj8mmRhFk1Xqvkbjuz8V1cJk54d3gIJvQt8gD2D6yJQZecnuGWd5K2e2HohvCc8Fc9kBl1300nUJPV+k4tr/A5R/0QfEKOZL1/k5lf1g9CREnrM8LVkGxCgdYMxLQow1uTL+QU67AHRRSp5PhhGX4Rek+01vdYSnJCMaPhSEgcLqDlQkhk6MPsyT91QMXcWmyO+cAZwUPwnRamFepuP4K8k2KVXs/LIJHLELwAZ0ekyaS7CptgOqS7uaSTFG3U+vzFZLEnGvWQ7y9IPNQZ+Dffgh4p3vF4J68y9049sI6Sr5d5wbKkcbm8hdCDHZcv4lnqohquPirLiFQ3q7B17V9krMPu3mz1cg4Ekgcrn/E09NTsxAqD8NcZ7C7ECom9r+X3zkDOxaajW6hu3Az8hGlyylDaMiFfRbBJpTIlxp7jfa7CxikNgNtEKLH9iCzvuSg2vhA=="
+const (
+	accessKeyID     = "ASIARD4OQDT6A77FR3CL"
+	secretAccessKey = "Y8AfSaucF37G4PpvfguKZ3/l7Id4uocLXxX0+VTx"
+	securityToken   = "IQoJb3JpZ2luX2VjEIz//////////wEaCXVzLWVhc3QtMiJGMEQCIH7MHX/Oy/OB8OlLQa9GrqU1B914+iMikqWQW7vPCKlgAiA/Lsv8Jcafn14owfxXn95FURZNKaaphj0ykpmS+Ki+CSq0AwhlEAAaDDA3NzA3MTM5MTk5NiIMx9sAeP1ovlMTMKLjKpEDwuJQg41/QUKx0laTZYjPlQvjwSqS3OB9P1KAXPWSLkliVMMqaHqelvMF/WO/glv3KwuTfQsavRNs3v5pcSEm4SPO3l7mCs7KrQUHwGP0neZhIKxEXy+Ls//1C/Bqt53NL+LSbaGv6RPHaX82laz2qElphg95aVLdYgIFY6JWV5fzyjgnhz0DQmy62/Vi8pNcM2/VnxeCQ8CC8dRDSt52ry2v+nc77vstuI9xV5k8mPtnaPoJDRANh0bjwY5Sdwkbp+mGRUJBAQRlNgHUJusefXQgVKBCiyJY4w3Csd8Bgj9IyDV+Azuy1jQqfFZWgP68LSz5bURyIjlWDQunO82stZ0BgplKKAa/KJHBPCp8Qi6i99uy7qh76FQAqgVTsnDuU6fGpHDcsDSGoCls2HgZjZFPeOj8mmRhFk1Xqvkbjuz8V1cJk54d3gIJvQt8gD2D6yJQZecnuGWd5K2e2HohvCc8Fc9kBl1300nUJPV+k4tr/A5R/0QfEKOZL1/k5lf1g9CREnrM8LVkGxCgdYMxLQow1uTL+QU67AHRRSp5PhhGX4Rek+01vdYSnJCMaPhSEgcLqDlQkhk6MPsyT91QMXcWmyO+cAZwUPwnRamFepuP4K8k2KVXs/LIJHLELwAZ0ekyaS7CptgOqS7uaSTFG3U+vzFZLEnGvWQ7y9IPNQZ+Dffgh4p3vF4J68y9049sI6Sr5d5wbKkcbm8hdCDHZcv4lnqohquPirLiFQ3q7B17V9krMPu3mz1cg4Ekgcrn/E09NTsxAqD8NcZ7C7ECom9r+X3zkDOxaajW6hu3Az8hGlyylDaMiFfRbBJpTIlxp7jfa7CxikNgNtEKLH9iCzvuSg2vhA=="
+)
 
 var requestSignerWithToken = &awsRequestSigner{
 	RegionName: "us-east-2",
-	AwsSecurityCredentials: map[string]string{
-		"access_key_id":     accessKeyId,
-		"secret_access_key": secretAccessKey,
-		"security_token":    securityToken,
+	AwsSecurityCredentials: awsSecurityCredentials{
+		AccessKeyID:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+		SecurityToken:   securityToken,
 	},
 }
 
@@ -317,7 +330,7 @@ func TestAwsV4Signature_GetRequestWithSecurityToken(t *testing.T) {
 	output, _ := http.NewRequest("GET", "https://ec2.us-east-2.amazonaws.com?Action=DescribeRegions&Version=2013-10-15", nil)
 	output.Header = http.Header{
 		"Host":                 []string{"ec2.us-east-2.amazonaws.com"},
-		"Authorization":        []string{"AWS4-HMAC-SHA256 Credential=" + accessKeyId + "/20200811/us-east-2/ec2/aws4_request, SignedHeaders=host;x-amz-date;x-amz-security-token, Signature=631ea80cddfaa545fdadb120dc92c9f18166e38a5c47b50fab9fce476e022855"},
+		"Authorization":        []string{"AWS4-HMAC-SHA256 Credential=" + accessKeyID + "/20200811/us-east-2/ec2/aws4_request, SignedHeaders=host;x-amz-date;x-amz-security-token, Signature=631ea80cddfaa545fdadb120dc92c9f18166e38a5c47b50fab9fce476e022855"},
 		"X-Amz-Date":           []string{"20200811T065522Z"},
 		"X-Amz-Security-Token": []string{securityToken},
 	}
@@ -334,7 +347,7 @@ func TestAwsV4Signature_PostRequestWithSecurityToken(t *testing.T) {
 
 	output, _ := http.NewRequest("POST", "https://sts.us-east-2.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15", nil)
 	output.Header = http.Header{
-		"Authorization":        []string{"AWS4-HMAC-SHA256 Credential=" + accessKeyId + "/20200811/us-east-2/sts/aws4_request, SignedHeaders=host;x-amz-date;x-amz-security-token, Signature=73452984e4a880ffdc5c392355733ec3f5ba310d5e0609a89244440cadfe7a7a"},
+		"Authorization":        []string{"AWS4-HMAC-SHA256 Credential=" + accessKeyID + "/20200811/us-east-2/sts/aws4_request, SignedHeaders=host;x-amz-date;x-amz-security-token, Signature=73452984e4a880ffdc5c392355733ec3f5ba310d5e0609a89244440cadfe7a7a"},
 		"Host":                 []string{"sts.us-east-2.amazonaws.com"},
 		"X-Amz-Date":           []string{"20200811T065522Z"},
 		"X-Amz-Security-Token": []string{securityToken},
@@ -355,7 +368,7 @@ func TestAwsV4Signature_PostRequestWithSecurityTokenAndAdditionalHeaders(t *test
 
 	output, _ := http.NewRequest("POST", "https://dynamodb.us-east-2.amazonaws.com/", strings.NewReader(requestParams))
 	output.Header = http.Header{
-		"Authorization":        []string{"AWS4-HMAC-SHA256 Credential=" + accessKeyId + "/20200811/us-east-2/dynamodb/aws4_request, SignedHeaders=content-type;host;x-amz-date;x-amz-security-token;x-amz-target, Signature=fdaa5b9cc9c86b80fe61eaf504141c0b3523780349120f2bd8145448456e0385"},
+		"Authorization":        []string{"AWS4-HMAC-SHA256 Credential=" + accessKeyID + "/20200811/us-east-2/dynamodb/aws4_request, SignedHeaders=content-type;host;x-amz-date;x-amz-security-token;x-amz-target, Signature=fdaa5b9cc9c86b80fe61eaf504141c0b3523780349120f2bd8145448456e0385"},
 		"Host":                 []string{"dynamodb.us-east-2.amazonaws.com"},
 		"X-Amz-Date":           []string{"20200811T065522Z"},
 		"Content-Type":         []string{"application/x-amz-json-1.0"},
@@ -373,9 +386,9 @@ func TestAwsV4Signature_PostRequestWithSecurityTokenAndAdditionalHeaders(t *test
 func TestAwsV4Signature_PostRequestWithAmzDateButNoSecurityToken(t *testing.T) {
 	var requestSigner = &awsRequestSigner{
 		RegionName: "us-east-2",
-		AwsSecurityCredentials: map[string]string{
-			"access_key_id":     accessKeyId,
-			"secret_access_key": secretAccessKey,
+		AwsSecurityCredentials: awsSecurityCredentials{
+			AccessKeyID:     accessKeyID,
+			SecretAccessKey: secretAccessKey,
 		},
 	}
 
@@ -383,7 +396,7 @@ func TestAwsV4Signature_PostRequestWithAmzDateButNoSecurityToken(t *testing.T) {
 
 	output, _ := http.NewRequest("POST", "https://sts.us-east-2.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15", nil)
 	output.Header = http.Header{
-		"Authorization": []string{"AWS4-HMAC-SHA256 Credential=" + accessKeyId + "/20200811/us-east-2/sts/aws4_request, SignedHeaders=host;x-amz-date, Signature=d095ba304919cd0d5570ba8a3787884ee78b860f268ed040ba23831d55536d56"},
+		"Authorization": []string{"AWS4-HMAC-SHA256 Credential=" + accessKeyID + "/20200811/us-east-2/sts/aws4_request, SignedHeaders=host;x-amz-date, Signature=d095ba304919cd0d5570ba8a3787884ee78b860f268ed040ba23831d55536d56"},
 		"Host":          []string{"sts.us-east-2.amazonaws.com"},
 		"X-Amz-Date":    []string{"20200811T065522Z"},
 	}
@@ -393,4 +406,447 @@ func TestAwsV4Signature_PostRequestWithAmzDateButNoSecurityToken(t *testing.T) {
 	now = setTime(secondDefaultTime)
 
 	testRequestSigner(t, requestSigner, input, output)
+}
+
+type testAwsServer struct {
+	url                         string
+	securityCredentialURL       string
+	regionURL                   string
+	regionalCredVerificationURL string
+
+	Credentials map[string]string
+
+	WriteRolename            func(http.ResponseWriter)
+	WriteSecurityCredentials func(http.ResponseWriter)
+	WriteRegion              func(http.ResponseWriter)
+}
+
+func createAwsTestServer(url, regionURL, regionalCredVerificationURL, rolename, region string, credentials map[string]string) *testAwsServer {
+	server := &testAwsServer{
+		url:                         url,
+		securityCredentialURL:       fmt.Sprintf("%s/%s", url, rolename),
+		regionURL:                   regionURL,
+		regionalCredVerificationURL: regionalCredVerificationURL,
+		Credentials:                 credentials,
+		WriteRolename: func(w http.ResponseWriter) {
+			w.Write([]byte(rolename))
+		},
+		WriteRegion: func(w http.ResponseWriter) {
+			w.Write([]byte(region))
+		},
+	}
+
+	server.WriteSecurityCredentials = func(w http.ResponseWriter) {
+		jsonCredentials, _ := json.Marshal(server.Credentials)
+		w.Write(jsonCredentials)
+	}
+
+	return server
+}
+
+func createDefaultAwsTestServer() *testAwsServer {
+	return createAwsTestServer(
+		"/latest/meta-data/iam/security-credentials",
+		"/latest/meta-data/placement/availability-zone",
+		"https://sts.{region}.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+		"gcp-aws-role",
+		"us-east-2b",
+		map[string]string{
+			"SecretAccessKey": secretAccessKey,
+			"AccessKeyId":     accessKeyID,
+			"Token":           securityToken,
+		},
+	)
+}
+
+func (server *testAwsServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch p := r.URL.Path; p {
+	case server.url:
+		server.WriteRolename(w)
+	case server.securityCredentialURL:
+		server.WriteSecurityCredentials(w)
+	case server.regionURL:
+		server.WriteRegion(w)
+	}
+}
+
+func notFound(w http.ResponseWriter) {
+	w.WriteHeader(404)
+	w.Write([]byte("Not Found"))
+}
+
+func (server *testAwsServer) getCredentialSource(url string) CredentialSource {
+	return CredentialSource{
+		EnvironmentID:               "aws1",
+		URL:                         url + server.url,
+		RegionURL:                   url + server.regionURL,
+		RegionalCredVerificationURL: server.regionalCredVerificationURL,
+	}
+}
+
+func getExpectedSubjectToken(url, region, accessKeyID, secretAccessKey, securityToken string) string {
+	req, _ := http.NewRequest("POST", url, nil)
+	req.Header.Add("x-goog-cloud-target-resource", testFileConfig.Audience)
+	signer := &awsRequestSigner{
+		RegionName: region,
+		AwsSecurityCredentials: awsSecurityCredentials{
+			AccessKeyID:     accessKeyID,
+			SecretAccessKey: secretAccessKey,
+			SecurityToken:   securityToken,
+		},
+	}
+	signer.SignRequest(req)
+
+	result := awsRequest{
+		URL:    url,
+		Method: "POST",
+		Headers: []awsRequestHeader{
+			{
+				Key:   "Authorization",
+				Value: req.Header.Get("Authorization"),
+			}, {
+				Key:   "Host",
+				Value: req.Header.Get("Host"),
+			}, {
+				Key:   "X-Amz-Date",
+				Value: req.Header.Get("X-Amz-Date"),
+			},
+		},
+	}
+
+	if securityToken != "" {
+		result.Headers = append(result.Headers, awsRequestHeader{
+			Key:   "X-Amz-Security-Token",
+			Value: securityToken,
+		})
+	}
+
+	result.Headers = append(result.Headers, awsRequestHeader{
+		Key:   "X-Goog-Cloud-Target-Resource",
+		Value: testFileConfig.Audience,
+	})
+
+	str, _ := json.Marshal(result)
+	return string(str)
+}
+
+func TestAwsCredential_BasicRequest(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{})
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+
+	expected := getExpectedSubjectToken(
+		"https://sts.us-east-2.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+		"us-east-2",
+		accessKeyID,
+		secretAccessKey,
+		securityToken,
+	)
+
+	if got, want := out, expected; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = %q, want %q", got, want)
+	}
+}
+
+func TestAwsCredential_BasicRequestWithoutSecurityToken(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+	delete(server.Credentials, "Token")
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{})
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+
+	expected := getExpectedSubjectToken(
+		"https://sts.us-east-2.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+		"us-east-2",
+		accessKeyID,
+		secretAccessKey,
+		"",
+	)
+
+	if got, want := out, expected; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = %q, want %q", got, want)
+	}
+}
+
+func TestAwsCredential_BasicRequestWithEnv(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{
+		"AWS_ACCESS_KEY_ID":     "AKIDEXAMPLE",
+		"AWS_SECRET_ACCESS_KEY": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+		"AWS_REGION":            "us-west-1",
+	})
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+
+	expected := getExpectedSubjectToken(
+		"https://sts.us-west-1.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+		"us-west-1",
+		"AKIDEXAMPLE",
+		"wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+		"",
+	)
+
+	if got, want := out, expected; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = %q, want %q", got, want)
+	}
+}
+
+func TestAwsCredential_RequestWithBadVersion(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+	tfc.CredentialSource.EnvironmentID = "aws3"
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{})
+
+	_, err := tfc.parse(context.Background())
+	if err == nil {
+		t.Fatalf("parse() should have failed")
+	}
+	if got, want := err.Error(), "oauth2/google: aws version '3' is not supported in the current build"; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = %q, want %q", got, want)
+	}
+}
+
+func TestAwsCredential_RequestWithNoRegionURL(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+	tfc.CredentialSource.RegionURL = ""
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{})
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("retrieveSubjectToken() should have failed")
+	}
+
+	if got, want := err.Error(), "oauth2/google: unable to determine AWS region"; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = %q, want %q", got, want)
+	}
+}
+
+func TestAwsCredential_RequestWithBadRegionURL(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+	server.WriteRegion = notFound
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{})
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("retrieveSubjectToken() should have failed")
+	}
+
+	if got, want := err.Error(), "oauth2/google: unable to retrieve AWS region - Not Found"; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = %q, want %q", got, want)
+	}
+}
+
+func TestAwsCredential_RequestWithMissingCredential(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+	server.WriteSecurityCredentials = func(w http.ResponseWriter) {
+		w.Write([]byte("{}"))
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{})
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("retrieveSubjectToken() should have failed")
+	}
+
+	if got, want := err.Error(), "oauth2/google: missing AccessKeyId credential"; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = %q, want %q", got, want)
+	}
+}
+
+func TestAwsCredential_RequestWithIncompleteCredential(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+	server.WriteSecurityCredentials = func(w http.ResponseWriter) {
+		w.Write([]byte(`{"AccessKeyId":"FOOBARBAS"}`))
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{})
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("retrieveSubjectToken() should have failed")
+	}
+
+	if got, want := err.Error(), "oauth2/google: missing SecretAccessKey credential"; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = %q, want %q", got, want)
+	}
+}
+
+func TestAwsCredential_RequestWithNoCredentialURL(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+	tfc.CredentialSource.URL = ""
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{})
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("retrieveSubjectToken() should have failed")
+	}
+
+	if got, want := err.Error(), "oauth2/google: unable to determine the AWS metadata server security credentials endpoint"; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = %q, want %q", got, want)
+	}
+}
+
+func TestAwsCredential_RequestWithBadCredentialURL(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+	server.WriteRolename = notFound
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{})
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("retrieveSubjectToken() should have failed")
+	}
+
+	if got, want := err.Error(), "oauth2/google: unable to retrieve AWS role name - Not Found"; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = %q, want %q", got, want)
+	}
+}
+
+func TestAwsCredential_RequestWithBadFinalCredentialURL(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+	server.WriteSecurityCredentials = notFound
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{})
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("retrieveSubjectToken() should have failed")
+	}
+
+	if got, want := err.Error(), "oauth2/google: unable to retrieve AWS security credentials - Not Found"; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = %q, want %q", got, want)
+	}
 }
