@@ -60,7 +60,9 @@ func (c *Config) Token(ctx context.Context) (*oauth2.Token, error) {
 // The token will auto-refresh as necessary.
 //
 // The provided context optionally controls which HTTP client
-// is returned. See the oauth2.HTTPClient variable.
+// is returned. See the oauth2.HTTPClient variable. It will be
+// used for all refresh requests for the life of the Config, so
+// do not pass a context with a deadline.
 //
 // The returned Client and its Transport should not be modified.
 func (c *Config) Client(ctx context.Context) *http.Client {
