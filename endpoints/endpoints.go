@@ -167,6 +167,12 @@ var StackOverflow = oauth2.Endpoint{
 	TokenURL: "https://stackoverflow.com/oauth/access_token",
 }
 
+// Strava is the endpoint for Strava.
+var Strava = oauth2.Endpoint{
+	AuthURL:  "https://www.strava.com/oauth/authorize",
+	TokenURL: "https://www.strava.com/oauth/token",
+}
+
 // Twitch is the endpoint for Twitch.
 var Twitch = oauth2.Endpoint{
 	AuthURL:  "https://id.twitch.tv/oauth2/authorize",
