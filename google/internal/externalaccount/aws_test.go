@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	neturl "net/url"
 	"reflect"
 	"strings"
 	"testing"
@@ -527,7 +528,7 @@ func getExpectedSubjectToken(url, region, accessKeyID, secretAccessKey, security
 	})
 
 	str, _ := json.Marshal(result)
-	return string(str)
+	return neturl.QueryEscape(string(str))
 }
 
 func TestAwsCredential_BasicRequest(t *testing.T) {
