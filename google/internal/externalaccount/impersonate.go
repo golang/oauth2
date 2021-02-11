@@ -64,7 +64,7 @@ func (its impersonateTokenSource) Token() (*oauth2.Token, error) {
 		return nil, fmt.Errorf("oauth2/google: unable to read body: %v", err)
 	}
 	if c := resp.StatusCode; c < 200 || c > 299 {
-		return nil, fmt.Errorf("oauth2/google: status code %d: %s", c, string(body))
+		return nil, fmt.Errorf("oauth2/google: status code %d: %s", c, body)
 	}
 
 	var accessTokenResp impersonateTokenResponse
