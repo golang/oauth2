@@ -69,7 +69,7 @@ func ExchangeToken(ctx context.Context, endpoint string, request *STSTokenExchan
 		return nil, fmt.Errorf("oauth2/google: status code %d: %s", c, string(body))
 	}
 	var stsResp STSTokenExchangeResponse
-	json.Unmarshal(body, &stsResp)
+	err = json.Unmarshal(body, &stsResp)
 	if err != nil {
 		return nil, fmt.Errorf("oauth2/google: failed to unmarshal response body from Secure Token Server: %v", err)
 
