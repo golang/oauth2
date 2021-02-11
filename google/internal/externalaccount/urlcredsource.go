@@ -43,6 +43,9 @@ func (cs urlCredentialSource) subjectToken() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("oauth2/google: invalid body in subject token URL query: %v", err)
 	}
+	if c := resp.StatusCode; c < 200 || c > 299 {
+		return "", fmt.Errorf("oauth2/google: status code %d: %s", c, string(tokenBytes))
+	}
 
 	switch cs.Format.Type {
 	case "json":
