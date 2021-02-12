@@ -97,7 +97,7 @@ func TestExchangeToken_Err(t *testing.T) {
 	headers.Add("Content-Type", "application/x-www-form-urlencoded")
 	_, err := ExchangeToken(context.Background(), ts.URL, &tokenRequest, auth, headers, nil)
 	if err == nil {
-		t.Errorf(" Expected handled error; instead got nil.")
+		t.Errorf("Expected handled error; instead got nil.")
 	}
 }
 
