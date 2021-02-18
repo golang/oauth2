@@ -37,7 +37,7 @@ func TestClientAuthentication_InjectHeaderAuthentication(t *testing.T) {
 		"Content-Type": ContentType,
 	}
 
-	headerAuthentication := ClientAuthentication{
+	headerAuthentication := clientAuthentication{
 		AuthStyle:    oauth2.AuthStyleInHeader,
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
@@ -79,7 +79,7 @@ func TestClientAuthentication_ParamsAuthentication(t *testing.T) {
 	headerP := http.Header{
 		"Content-Type": ContentType,
 	}
-	paramsAuthentication := ClientAuthentication{
+	paramsAuthentication := clientAuthentication{
 		AuthStyle:    oauth2.AuthStyleInParams,
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
