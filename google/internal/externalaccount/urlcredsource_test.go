@@ -29,8 +29,8 @@ func TestRetrieveURLSubjectToken_Text(t *testing.T) {
 	heads := make(map[string]string)
 	heads["Metadata"] = "True"
 	cs := CredentialSource{
-		URL:    ts.URL,
-		Format: format{Type: fileTypeText},
+		URL:     ts.URL,
+		Format:  format{Type: fileTypeText},
 		Headers: heads,
 	}
 	tfc := testFileConfig
