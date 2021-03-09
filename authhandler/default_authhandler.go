@@ -1,28 +1,32 @@
-// Copyright 2020 The Go Authors. All rights reserved.
+// Copyright 2021 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package google
+package authhandler
 
 import (
 	"fmt"
-
-	"github.com/google/uuid"
 )
-
-// RandomAuthorizationState generates a state via UUID generator.
-func RandomAuthorizationState() string {
-	return uuid.New().String()
-}
 
 // DefaultAuthorizationHandler returns a command line auth handler
 // that prints the auth URL on the console and prompts the user to
 // authorize in the browser and paste the auth code back via stdin.
 //
+// Per OAuth protocol, a unique "state" string should be sent and verified
+// before exchanging auth code for OAuth token to prevent CSRF attacks.
+//
 // For convenience, this handler returns a pre-configured state
 // instead of asking the user to additionally paste the state from
 // the auth response. In order for this to work, the state
-// configured here should match the one in the oauth2 AuthTokenURL.
+// configured here must match the state used in authCodeURL.
+//
+// Usage example:
+//
+// state := uuid.New().String()
+// tokenSource:= authhandler.TokenSource(ctx, conf
+//     authhandler.DefaultAuthorizationHandler(state), state)
+// pubsubService, err := pubsub.NewService(ctx,
+//     option.WithTokenSource(tokenSource))
 func DefaultAuthorizationHandler(state string) AuthorizationHandler {
 	return func(authCodeURL string) (string, string, error) {
 		return defaultAuthorizationHandlerHelper(state, authCodeURL)
