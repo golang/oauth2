@@ -29,14 +29,10 @@ import (
 //     option.WithTokenSource(tokenSource))
 func DefaultAuthorizationHandler(state string) AuthorizationHandler {
 	return func(authCodeURL string) (string, string, error) {
-		return defaultAuthorizationHandlerHelper(state, authCodeURL)
+		fmt.Printf("Go to the following link in your browser:\n\n   %s\n\n", authCodeURL)
+		fmt.Println("Enter authorization code: ")
+		var code string
+		fmt.Scanln(&code)
+		return code, state, nil
 	}
-}
-
-func defaultAuthorizationHandlerHelper(state string, authCodeURL string) (string, string, error) {
-	fmt.Printf("Go to the following link in your browser:\n\n   %s\n\n", authCodeURL)
-	fmt.Println("Enter authorization code: ")
-	var code string
-	fmt.Scanln(&code)
-	return code, state, nil
 }
