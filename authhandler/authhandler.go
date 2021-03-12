@@ -13,20 +13,23 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// AuthorizationHandler is a 3-legged-OAuth helper that
-// prompts the user for OAuth consent at the specified Auth URL
+// AuthorizationHandler is a 3-legged-OAuth helper that prompts
+// the user for OAuth consent at the specified auth code URL
 // and returns an auth code and state upon approval.
-type AuthorizationHandler func(string) (string, string, error)
+type AuthorizationHandler func(authCodeURL string) (code string, state string, err error)
 
 // TokenSource returns an oauth2.TokenSource that fetches access tokens
 // using 3-legged-OAuth flow.
 //
-// The provided oauth2.Config should be a full configuration containing AuthURL,
-// TokenURL, and scope. An environment-specific AuthorizationHandler is used to
-// obtain user consent.
+// The provided context.Context is used for oauth2 Exchange operation.
 //
-// Per OAuth protocol, a unique "state" string should be sent and verified
-// before exchanging auth code for OAuth token to prevent CSRF attacks.
+// The provided oauth2.Config should be a full configuration containing AuthURL,
+// TokenURL, and Scope.
+//
+// An environment-specific AuthorizationHandler is used to obtain user consent.
+//
+// Per the OAuth protocol, a unique "state" string should be sent and verified
+// before exchanging the auth code for OAuth token to prevent CSRF attacks.
 func TokenSource(ctx context.Context, config *oauth2.Config, authHandler AuthorizationHandler, state string) oauth2.TokenSource {
 	return oauth2.ReuseTokenSource(nil, authHandlerSource{config: config, ctx: ctx, authHandler: authHandler, state: state})
 }
@@ -47,5 +50,5 @@ func (source authHandlerSource) Token() (*oauth2.Token, error) {
 	if state == source.state {
 		return source.config.Exchange(source.ctx, code)
 	}
-	return nil, errors.New("State mismatch in 3-legged-OAuth flow.")
+	return nil, errors.New("state mismatch in 3-legged-OAuth flow.")
 }
