@@ -8,7 +8,7 @@ import (
 	"fmt"
 )
 
-// DefaultAuthorizationHandler returns a command line auth handler
+// CmdAuthorizationHandler returns a command line auth handler
 // that prints the auth URL on the console and prompts the user to
 // authorize in the browser and paste the auth code back via stdin.
 //
@@ -19,18 +19,10 @@ import (
 // instead of asking the user to additionally paste the state from
 // the auth response. In order for this to work, the state
 // configured here must match the state used in authCodeURL.
-//
-// Usage example:
-//
-// state := uuid.New().String()
-// tokenSource:= authhandler.TokenSource(ctx, conf
-//     authhandler.DefaultAuthorizationHandler(state), state)
-// pubsubService, err := pubsub.NewService(ctx,
-//     option.WithTokenSource(tokenSource))
-func DefaultAuthorizationHandler(state string) AuthorizationHandler {
+func CmdAuthorizationHandler(state string) AuthorizationHandler {
 	return func(authCodeURL string) (string, string, error) {
 		fmt.Printf("Go to the following link in your browser:\n\n   %s\n\n", authCodeURL)
-		fmt.Println("Enter authorization code: ")
+		fmt.Println("Enter authorization code:")
 		var code string
 		fmt.Scanln(&code)
 		return code, state, nil
