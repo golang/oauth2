@@ -30,7 +30,7 @@ type AuthorizationHandler func(authCodeURL string) (code string, state string, e
 //
 // Per the OAuth protocol, a unique "state" string should be sent and verified
 // before exchanging the auth code for OAuth token to prevent CSRF attacks.
-func TokenSource(ctx context.Context, config *oauth2.Config, authHandler AuthorizationHandler, state string) oauth2.TokenSource {
+func TokenSource(ctx context.Context, config *oauth2.Config, state string, authHandler AuthorizationHandler) oauth2.TokenSource {
 	return oauth2.ReuseTokenSource(nil, authHandlerSource{config: config, ctx: ctx, authHandler: authHandler, state: state})
 }
 
@@ -47,8 +47,8 @@ func (source authHandlerSource) Token() (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	if state == source.state {
-		return source.config.Exchange(source.ctx, code)
+	if state != source.state {
+		return nil, errors.New("state mismatch in 3-legged-OAuth flow")
 	}
-	return nil, errors.New("state mismatch in 3-legged-OAuth flow.")
+	return source.config.Exchange(source.ctx, code)
 }

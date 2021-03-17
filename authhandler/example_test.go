@@ -38,7 +38,7 @@ func ExampleCmdAuthorizationHandler() {
 	}
 	state := "unique_state"
 
-	token, err := authhandler.TokenSource(ctx, conf, authhandler.CmdAuthorizationHandler(state), state).Token()
+	token, err := authhandler.TokenSource(ctx, conf, state, authhandler.CmdAuthorizationHandler(state)).Token()
 
 	if err != nil {
 		fmt.Println(err)
