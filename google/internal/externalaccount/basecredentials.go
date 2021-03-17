@@ -17,45 +17,34 @@ import (
 var now = time.Now
 
 // Config stores the configuration for fetching tokens with external credentials:
-
-// Audience is the STS audience which contains the resource name for the workload
-// identity pool or the workforce pool and the provider identifier in that pool.
-
-// TokenURL is the STS token exchange endpoint.
-
-// TokenInfoURL is the token_info endpoint used to retrieve the account related information (
-// user attributes like account identifier, eg. email, username, uid, etc). This is
-// needed for gCloud session account identification.
-
-// SubjectTokenType is the STS token type based on the Oauth2.0 token exchange spec
-// e.g. `urn:ietf:params:oauth:token-type:jwt`
-
-// TokenURL is the STS token exchange endpoint
-
-// ServiceAccountImpersonationURL is the URL for the service account impersonation request. This is only
-// required for workload identity pools when APIs to be accessed have not integrated with UberMint.
-
-// Client ID and client secret are currently only required if token_info endpoint also
-// needs to be called with the generated GCP access token. When provided, STS will be
-// called with additional basic authentication using client_id as username and client_secret as password.
-
-// CredentialSource contains the necessary information to retrieve the token itself, as well
-// as some environmental information.
-
-// QuotaProjectID is injected by gCloud. If the value is non-empty, the Auth libraries
-// will set the x-goog-user-project which overrides the project associated with the credentials.
-
-// Scopes contains the desired scopes for the returned access token.
 type Config struct {
+	// Audience is the STS audience which contains the resource name for the workload
+	// identity pool or the workforce pool and the provider identifier in that pool.
 	Audience                       string
+	// SubjectTokenType is the STS token type based on the Oauth2.0 token exchange spec
+	// e.g. `urn:ietf:params:oauth:token-type:jwt`
 	SubjectTokenType               string
+	// TokenURL is the STS token exchange endpoint.
 	TokenURL                       string
+	// TokenInfoURL is the token_info endpoint used to retrieve the account related information (
+	// user attributes like account identifier, eg. email, username, uid, etc). This is
+	// needed for gCloud session account identification.
 	TokenInfoURL                   string
+	// ServiceAccountImpersonationURL is the URL for the service account impersonation request. This is only
+	// required for workload identity pools when APIs to be accessed have not integrated with UberMint.
 	ServiceAccountImpersonationURL string
+	// ClientID and ClientSecret are currently only required if token_info endpoint also
+	// needs to be called with the generated GCP access token. When provided, STS will be
+	// called with additional basic authentication using client_id as username and client_secret as password.
 	ClientSecret                   string
 	ClientID                       string
+	// CredentialSource contains the necessary information to retrieve the token itself, as well
+	// as some environmental information.
 	CredentialSource               CredentialSource
+	// QuotaProjectID is injected by gCloud. If the value is non-empty, the Auth libraries
+	// will set the x-goog-user-project which overrides the project associated with the credentials.
 	QuotaProjectID                 string
+	// Scopes contains the desired scopes for the returned access token.
 	Scopes                         []string
 }
 
