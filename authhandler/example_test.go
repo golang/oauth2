@@ -14,7 +14,28 @@ import (
 	"golang.org/x/oauth2/authhandler"
 )
 
-func ExampleCmdAuthorizationHandler() {
+// CmdAuthorizationHandler returns a command line auth handler that prints
+// the auth URL to the console and prompts the user to authorize in the
+// browser and paste the auth code back via stdin.
+//
+// Per the OAuth protocol, a unique "state" string should be sent and verified
+// before exchanging auth code for OAuth token to prevent CSRF attacks.
+//
+// For convenience, this handler returns a pre-configured state instead of
+// asking the user to additionally paste the state from the auth response.
+// In order for this to work, the state configured here must match the state
+// used in authCodeURL.
+func CmdAuthorizationHandler(state string) authhandler.AuthorizationHandler {
+	return func(authCodeURL string) (string, string, error) {
+		fmt.Printf("Go to the following link in your browser:\n\n   %s\n\n", authCodeURL)
+		fmt.Println("Enter authorization code:")
+		var code string
+		fmt.Scanln(&code)
+		return code, state, nil
+	}
+}
+
+func Example() {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		w.Header().Set("Content-Type", "application/json")
@@ -38,7 +59,7 @@ func ExampleCmdAuthorizationHandler() {
 	}
 	state := "unique_state"
 
-	token, err := authhandler.TokenSource(ctx, conf, state, authhandler.CmdAuthorizationHandler(state)).Token()
+	token, err := authhandler.TokenSource(ctx, conf, state, CmdAuthorizationHandler(state)).Token()
 
 	if err != nil {
 		fmt.Println(err)
