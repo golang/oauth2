@@ -18,8 +18,10 @@ import (
 // the auth URL to the console and prompts the user to authorize in the
 // browser and paste the auth code back via stdin.
 //
-// Per the OAuth protocol, a unique "state" string should be sent and verified
-// before exchanging auth code for OAuth token to prevent CSRF attacks.
+// Per the OAuth protocol, a unique "state" string should be specified here.
+// The authhandler token source will verify that the "state" is identical in
+// the request and response before exchanging the auth code for OAuth token to
+// prevent CSRF attacks.
 //
 // For convenience, this handler returns a pre-configured state instead of
 // asking the user to additionally paste the state from the auth response.
