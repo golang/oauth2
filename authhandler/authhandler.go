@@ -28,8 +28,10 @@ type AuthorizationHandler func(authCodeURL string) (code string, state string, e
 //
 // An environment-specific AuthorizationHandler is used to obtain user consent.
 //
-// Per the OAuth protocol, a unique "state" string should be sent and verified
-// before exchanging the auth code for OAuth token to prevent CSRF attacks.
+// Per the OAuth protocol, a unique "state" string should be specified here.
+// This token source will verify that the "state" is identical in the request
+// and response before exchanging the auth code for OAuth token to prevent CSRF
+// attacks.
 func TokenSource(ctx context.Context, config *oauth2.Config, state string, authHandler AuthorizationHandler) oauth2.TokenSource {
 	return oauth2.ReuseTokenSource(nil, authHandlerSource{config: config, ctx: ctx, authHandler: authHandler, state: state})
 }
