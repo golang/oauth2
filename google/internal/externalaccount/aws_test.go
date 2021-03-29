@@ -638,6 +638,81 @@ func TestAwsCredential_BasicRequestWithEnv(t *testing.T) {
 	}
 }
 
+func TestAwsCredential_BasicRequestWithDefaultEnv(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{
+		"AWS_ACCESS_KEY_ID":     "AKIDEXAMPLE",
+		"AWS_SECRET_ACCESS_KEY": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+		"AWS_DEFAULT_REGION":            "us-west-1",
+	})
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+	expected := getExpectedSubjectToken(
+		"https://sts.us-west-1.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+		"us-west-1",
+		"AKIDEXAMPLE",
+		"wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+		"",
+	)
+
+	if got, want := out, expected; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = %q, want %q", got, want)
+	}
+}
+
+func TestAwsCredential_BasicRequestWithTwoRegions(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{
+		"AWS_ACCESS_KEY_ID":     "AKIDEXAMPLE",
+		"AWS_SECRET_ACCESS_KEY": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+		"AWS_REGION":            "us-west-1",
+		"AWS_DEFAULT_REGION":            "us-east-1",
+	})
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+	expected := getExpectedSubjectToken(
+		"https://sts.us-west-1.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+		"us-west-1",
+		"AKIDEXAMPLE",
+		"wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+		"",
+	)
+
+	if got, want := out, expected; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = %q, want %q", got, want)
+	}
+}
+
 func TestAwsCredential_RequestWithBadVersion(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
