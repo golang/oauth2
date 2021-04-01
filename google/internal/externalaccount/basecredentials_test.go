@@ -13,8 +13,13 @@ import (
 	"time"
 )
 
+const (
+	textBaseCredPath = "testdata/3pi_cred.txt"
+	jsonBaseCredPath = "testdata/3pi_cred.json"
+)
+
 var testBaseCredSource = CredentialSource{
-	File:   "./testdata/3pi_cred.txt",
+	File:   textBaseCredPath,
 	Format: format{Type: fileTypeText},
 }
 

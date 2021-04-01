@@ -28,14 +28,14 @@ func TestRetrieveFileSubjectToken(t *testing.T) {
 		{
 			name: "UntypedFileSource",
 			cs: CredentialSource{
-				File: "./testdata/3pi_cred.txt",
+				File: textBaseCredPath,
 			},
 			want: "street123",
 		},
 		{
 			name: "TextFileSource",
 			cs: CredentialSource{
-				File:   "./testdata/3pi_cred.txt",
+				File:   textBaseCredPath,
 				Format: format{Type: fileTypeText},
 			},
 			want: "street123",
@@ -43,7 +43,7 @@ func TestRetrieveFileSubjectToken(t *testing.T) {
 		{
 			name: "JSONFileSource",
 			cs: CredentialSource{
-				File:   "./testdata/3pi_cred.json",
+				File:   jsonBaseCredPath,
 				Format: format{Type: fileTypeJSON, SubjectTokenFieldName: "SubjToken"},
 			},
 			want: "321road",
