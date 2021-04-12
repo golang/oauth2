@@ -197,6 +197,12 @@ var Yandex = oauth2.Endpoint{
 	TokenURL: "https://oauth.yandex.com/token",
 }
 
+// Zoom is the endpoint for Zoom.
+var Zoom = oauth2.Endpoint{
+	AuthURL:  "https://zoom.us/oauth/authorize",
+	TokenURL: "https://zoom.us/oauth/token",
+}
+
 // AzureAD returns a new oauth2.Endpoint for the given tenant at Azure Active Directory.
 // If tenant is empty, it uses the tenant called `common`.
 //
