@@ -17,6 +17,12 @@ var Amazon = oauth2.Endpoint{
 	TokenURL: "https://api.amazon.com/auth/o2/token",
 }
 
+// Battlenet is the endpoint for Battlenet.
+var Battlenet = oauth2.Endpoint{
+	AuthURL: "https://battle.net/oauth/authorize",
+	TokenURL: "https://battle.net/oauth/token",
+}
+
 // Bitbucket is the endpoint for Bitbucket.
 var Bitbucket = oauth2.Endpoint{
 	AuthURL:  "https://bitbucket.org/site/oauth2/authorize",
