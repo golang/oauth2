@@ -140,7 +140,7 @@ func (f *credentialsFile) jwtConfig(scopes []string, subject string) *jwt.Config
 	return cfg
 }
 
-func (f *credentialsFile) tokenSource(ctx context.Context, params TokenSourceParams) (oauth2.TokenSource, error) {
+func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsParams) (oauth2.TokenSource, error) {
 	switch f.Type {
 	case serviceAccountKey:
 		cfg := f.jwtConfig(params.Scopes, params.Subject)
