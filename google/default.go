@@ -46,7 +46,7 @@ type DefaultCredentials = Credentials
 // with a credentials file for building a Credentials object.
 type CredentialsParams struct {
 	// Scopes is the list OAuth scopes. Required.
-	// Example: cloud-platform
+	// Example: https://www.googleapis.com/auth/cloud-platform
 	Scopes []string
 
 	// Subject is the user email used for domain wide delegation (see
@@ -164,16 +164,16 @@ func FindDefaultCredentials(ctx context.Context, scopes ...string) (*Credentials
 
 // CredentialsFromJSONWithParams obtains Google credentials from a JSON value. The JSON can
 // represent either a Google Developers Console client_credentials.json file (as in ConfigFromJSON),
-// a Google Developers service account key file, a gCloud-style user credentials file (a.k.a.
-// refresh token JSON), or the JSON configuration file for workload identity federation in
-// non-Google cloud platforms (see https://cloud.google.com/iam/docs/how-to#using-workload-identity-federation).
+// a Google Developers service account key file, a gcloud user credentials file (a.k.a. refresh
+// token JSON), or the JSON configuration file for workload identity federation in non-Google cloud
+// platforms (see https://cloud.google.com/iam/docs/how-to#using-workload-identity-federation).
 func CredentialsFromJSONWithParams(ctx context.Context, jsonData []byte, params CredentialsParams) (*Credentials, error) {
 	// Make defensive copy of the slices in params.
 	params = params.deepCopy()
 
 	// First, attempt to parse jsonData as a Google Developers Console client_credentials.json.
-	config, err := ConfigFromJSON(jsonData, params.Scopes...)
-	if err == nil {
+	config, _ := ConfigFromJSON(jsonData, params.Scopes...)
+	if config != nil {
 		return &Credentials{
 			ProjectID:   "",
 			TokenSource: authhandler.TokenSource(ctx, config, params.State, params.AuthHandler),
@@ -183,7 +183,7 @@ func CredentialsFromJSONWithParams(ctx context.Context, jsonData []byte, params 
 
 	// Otherwise, parse jsonData as one of the other supported credentials files.
 	var f credentialsFile
-	if err = json.Unmarshal(jsonData, &f); err != nil {
+	if err := json.Unmarshal(jsonData, &f); err != nil {
 		return nil, err
 	}
 	ts, err := f.tokenSource(ctx, params)
