@@ -46,7 +46,7 @@ type ClaimSet struct {
 	// complaint with legacy OAuth 2.0 providers. (Optional)
 	Prn string `json:"prn,omitempty"`
 
-	// See http://tools.ietf.org/html/draft-jones-json-web-token-10#section-4.3
+	// See https://datatracker.ietf.org/doc/html/rfc7519#section-4.3
 	// This array is marshalled using custom code (see (c *ClaimSet) encode()).
 	PrivateClaims map[string]interface{} `json:"-"`
 }
@@ -178,5 +178,5 @@ func Verify(token string, key *rsa.PublicKey) error {
 
 	h := sha256.New()
 	h.Write([]byte(signedContent))
-	return rsa.VerifyPKCS1v15(key, crypto.SHA256, h.Sum(nil), []byte(signatureString))
+	return rsa.VerifyPKCS1v15(key, crypto.SHA256, h.Sum(nil), signatureString)
 }
