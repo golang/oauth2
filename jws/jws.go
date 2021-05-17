@@ -171,12 +171,12 @@ func Verify(token string, key *rsa.PublicKey) error {
 	}
 
 	signedContent := parts[0] + "." + parts[1]
-	signatureString, err := base64.RawURLEncoding.DecodeString(parts[2])
+	signature, err := base64.RawURLEncoding.DecodeString(parts[2])
 	if err != nil {
 		return err
 	}
 
 	h := sha256.New()
 	h.Write([]byte(signedContent))
-	return rsa.VerifyPKCS1v15(key, crypto.SHA256, h.Sum(nil), signatureString)
+	return rsa.VerifyPKCS1v15(key, crypto.SHA256, h.Sum(nil), signature)
 }
