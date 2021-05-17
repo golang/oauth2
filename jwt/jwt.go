@@ -5,7 +5,7 @@
 // Package jwt implements the OAuth 2.0 JSON Web Token flow, commonly
 // known as "two-legged OAuth 2.0".
 //
-// See: https://tools.ietf.org/html/draft-ietf-oauth-jwt-bearer-12
+// See: https://datatracker.ietf.org/doc/html/rfc7523
 package jwt
 
 import (
@@ -68,7 +68,7 @@ type Config struct {
 	Audience string
 
 	// PrivateClaims optionally specifies custom private claims in the JWT.
-	// See http://tools.ietf.org/html/draft-jones-json-web-token-10#section-4.3
+	// See https://datatracker.ietf.org/doc/html/rfc7519#section-4.3
 	PrivateClaims map[string]interface{}
 
 	// UseIDToken optionally specifies whether ID token should be used instead
