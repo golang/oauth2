@@ -1,6 +1,7 @@
 package downscoped
 
 import (
+	"context"
 	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
@@ -14,7 +15,7 @@ var (
 )
 
 func Test_NewAccessBoundary(t *testing.T) {
-	got := NewAccessBoundary()
+	got := AccessBoundary{make([]AccessBoundaryRule, 0)}
 	want := AccessBoundary{nil}
 	if got.AccessBoundaryRules == nil || len(got.AccessBoundaryRules) != 0 {
 		t.Errorf("NewAccessBoundary() = %v; want %v", got, want)
@@ -26,7 +27,7 @@ func Test_DownscopedTokenSource(t *testing.T) {
 		if r.Method != "POST" {
 			t.Errorf("Unexpected request method, %v is found", r.Method)
 		}
-		if r.URL.String() != "/" { //TODO: Will this work, or do I need to redirect this to this test server instead?
+		if r.URL.String() != "/" {
 			t.Errorf("Unexpected request URL, %v is found", r.URL)
 		}
 		body, err := ioutil.ReadAll(r.Body)
@@ -40,11 +41,11 @@ func Test_DownscopedTokenSource(t *testing.T) {
 		w.Write([]byte(standardRespBody))
 
 	}))
-	new := NewAccessBoundary()
+	new := AccessBoundary{make([]AccessBoundaryRule, 0)}
 	new.AccessBoundaryRules = append(new.AccessBoundaryRules, AccessBoundaryRule{"test1", []string{"Perm1, perm2"}, nil})
 	myTok := oauth2.Token{AccessToken: "Mellon"}
 	tmpSrc := oauth2.StaticTokenSource(&myTok)
-	out, err := DownscopedTokenWithEndpoint(DownscopingConfig{tmpSrc, new}, ts.URL)
+	out, err := downscopedTokenWithEndpoint(context.Background(), DownscopingConfig{tmpSrc, new}, ts.URL)
 	if err != nil {
 		t.Fatalf("NewDownscopedTokenSource failed with error: %v", err)
 	}
