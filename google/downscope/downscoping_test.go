@@ -1,4 +1,4 @@
-package downscoped
+package downscope
 
 import (
 	"context"
