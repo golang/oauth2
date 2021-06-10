@@ -2,8 +2,11 @@ package downscope
 
 import (
 	"context"
+	"fmt"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -53,4 +56,42 @@ func Test_DownscopedTokenSource(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Token() call failed with error %v", err)
 	}
+}
+
+func Example() {
+	ctx := context.Background()
+	availableResource := "//storage.googleapis.com/projects/_/buckets/foo"
+	availablePermissions := []string{"inRole:roles/storage.objectViewer"}
+
+
+	// Initializes an accessBoundary
+	myBoundary := AccessBoundary{make([]AccessBoundaryRule, 0)}
+
+	// Add a new rule to the AccessBoundary
+	myBoundary.AccessBoundaryRules = append(myBoundary.AccessBoundaryRules, AccessBoundaryRule{availableResource, availablePermissions, nil})
+
+	// Get the token source for Application Default Credentials (DefaultTokenSource is a shorthand
+	// for is a shortcut for FindDefaultCredentials(ctx, scope).TokenSource.
+	// This example assumes that you've defined the GOOGLE_APPLICATION_CREDENTIALS environment variable
+	rootSource, err := google.DefaultTokenSource(ctx, "https://www.googleapis.com/auth/cloud-platform")
+	if err != nil {
+		log.Fatalf("failed to generate root token source; %v", err)
+		return
+	}
+	myTokenSource, err := NewTokenSource(context.Background(), DownscopingConfig{rootSource, myBoundary})
+	//myTokenSource, err := NewSource(rootSource, myBoundary)
+	if err != nil {
+		log.Fatalf("failed to generate downscoped token source: %v", err)
+		return
+	}
+	fmt.Printf("%+v\n", myTokenSource)
+	// You can now use the token held in myTokenSource to make
+	// Google Cloud Storage calls.  A short example follows.
+
+	// storageClient, err := storage.NewClient(ctx, option.WithTokenSource(myTokenSource))
+	// bkt := storageClient.Bucket(bucketName)
+	// obj := bkt.Object(objectName)
+	// rc, err := obj.NewReader(ctx)
+	// data, err := ioutil.ReadAll(rc)
+	return
 }

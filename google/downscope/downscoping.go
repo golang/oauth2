@@ -155,7 +155,10 @@ func downscopedTokenWithEndpoint(ctx context.Context, config DownscopingConfig, 
 // NewTokenSource takes a root TokenSource and returns a downscoped TokenSource
 // with a subset of the permissions held by the root source.  The
 // CredentialAccessBoundary in the config defines the permissions held
-// by the new TokenSource.
+// by the new TokenSource.  Do note that the returned TokenSource is
+// an oauth2.StaticTokenSource.  If you wish to refresh this token automatically,
+// then initialize a locally defined TokenSource struct with the Token held
+// by the StaticTokenSource and wrap that TokenSource in an oauth2.ReuseTokenSource.
 func NewTokenSource(ctx context.Context, config DownscopingConfig) (oauth2.TokenSource, error) {
 	return downscopedTokenWithEndpoint(ctx, config, identityBindingEndpoint)
 }
