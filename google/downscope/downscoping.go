@@ -2,7 +2,7 @@
 Package downscope implements the ability to downwcope, or restrict, the
 Identity and AccessManagement permissions that a short-lived Token
 can use.  Please note that only Google Cloud Storage supports this feature.
- */
+*/
 package downscope
 
 import (
@@ -32,9 +32,9 @@ type AvailabilityCondition struct {
 	// A condition expression that specifies the Cloud Storage objects where
 	// permissions are available. For further documentation, see
 	// https://cloud.google.com/iam/docs/conditions-overview
-	Expression  string `json:"expression"`
+	Expression string `json:"expression"`
 	// Optional. A short string that identifies the purpose of the condition.
-	Title       string `json:"title,omitempty"`
+	Title string `json:"title,omitempty"`
 	// Optional. Details about the purpose of the condition.
 	Description string `json:"description,omitempty"`
 }
@@ -44,18 +44,18 @@ type AvailabilityCondition struct {
 type AccessBoundaryRule struct {
 	// AvailableResource is the full resource name of the Cloud Storage bucket that the rule applies to.
 	// Use the format //storage.googleapis.com/projects/_/buckets/bucket-name.
-	AvailableResource    string                 `json:"availableResource"`
+	AvailableResource string `json:"availableResource"`
 	// AvailablePermissions is a list that defines the upper bound on the available permissions
 	// for the resource.  Each value is the identifier for an IAM predefined role or custom role,
 	// with the prefix inRole:. For example: inRole:roles/storage.objectViewer.
 	// Only the permissions in these roles will be available.
-	AvailablePermissions []string               `json:"availablePermissions"`
+	AvailablePermissions []string `json:"availablePermissions"`
 	// An optional Condition that restricts the availability of permissions
 	// to specific Cloud Storage objects.
 	//
 	// Use this field if you want to make permissions available for specific objects,
 	// rather than all objects in a Cloud Storage bucket.
-	Condition            *AvailabilityCondition `json:"availabilityCondition,omitempty"`
+	Condition *AvailabilityCondition `json:"availabilityCondition,omitempty"`
 }
 
 type downscopedTokenResponse struct {
@@ -70,7 +70,7 @@ type DownscopingConfig struct {
 	// RootSource is the TokenSource used to create the downscoped token.
 	// The downscoped token therefore has some subset of the accesses of
 	// the original RootSource.
-	RootSource               oauth2.TokenSource
+	RootSource oauth2.TokenSource
 	// CredentialAccessBoundary defines the accesses held by the new
 	// downscoped Token.
 	CredentialAccessBoundary AccessBoundary

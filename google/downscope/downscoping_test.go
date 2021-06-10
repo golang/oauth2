@@ -63,7 +63,6 @@ func Example() {
 	availableResource := "//storage.googleapis.com/projects/_/buckets/foo"
 	availablePermissions := []string{"inRole:roles/storage.objectViewer"}
 
-
 	// Initializes an accessBoundary
 	myBoundary := AccessBoundary{make([]AccessBoundaryRule, 0)}
 
