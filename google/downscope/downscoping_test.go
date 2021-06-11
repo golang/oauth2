@@ -1,29 +1,24 @@
+// Copyright 2021 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package downscope
 
 import (
 	"context"
-	"fmt"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"golang.org/x/oauth2"
 )
 
 var (
 	standardReqBody  = "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&options=%257B%2522accessBoundary%2522%253A%257B%2522accessBoundaryRules%2522%253A%255B%257B%2522availableResource%2522%253A%2522test1%2522%252C%2522availablePermissions%2522%253A%255B%2522Perm1%252C%2Bperm2%2522%255D%257D%255D%257D%257D&requested_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token&subject_token=Mellon&subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token"
 	standardRespBody = `{"access_token":"Open Sesame","expires_in":432,"issued_token_type":"urn:ietf:params:oauth:token-type:access_token","token_type":"Bearer"}`
 )
-
-func Test_NewAccessBoundary(t *testing.T) {
-	got := AccessBoundary{make([]AccessBoundaryRule, 0)}
-	want := AccessBoundary{nil}
-	if got.AccessBoundaryRules == nil || len(got.AccessBoundaryRules) != 0 {
-		t.Errorf("NewAccessBoundary() = %v; want %v", got, want)
-	}
-}
 
 func Test_DownscopedTokenSource(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -44,8 +39,12 @@ func Test_DownscopedTokenSource(t *testing.T) {
 		w.Write([]byte(standardRespBody))
 
 	}))
-	new := AccessBoundary{make([]AccessBoundaryRule, 0)}
-	new.AccessBoundaryRules = append(new.AccessBoundaryRules, AccessBoundaryRule{"test1", []string{"Perm1, perm2"}, nil})
+	new := []AccessBoundaryRule{
+		AccessBoundaryRule{
+			AvailableResource:    "test1",
+			AvailablePermissions: []string{"Perm1", "Perm2"},
+		},
+	}
 	myTok := oauth2.Token{AccessToken: "Mellon"}
 	tmpSrc := oauth2.StaticTokenSource(&myTok)
 	out, err := downscopedTokenWithEndpoint(context.Background(), DownscopingConfig{tmpSrc, new}, ts.URL)
@@ -58,39 +57,60 @@ func Test_DownscopedTokenSource(t *testing.T) {
 	}
 }
 
-func Example() {
+func ExampleNewTokenSource() {
 	ctx := context.Background()
-	availableResource := "//storage.googleapis.com/projects/_/buckets/foo"
-	availablePermissions := []string{"inRole:roles/storage.objectViewer"}
-
-	// Initializes an accessBoundary
-	myBoundary := AccessBoundary{make([]AccessBoundaryRule, 0)}
-
-	// Add a new rule to the AccessBoundary
-	myBoundary.AccessBoundaryRules = append(myBoundary.AccessBoundaryRules, AccessBoundaryRule{availableResource, availablePermissions, nil})
-
-	// Get the token source for Application Default Credentials (DefaultTokenSource is a shorthand
-	// for is a shortcut for FindDefaultCredentials(ctx, scope).TokenSource.
-	// This example assumes that you've defined the GOOGLE_APPLICATION_CREDENTIALS environment variable
-	rootSource, err := google.DefaultTokenSource(ctx, "https://www.googleapis.com/auth/cloud-platform")
-	if err != nil {
-		log.Fatalf("failed to generate root token source; %v", err)
-		return
+	// Initializes an accessBoundary with one Rule
+	accessBoundary := []AccessBoundaryRule{
+		AccessBoundaryRule{
+			AvailableResource:    "//storage.googleapis.com/projects/_/buckets/foo",
+			AvailablePermissions: []string{"inRole:roles/storage.objectViewer"},
+		},
 	}
-	myTokenSource, err := NewTokenSource(context.Background(), DownscopingConfig{rootSource, myBoundary})
+
+	var rootSource oauth2.TokenSource
+	// This Source can be initialized using Application Default Credentials as follows:
+
+	// rootSource, err := google.DefaultTokenSource(ctx, "https://www.googleapis.com/auth/cloud-platform")
+
+	myTokenSource, err := NewTokenSource(ctx, DownscopingConfig{RootSource: rootSource, Rules: accessBoundary})
 	//myTokenSource, err := NewSource(rootSource, myBoundary)
 	if err != nil {
 		log.Fatalf("failed to generate downscoped token source: %v", err)
-		return
 	}
-	fmt.Printf("%+v\n", myTokenSource)
+	_ = myTokenSource
 	// You can now use the token held in myTokenSource to make
-	// Google Cloud Storage calls.  A short example follows.
+	// Google Cloud Storage calls, as follows:
 
 	// storageClient, err := storage.NewClient(ctx, option.WithTokenSource(myTokenSource))
-	// bkt := storageClient.Bucket(bucketName)
-	// obj := bkt.Object(objectName)
-	// rc, err := obj.NewReader(ctx)
-	// data, err := ioutil.ReadAll(rc)
-	return
+}
+
+type localTokenSource struct {
+	tokenBrokerURL       string
+	tokenSourceForBroker oauth2.TokenSource
+}
+
+func (lts localTokenSource) Token() (*oauth2.Token, error) {
+	// Make a call to a remote token broker, which runs downscope.NewTokenSource
+	// to generate a downscoped version of a token it holds.  Return
+	var tok oauth2.Token
+	return &tok, nil
+}
+
+// ExampleRefreshableToken provices a sample of how a token consumer would
+// construct a refreshable token by wrapping a method that requests a
+// downscoped token from a token broker in an oauth2.ReuseTokenSource
+func ExampleRefreshableToken() {
+	var myCredentials oauth2.TokenSource
+	// This Source contains the credentials that the token consumer uses to
+	// authenticate itself to the token broker from which it is requesting
+	// a downscoped token.
+	myTokenSource := localTokenSource{
+		tokenBrokerURL:       "www.foo.bar",
+		tokenSourceForBroker: myCredentials,
+	}
+
+	downscopedToken := oauth2.ReuseTokenSource(nil, myTokenSource)
+	// downscopedToken can now be used as a refreshable token for Google Cloud Storage calls
+	// storageClient, err := storage.NewClient(ctx, option.WithTokenSource(myTokenSource))
+	_ = downscopedToken
 }
