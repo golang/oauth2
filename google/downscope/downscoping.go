@@ -6,6 +6,7 @@
 Package downscope implements the ability to downscope, or restrict, the
 Identity and AccessManagement permissions that a short-lived Token
 can use. Please note that only Google Cloud Storage supports this feature.
+For complete documentation, see https://cloud.google.com/iam/docs/downscoping-short-lived-credentials
 */
 package downscope
 
@@ -30,7 +31,7 @@ type accessBoundary struct {
 
 // An AvailabilityCondition restricts access to a given Resource.
 type AvailabilityCondition struct {
-	// A condition expression that specifies the Cloud Storage objects where
+	// A Expression specifies the Cloud Storage objects where
 	// permissions are available. For further documentation, see
 	// https://cloud.google.com/iam/docs/conditions-overview
 	Expression string `json:"expression"`
@@ -40,8 +41,8 @@ type AvailabilityCondition struct {
 	Description string `json:"description,omitempty"`
 }
 
-// Sets the permissions (and optionally conditions) that the new
-// token has on given resource.
+// An AccessBoundaryRule Sets the permissions (and optionally conditions)
+// that the new token has on given resource.
 type AccessBoundaryRule struct {
 	// AvailableResource is the full resource name of the Cloud Storage bucket that the rule applies to.
 	// Use the format //storage.googleapis.com/projects/_/buckets/bucket-name.
@@ -66,7 +67,7 @@ type downscopedTokenResponse struct {
 	ExpiresIn       int    `json:"expires_in"`
 }
 
-// DownscopingConfigSpecifies the information necessary to request a downscoped token
+// DownscopingConfig specifies the information necessary to request a downscoped token
 type DownscopingConfig struct {
 	// RootSource is the TokenSource used to create the downscoped token.
 	// The downscoped token therefore has some subset of the accesses of
