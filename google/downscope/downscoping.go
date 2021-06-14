@@ -14,6 +14,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
@@ -129,14 +130,18 @@ func downscopedTokenWithEndpoint(ctx context.Context, config DownscopingConfig, 
 		return nil, fmt.Errorf("unable to generate POST Request %v", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("downscope: unable to exchange token; %v.  Failed to read response body: %v", resp.StatusCode, err)
+		}
+		return nil, fmt.Errorf("downscope: unable to exchange token; %v.  Server responsed: %v", resp.StatusCode, string(b))
+	}
 
 	var tresp downscopedTokenResponse
 	err = json.NewDecoder(resp.Body).Decode(&tresp)
 	if err != nil {
 		return nil, fmt.Errorf("downscope: unable to unmarshal response body: %v", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("downscope: unable to exchange token; %v", resp.StatusCode)
 	}
 
 	// an exchanged token that is derived from a service account (2LO) has an expired_in value
