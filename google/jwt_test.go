@@ -13,29 +13,21 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"golang.org/x/oauth2/jws"
 )
 
-func TestJWTAccessTokenSourceFromJSON(t *testing.T) {
-	// Generate a key we can use in the test data.
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		t.Fatal(err)
-	}
+var (
+	privateKey *rsa.PrivateKey
+	jsonKey    []byte
+	once sync.Once
+)
 
-	// Encode the key and substitute into our example JSON.
-	enc := pem.EncodeToMemory(&pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
-	})
-	enc, err = json.Marshal(string(enc))
-	if err != nil {
-		t.Fatalf("json.Marshal: %v", err)
-	}
-	jsonKey := bytes.Replace(jwtJSONKey, []byte(`"super secret key"`), enc, 1)
+func TestJWTAccessTokenSourceFromJSON(t *testing.T) {
+	setupDummyKey(t)
 
 	ts, err := JWTAccessTokenSourceFromJSON(jsonKey, "audience")
 	if err != nil {
@@ -91,24 +83,9 @@ func TestJWTAccessTokenSourceFromJSON(t *testing.T) {
 }
 
 func TestJWTAccessTokenSourceWithScope(t *testing.T) {
-	// Generate a key we can use in the test data.
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		t.Fatal(err)
-	}
+	setupDummyKey(t)
 
-	// Encode the key and substitute into our example JSON.
-	enc := pem.EncodeToMemory(&pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
-	})
-	enc, err = json.Marshal(string(enc))
-	if err != nil {
-		t.Fatalf("json.Marshal: %v", err)
-	}
-	jsonKey := bytes.Replace(jwtJSONKey, []byte(`"super secret key"`), enc, 1)
-
-	ts, err := JWTAccessTokenSourceWithScope(jsonKey, []string{"scope1", "scope2"})
+	ts, err := JWTAccessTokenSourceWithScope(jsonKey, "scope1", "scope2")
 	if err != nil {
 		t.Fatalf("JWTAccessTokenSourceWithScope: %v\nJSON: %s", err, string(jsonKey))
 	}
@@ -159,4 +136,25 @@ func TestJWTAccessTokenSourceWithScope(t *testing.T) {
 	if got, want := hdr.KeyID, "268f54e43a1af97cfc71731688434f45aca15c8b"; got != want {
 		t.Errorf("Header KeyID = %q, want %q", got, want)
 	}
+}
+
+func setupDummyKey(t *testing.T) {
+	once.Do(func () {
+		// Generate a key we can use in the test data.
+		pk, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			t.Fatal(err)
+		}
+		privateKey = pk
+		// Encode the key and substitute into our example JSON.
+		enc := pem.EncodeToMemory(&pem.Block{
+			Type:  "PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+		})
+		enc, err = json.Marshal(string(enc))
+		if err != nil {
+			t.Fatalf("json.Marshal: %v", err)
+		}
+		jsonKey = bytes.Replace(jwtJSONKey, []byte(`"super secret key"`), enc, 1)
+  })
 }

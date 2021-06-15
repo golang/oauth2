@@ -32,17 +32,21 @@ func JWTAccessTokenSourceFromJSON(jsonKey []byte, audience string) (oauth2.Token
 // key file to read the credentials that authorize and authenticate the
 // requests, and returns a TokenSource that does not use any OAuth2 flow but
 // instead creates a JWT and sends that as the access token.
-// The scopes is typically a list of URLs that specifies the scope of the
+// The scope is typically a list of URLs that specifies the scope of the
 // credentials.
 //
 // Note that this is not a standard OAuth flow, but rather an
 // optimization supported by a few Google services.
 // Unless you know otherwise, you should use JWTConfigFromJSON instead.
-func JWTAccessTokenSourceWithScope(jsonKey []byte, scopes []string) (oauth2.TokenSource, error) {
-	return newJWTSource(jsonKey, "", scopes)
+func JWTAccessTokenSourceWithScope(jsonKey []byte, scope ...string) (oauth2.TokenSource, error) {
+	return newJWTSource(jsonKey, "", scope)
 }
 
 func newJWTSource(jsonKey []byte, audience string, scopes []string) (oauth2.TokenSource, error) {
+	if len(scopes) == 0 && audience == "" {
+		return nil, fmt.Errorf("google: missing scope/audience for JWT access token")
+	}
+
 	cfg, err := JWTConfigFromJSON(jsonKey)
 	if err != nil {
 		return nil, fmt.Errorf("google: could not parse JSON key: %v", err)
