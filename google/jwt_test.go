@@ -23,7 +23,7 @@ import (
 var (
 	privateKey *rsa.PrivateKey
 	jsonKey    []byte
-	once sync.Once
+	once       sync.Once
 )
 
 func TestJWTAccessTokenSourceFromJSON(t *testing.T) {
@@ -139,7 +139,7 @@ func TestJWTAccessTokenSourceWithScope(t *testing.T) {
 }
 
 func setupDummyKey(t *testing.T) {
-	once.Do(func () {
+	once.Do(func() {
 		// Generate a key we can use in the test data.
 		pk, err := rsa.GenerateKey(rand.Reader, 2048)
 		if err != nil {
@@ -156,5 +156,5 @@ func setupDummyKey(t *testing.T) {
 			t.Fatalf("json.Marshal: %v", err)
 		}
 		jsonKey = bytes.Replace(jwtJSONKey, []byte(`"super secret key"`), enc, 1)
-  })
+	})
 }
