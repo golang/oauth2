@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	identityBindingEndpoint = "https://sts.googleapis.com/v1beta/token"
+	identityBindingEndpoint = "https://sts.googleapis.com/v1/token"
 )
 
 type accessBoundary struct {
@@ -122,7 +122,7 @@ func downscopedTokenWithEndpoint(ctx context.Context, config DownscopingConfig, 
 	form.Add("subject_token_type", "urn:ietf:params:oauth:token-type:access_token")
 	form.Add("requested_token_type", "urn:ietf:params:oauth:token-type:access_token")
 	form.Add("subject_token", tok.AccessToken)
-	form.Add("options", url.QueryEscape(string(b)))
+	form.Add("options", string(b))
 
 	myClient := oauth2.NewClient(ctx, nil)
 	resp, err := myClient.PostForm(endpoint, form)
@@ -148,17 +148,17 @@ func downscopedTokenWithEndpoint(ctx context.Context, config DownscopingConfig, 
 	// a token derived from a users token (3LO) does not.
 	// The following code uses the time remaining on rootToken for a user as the value for the
 	// derived token's lifetime
-	var expiry_time time.Time
+	var expiryTime time.Time
 	if tresp.ExpiresIn > 0 {
-		expiry_time = time.Now().Add(time.Duration(time.Duration(tresp.ExpiresIn) * time.Second))
+		expiryTime = time.Now().Add(time.Duration(tresp.ExpiresIn) * time.Second)
 	} else {
-		expiry_time = tok.Expiry
+		expiryTime = tok.Expiry
 	}
 
 	newToken := &oauth2.Token{
 		AccessToken: tresp.AccessToken,
 		TokenType:   tresp.TokenType,
-		Expiry:      expiry_time,
+		Expiry:      expiryTime,
 	}
 	return oauth2.StaticTokenSource(newToken), nil
 }
