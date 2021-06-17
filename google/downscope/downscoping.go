@@ -78,17 +78,30 @@ type DownscopingConfig struct {
 	// downscoped Token. One or more AccessBoundaryRules are required to
 	// define permissions for the new downscoped token. Each one defines an
 	// access (or set of accesses) that the new token has to a given resource.
+	// There can be a maximum of 10 AccessBoundaryRules.
 	Rules []AccessBoundaryRule
+}
+
+// A DownscopingTokenSource is used to retrieve a downscoped token with restricted
+// permissions compared to the root Token that is used to generate it.
+type DownscopingTokenSource struct {
+	// Ctx is the context used to query the API to retrieve a downscoped Token.
+	Ctx context.Context
+	// Config holds the information necessary to generate a downscoped Token.
+	Config DownscopingConfig
 }
 
 // downscopedTokenWithEndpoint is a helper function used for unit testing
 // purposes, as it allows us to pass in a locally mocked endpoint.
-func downscopedTokenWithEndpoint(ctx context.Context, config DownscopingConfig, endpoint string) (oauth2.TokenSource, error) {
+func downscopedTokenWithEndpoint(ctx context.Context, config DownscopingConfig, endpoint string) (*oauth2.Token, error) {
 	if config.RootSource == nil {
 		return nil, fmt.Errorf("downscope: rootTokenSource cannot be nil")
 	}
 	if len(config.Rules) == 0 {
 		return nil, fmt.Errorf("downscope: length of AccessBoundaryRules must be at least 1")
+	}
+	if len(config.Rules) > 10 {
+		return nil, fmt.Errorf("downscope: length of AccessBoundaryRules may not be greater than 10")
 	}
 	for _, val := range config.Rules {
 		if val.AvailableResource == "" {
@@ -160,16 +173,14 @@ func downscopedTokenWithEndpoint(ctx context.Context, config DownscopingConfig, 
 		TokenType:   tresp.TokenType,
 		Expiry:      expiryTime,
 	}
-	return oauth2.StaticTokenSource(newToken), nil
+	return newToken, nil
 }
 
-// NewTokenSource takes a root TokenSource and returns a downscoped TokenSource
-// with a subset of the permissions held by the root source. The
-// CredentialAccessBoundary in the config defines the permissions held
-// by the new TokenSource. Do note that the returned TokenSource is
-// an oauth2.StaticTokenSource. If you wish to refresh this token automatically,
-// then initialize a locally defined TokenSource struct with the Token held
-// by the StaticTokenSource and wrap that TokenSource in an oauth2.ReuseTokenSource.
-func NewTokenSource(ctx context.Context, config DownscopingConfig) (oauth2.TokenSource, error) {
-	return downscopedTokenWithEndpoint(ctx, config, identityBindingEndpoint)
+// Token() uses a DownscopingTokenSource to generate an oauth2 Token.
+// Do note that the returned TokenSource is an oauth2.StaticTokenSource. If you wish
+// to refresh this token automatically, then initialize a locally defined
+// TokenSource struct with the Token held by the StaticTokenSource and wrap
+// that TokenSource in an oauth2.ReuseTokenSource.
+func (dts DownscopingTokenSource) Token() (*oauth2.Token, error) {
+	return downscopedTokenWithEndpoint(dts.Ctx, dts.Config, identityBindingEndpoint)
 }
