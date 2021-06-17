@@ -32,7 +32,7 @@ type accessBoundary struct {
 
 // An AvailabilityCondition restricts access to a given Resource.
 type AvailabilityCondition struct {
-	// A Expression specifies the Cloud Storage objects where
+	// An Expression specifies the Cloud Storage objects where
 	// permissions are available. For further documentation, see
 	// https://cloud.google.com/iam/docs/conditions-overview
 	Expression string `json:"expression"`
@@ -68,7 +68,7 @@ type downscopedTokenResponse struct {
 	ExpiresIn       int    `json:"expires_in"`
 }
 
-// DownscopingConfig specifies the information necessary to request a downscoped token
+// DownscopingConfig specifies the information necessary to request a downscoped token.
 type DownscopingConfig struct {
 	// RootSource is the TokenSource used to create the downscoped token.
 	// The downscoped token therefore has some subset of the accesses of
