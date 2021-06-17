@@ -39,7 +39,7 @@ func Test_DownscopedTokenSource(t *testing.T) {
 
 	}))
 	new := []AccessBoundaryRule{
-		AccessBoundaryRule{
+		{
 			AvailableResource:    "test1",
 			AvailablePermissions: []string{"Perm1", "Perm2"},
 		},

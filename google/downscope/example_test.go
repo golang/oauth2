@@ -41,8 +41,8 @@ type localTokenSource struct {
 }
 
 func (lts localTokenSource) Token() (*oauth2.Token, error) {
-	// Make a call to a remote token broker, which runs downscope.NewTokenSource
-	// to generate a downscoped version of a token it holds.  Return
+	// Make a call to a remote token broker, which runs downscope.NewTokenSource()
+	// to generate a downscoped version of a token it holds.  Returns said token.
 	var tok oauth2.Token
 	return &tok, nil
 }
@@ -50,7 +50,7 @@ func (lts localTokenSource) Token() (*oauth2.Token, error) {
 // ExampleRefreshableToken provices a sample of how a token consumer would
 // construct a refreshable token by wrapping a method that requests a
 // downscoped token from a token broker in an oauth2.ReuseTokenSource
-func ExampleRefreshableToken() {
+func ExampleNewTokenSource_refresh() {
 	var myCredentials oauth2.TokenSource
 	// This Source contains the credentials that the token consumer uses to
 	// authenticate itself to the token broker from which it is requesting
