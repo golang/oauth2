@@ -16,13 +16,13 @@ import (
 // now aliases time.Now for testing
 var now = time.Now
 
-// Config stores the configuration for fetching tokens with external credentials:
+// Config stores the configuration for fetching tokens with external credentials.
 type Config struct {
-	// Audience is the STS audience which contains the resource name for the workload
+	// Audience is the Secure Token Service (STS) audience which contains the resource name for the workload
 	// identity pool or the workforce pool and the provider identifier in that pool.
 	Audience                       string
 	// SubjectTokenType is the STS token type based on the Oauth2.0 token exchange spec
-	// e.g. `urn:ietf:params:oauth:token-type:jwt`
+	// e.g. `urn:ietf:params:oauth:token-type:jwt`.
 	SubjectTokenType               string
 	// TokenURL is the STS token exchange endpoint.
 	TokenURL                       string
@@ -33,10 +33,11 @@ type Config struct {
 	// ServiceAccountImpersonationURL is the URL for the service account impersonation request. This is only
 	// required for workload identity pools when APIs to be accessed have not integrated with UberMint.
 	ServiceAccountImpersonationURL string
-	// ClientID and ClientSecret are currently only required if token_info endpoint also
+	// ClientSecret is currently only required if token_info endpoint also
 	// needs to be called with the generated GCP access token. When provided, STS will be
 	// called with additional basic authentication using client_id as username and client_secret as password.
 	ClientSecret                   string
+	// ClientID is only required in conjunction with ClientSecret, as described above.
 	ClientID                       string
 	// CredentialSource contains the necessary information to retrieve the token itself, as well
 	// as some environmental information.
