@@ -1,3 +1,7 @@
+// Copyright 2021 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package downscope_test
 
 import (
@@ -9,9 +13,9 @@ import (
 
 func ExampleNewTokenSource() {
 	ctx := context.Background()
-	// Initializes an accessBoundary with one Rule
+	// Initializes an accessBoundary with one Rule.
 	accessBoundary := []downscope.AccessBoundaryRule{
-		downscope.AccessBoundaryRule{
+		{
 			AvailableResource:    "//storage.googleapis.com/projects/_/buckets/foo",
 			AvailablePermissions: []string{"inRole:roles/storage.objectViewer"},
 		},
@@ -23,7 +27,7 @@ func ExampleNewTokenSource() {
 
 	// rootSource, err := google.DefaultTokenSource(ctx, "https://www.googleapis.com/auth/cloud-platform")
 
-	dts := downscope.DownscopingTokenSource{ctx, downscope.DownscopingConfig{RootSource: rootSource, Rules: accessBoundary}}
+	dts := downscope.NewTokenSource(ctx, downscope.DownscopingConfig{RootSource: rootSource, Rules: accessBoundary})
 	_ = dts
 	// You can now use the token held in myTokenSource to make
 	// Google Cloud Storage calls, as follows:

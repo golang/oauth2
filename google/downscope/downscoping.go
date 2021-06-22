@@ -56,7 +56,7 @@ type AccessBoundaryRule struct {
 	// An Condition restricts the availability of permissions
 	// to specific Cloud Storage objects. Optional.
 	//
-	// Use this field if you want to make permissions available for specific objects,
+	// A Condition can be used  to make permissions available for specific objects,
 	// rather than all objects in a Cloud Storage bucket.
 	Condition *AvailabilityCondition `json:"availabilityCondition,omitempty"`
 }
@@ -82,13 +82,18 @@ type DownscopingConfig struct {
 	Rules []AccessBoundaryRule
 }
 
-// A DownscopingTokenSource is used to retrieve a downscoped token with restricted
+// A downscopingTokenSource is used to retrieve a downscoped token with restricted
 // permissions compared to the root Token that is used to generate it.
-type DownscopingTokenSource struct {
-	// Ctx is the context used to query the API to retrieve a downscoped Token.
-	Ctx context.Context
-	// Config holds the information necessary to generate a downscoped Token.
-	Config DownscopingConfig
+type downscopingTokenSource struct {
+	// ctx is the context used to query the API to retrieve a downscoped Token.
+	ctx context.Context
+	// config holds the information necessary to generate a downscoped Token.
+	config DownscopingConfig
+}
+
+// NewTokenSource returns an empty downscopingTokenSource.
+func NewTokenSource(ctx context.Context, conf DownscopingConfig) downscopingTokenSource {
+	return downscopingTokenSource{ctx: ctx, config: conf}
 }
 
 // downscopedTokenWithEndpoint is a helper function used for unit testing
@@ -176,11 +181,11 @@ func downscopedTokenWithEndpoint(ctx context.Context, config DownscopingConfig, 
 	return newToken, nil
 }
 
-// Token() uses a DownscopingTokenSource to generate an oauth2 Token.
+// Token() uses a downscopingTokenSource to generate an oauth2 Token.
 // Do note that the returned TokenSource is an oauth2.StaticTokenSource. If you wish
 // to refresh this token automatically, then initialize a locally defined
 // TokenSource struct with the Token held by the StaticTokenSource and wrap
 // that TokenSource in an oauth2.ReuseTokenSource.
-func (dts DownscopingTokenSource) Token() (*oauth2.Token, error) {
-	return downscopedTokenWithEndpoint(dts.Ctx, dts.Config, identityBindingEndpoint)
+func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
+	return downscopedTokenWithEndpoint(dts.ctx, dts.config, identityBindingEndpoint)
 }

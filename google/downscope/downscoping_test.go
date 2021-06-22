@@ -46,12 +46,8 @@ func Test_DownscopedTokenSource(t *testing.T) {
 	}
 	myTok := oauth2.Token{AccessToken: "Mellon"}
 	tmpSrc := oauth2.StaticTokenSource(&myTok)
-	out, err := downscopedTokenWithEndpoint(context.Background(), DownscopingConfig{tmpSrc, new}, ts.URL)
+	_, err := downscopedTokenWithEndpoint(context.Background(), DownscopingConfig{tmpSrc, new}, ts.URL)
 	if err != nil {
 		t.Fatalf("NewDownscopedTokenSource failed with error: %v", err)
-	}
-	_, err = out.Token()
-	if err != nil {
-		t.Fatalf("Token() call failed with error %v", err)
 	}
 }
