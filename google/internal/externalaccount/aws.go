@@ -341,7 +341,7 @@ func (cs awsCredentialSource) subjectToken() (string, error) {
 func (cs *awsCredentialSource) getRegion() (string, error) {
 	if envAwsRegion := getenv("AWS_REGION"); envAwsRegion != "" {
 		return envAwsRegion, nil
-	} else if envAwsRegion := getenv("AWS_DEFAULT_REGION"); envAwsRegion != "" {
+	} if envAwsRegion := getenv("AWS_DEFAULT_REGION"); envAwsRegion != "" {
 		return envAwsRegion, nil
 	}
 
