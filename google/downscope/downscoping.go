@@ -92,7 +92,7 @@ type downscopingTokenSource struct {
 }
 
 // NewTokenSource returns an empty downscopingTokenSource.
-func NewTokenSource(ctx context.Context, conf DownscopingConfig) downscopingTokenSource {
+func NewTokenSource(ctx context.Context, conf DownscopingConfig) oauth2.TokenSource {
 	return downscopingTokenSource{ctx: ctx, config: conf}
 }
 
