@@ -92,8 +92,25 @@ type downscopingTokenSource struct {
 }
 
 // NewTokenSource returns an empty downscopingTokenSource.
-func NewTokenSource(ctx context.Context, conf DownscopingConfig) oauth2.TokenSource {
-	return downscopingTokenSource{ctx: ctx, config: conf}
+func NewTokenSource(ctx context.Context, conf DownscopingConfig) (oauth2.TokenSource, error) {
+	if conf.RootSource == nil {
+		return nil, fmt.Errorf("downscope: rootSource cannot be nil")
+	}
+	if len(conf.Rules) == 0 {
+		return nil, fmt.Errorf("downscope: length of AccessBoundaryRules must be at least 1")
+	}
+	if len(conf.Rules) > 10 {
+		return nil, fmt.Errorf("downscope: length of AccessBoundaryRules may not be greater than 10")
+	}
+	for _, val := range conf.Rules {
+		if val.AvailableResource == "" {
+			return nil, fmt.Errorf("downscope: all rules must have a nonempty AvailableResource: %+v", val)
+		}
+		if len(val.AvailablePermissions) == 0 {
+			return nil, fmt.Errorf("downscope: all rules must provide at least one permission: %+v", val)
+		}
+	}
+	return downscopingTokenSource{ctx: ctx, config: conf}, nil
 }
 
 // Token() uses a downscopingTokenSource to generate an oauth2 Token.
@@ -102,23 +119,6 @@ func NewTokenSource(ctx context.Context, conf DownscopingConfig) oauth2.TokenSou
 // TokenSource struct with the Token held by the StaticTokenSource and wrap
 // that TokenSource in an oauth2.ReuseTokenSource.
 func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
-	if dts.config.RootSource == nil {
-		return nil, fmt.Errorf("downscope: rootSource cannot be nil")
-	}
-	if len(dts.config.Rules) == 0 {
-		return nil, fmt.Errorf("downscope: length of AccessBoundaryRules must be at least 1")
-	}
-	if len(dts.config.Rules) > 10 {
-		return nil, fmt.Errorf("downscope: length of AccessBoundaryRules may not be greater than 10")
-	}
-	for _, val := range dts.config.Rules {
-		if val.AvailableResource == "" {
-			return nil, fmt.Errorf("downscope: all rules must have a nonempty AvailableResource: %+v", val)
-		}
-		if len(val.AvailablePermissions) == 0 {
-			return nil, fmt.Errorf("downscope: all rules must provide at least one permission: %+v", val)
-		}
-	}
 
 	downscopedOptions := struct {
 		Boundary accessBoundary `json:"accessBoundary"`

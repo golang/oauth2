@@ -27,8 +27,10 @@ func ExampleNewTokenSource() {
 
 	// rootSource, err := google.DefaultTokenSource(ctx, "https://www.googleapis.com/auth/cloud-platform")
 
-	dts := downscope.NewTokenSource(ctx, downscope.DownscopingConfig{RootSource: rootSource, Rules: accessBoundary})
-	_ = dts
+	dts, err := downscope.NewTokenSource(ctx, downscope.DownscopingConfig{RootSource: rootSource, Rules: accessBoundary})
+	if err != nil {
+		_ = dts
+	}
 	// You can now use the token held in myTokenSource to make
 	// Google Cloud Storage calls, as follows:
 
