@@ -103,7 +103,7 @@ func NewTokenSource(ctx context.Context, conf DownscopingConfig) oauth2.TokenSou
 // that TokenSource in an oauth2.ReuseTokenSource.
 func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
 	if dts.config.RootSource == nil {
-		return nil, fmt.Errorf("downscope: rootTokenSource cannot be nil")
+		return nil, fmt.Errorf("downscope: rootSource cannot be nil")
 	}
 	if len(dts.config.Rules) == 0 {
 		return nil, fmt.Errorf("downscope: length of AccessBoundaryRules must be at least 1")
@@ -135,7 +135,7 @@ func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
 
 	b, err := json.Marshal(downscopedOptions)
 	if err != nil {
-		return nil, fmt.Errorf("downscope: unable to marshall AccessBoundary payload %v", err)
+		return nil, fmt.Errorf("downscope: unable to marshal AccessBoundary payload %v", err)
 	}
 
 	form := url.Values{}
@@ -151,6 +151,10 @@ func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
 		return nil, fmt.Errorf("unable to generate POST Request %v", err)
 	}
 	defer resp.Body.Close()
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("downscope: unable to read reaponse body: %v", err)
+	}
 	if resp.StatusCode != http.StatusOK {
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
@@ -160,7 +164,8 @@ func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
 	}
 
 	var tresp downscopedTokenResponse
-	err = json.NewDecoder(resp.Body).Decode(&tresp)
+
+	err = json.Unmarshal(respBody, &tresp)
 	if err != nil {
 		return nil, fmt.Errorf("downscope: unable to unmarshal response body: %v", err)
 	}
