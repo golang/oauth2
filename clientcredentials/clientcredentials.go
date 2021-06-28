@@ -11,6 +11,7 @@
 // server.
 //
 // See https://tools.ietf.org/html/rfc6749#section-4.4
+// See https://tools.ietf.org/html/rfc7523
 package clientcredentials // import "golang.org/x/oauth2/clientcredentials"
 
 import (
@@ -19,6 +20,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/internal"
@@ -46,7 +48,25 @@ type Config struct {
 	// AuthStyle optionally specifies how the endpoint wants the
 	// client ID & client secret sent. The zero value means to
 	// auto-detect.
+	// See https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication.
 	AuthStyle oauth2.AuthStyle
+
+	// JWTExpires optionally specifies how long the jwt token is valid for.
+	JWTExpires time.Duration
+
+	// PrivateKey contains the contents of an RSA private key or the
+	// contents of a PEM file that contains a private key. The provided
+	// private key is used to sign JWT payloads.
+	// PEM containers with a passphrase are not supported.
+	// Use the following command to convert a PKCS 12 file into a PEM.
+	//
+	//    $ openssl pkcs12 -in key.p12 -out key.pem -nodes
+	//
+	PrivateKey []byte
+
+	// KeyID contains an optional hint indicating which key is being
+	// used.
+	KeyID string
 }
 
 // Token uses client credentials to retrieve a token.
@@ -90,6 +110,14 @@ type tokenSource struct {
 func (c *tokenSource) Token() (*oauth2.Token, error) {
 	v := url.Values{
 		"grant_type": {"client_credentials"},
+	}
+	if c.conf.AuthStyle == oauth2.AuthStylePrivateKeyJWT {
+		var err error
+		v, err = c.jwtAssertionValues()
+		if err != nil {
+			return nil, err
+		}
+
 	}
 	if len(c.conf.Scopes) > 0 {
 		v.Set("scope", strings.Join(c.conf.Scopes, " "))
