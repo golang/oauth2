@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -450,6 +451,22 @@ func TestTokenRefreshRequest(t *testing.T) {
 	conf := newConf(ts.URL)
 	c := conf.Client(context.Background(), &Token{RefreshToken: "REFRESH_TOKEN"})
 	c.Get(ts.URL + "/somethingelse")
+}
+
+func TestTokenRefreshRequest_Expired(t *testing.T) {
+	internal.ResetAuthCache()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("should not make http request")
+	}))
+	defer ts.Close()
+	conf := newConf(ts.URL)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	c := conf.Client(ctx, &Token{RefreshToken: "REFRESH_TOKEN"})
+	_, getErr := c.Get(ts.URL + "/somethingelse")
+	if !strings.Contains(getErr.Error(), "oauth2: cannot fetch token: context canceled") {
+		t.Errorf("Unexpected error refreshing with expired context: %s", getErr.Error())
+	}
 }
 
 func TestFetchWithNoRefreshToken(t *testing.T) {

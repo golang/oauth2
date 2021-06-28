@@ -231,7 +231,7 @@ func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string,
 func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 	r, err := ctxhttp.Do(ctx, ContextClient(ctx), req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("oauth2: cannot fetch token: %w", err)
 	}
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1<<20))
 	r.Body.Close()
