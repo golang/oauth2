@@ -231,12 +231,12 @@ func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string,
 func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 	r, err := ctxhttp.Do(ctx, ContextClient(ctx), req)
 	if err != nil {
-		return nil, err
+		return nil, &RetrieveError{Err: err}
 	}
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1<<20))
 	r.Body.Close()
 	if err != nil {
-		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
+		return nil, &RetrieveError{Err: err}
 	}
 	if code := r.StatusCode; code < 200 || code > 299 {
 		return nil, &RetrieveError{
@@ -251,7 +251,7 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 	case "application/x-www-form-urlencoded", "text/plain":
 		vals, err := url.ParseQuery(string(body))
 		if err != nil {
-			return nil, err
+			return nil, &RetrieveError{Err: err}
 		}
 		token = &Token{
 			AccessToken:  vals.Get("access_token"),
@@ -285,10 +285,15 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 }
 
 type RetrieveError struct {
+	Err      error
 	Response *http.Response
 	Body     []byte
 }
 
 func (r *RetrieveError) Error() string {
-	return fmt.Sprintf("oauth2: cannot fetch token: %v\nResponse: %s", r.Response.Status, r.Body)
+	if r.Err != nil {
+		return fmt.Sprintf("oauth2: cannot fetch token: %v", r.Err)
+	} else {
+		return fmt.Sprintf("oauth2: cannot fetch token: %v\nResponse: %s", r.Response.Status, r.Body)
+	}
 }
