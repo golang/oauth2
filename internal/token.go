@@ -106,9 +106,10 @@ func RegisterBrokenAuthHeaderProvider(tokenURL string) {}
 type AuthStyle int
 
 const (
-	AuthStyleUnknown  AuthStyle = 0
-	AuthStyleInParams AuthStyle = 1
-	AuthStyleInHeader AuthStyle = 2
+	AuthStyleUnknown          AuthStyle = 0
+	AuthStyleInParams         AuthStyle = 1
+	AuthStyleInHeader         AuthStyle = 2
+	AuthStyleInHeaderNoEscape AuthStyle = 3
 )
 
 // authStyleCache is the set of tokenURLs we've successfully used via
@@ -173,6 +174,8 @@ func newTokenRequest(tokenURL, clientID, clientSecret string, v url.Values, auth
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	if authStyle == AuthStyleInHeader {
 		req.SetBasicAuth(url.QueryEscape(clientID), url.QueryEscape(clientSecret))
+	} else if authStyle == AuthStyleInHeaderNoEscape {
+		req.SetBasicAuth(clientID, clientSecret)
 	}
 	return req, nil
 }

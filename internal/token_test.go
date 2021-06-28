@@ -6,6 +6,7 @@ package internal
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"math"
@@ -30,6 +31,46 @@ func TestRetrieveToken_InParams(t *testing.T) {
 	}))
 	defer ts.Close()
 	_, err := RetrieveToken(context.Background(), clientID, "", ts.URL, url.Values{}, AuthStyleInParams)
+	if err != nil {
+		t.Errorf("RetrieveToken = %v; want no error", err)
+	}
+}
+
+func TestRetrieveToken_InHeader(t *testing.T) {
+	ResetAuthCache()
+	const clientID = "client-id%"
+	const clientSecret = "client-secret%"
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := base64.StdEncoding.EncodeToString([]byte(url.QueryEscape(clientID) + ":" + url.QueryEscape(clientSecret)))
+		want := fmt.Sprintf("Basic %s", token)
+		if got := r.Header.Get("Authorization"); got != want {
+			t.Errorf("Authorization header = %q; want %q", got, want)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"access_token": "ACCESS_TOKEN", "token_type": "bearer"}`)
+	}))
+	defer ts.Close()
+	_, err := RetrieveToken(context.Background(), clientID, clientSecret, ts.URL, url.Values{}, AuthStyleInHeader)
+	if err != nil {
+		t.Errorf("RetrieveToken = %v; want no error", err)
+	}
+}
+
+func TestRetrieveToken_InHeaderNoEscape(t *testing.T) {
+	ResetAuthCache()
+	const clientID = "client-id%"
+	const clientSecret = "client-secret%"
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := base64.StdEncoding.EncodeToString([]byte(clientID + ":" + clientSecret))
+		want := fmt.Sprintf("Basic %s", token)
+		if got := r.Header.Get("Authorization"); got != want {
+			t.Errorf("Authorization header = %q; want %q", got, want)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"access_token": "ACCESS_TOKEN", "token_type": "bearer"}`)
+	}))
+	defer ts.Close()
+	_, err := RetrieveToken(context.Background(), clientID, clientSecret, ts.URL, url.Values{}, AuthStyleInHeaderNoEscape)
 	if err != nil {
 		t.Errorf("RetrieveToken = %v; want no error", err)
 	}
