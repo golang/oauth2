@@ -32,8 +32,13 @@ type AuthorizationHandler func(authCodeURL string) (code string, state string, e
 // This token source will verify that the "state" is identical in the request
 // and response before exchanging the auth code for OAuth token to prevent CSRF
 // attacks.
-func TokenSource(ctx context.Context, config *oauth2.Config, state string, authHandler AuthorizationHandler) oauth2.TokenSource {
-	return oauth2.ReuseTokenSource(nil, authHandlerSource{config: config, ctx: ctx, authHandler: authHandler, state: state})
+func TokenSource(ctx context.Context, config *oauth2.Config,
+	state string, authHandler AuthorizationHandler, authCodeOpts ...oauth2.AuthCodeOption) oauth2.TokenSource {
+
+	return oauth2.ReuseTokenSource(
+		nil,
+		authHandlerSource{config: config, ctx: ctx, authHandler: authHandler, state: state, opts: authCodeOpts},
+	)
 }
 
 type authHandlerSource struct {
@@ -41,10 +46,11 @@ type authHandlerSource struct {
 	config      *oauth2.Config
 	authHandler AuthorizationHandler
 	state       string
+	opts        []oauth2.AuthCodeOption
 }
 
 func (source authHandlerSource) Token() (*oauth2.Token, error) {
-	url := source.config.AuthCodeURL(source.state)
+	url := source.config.AuthCodeURL(source.state, source.opts...)
 	code, state, err := source.authHandler(url)
 	if err != nil {
 		return nil, err
