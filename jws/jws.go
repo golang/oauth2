@@ -55,7 +55,7 @@ func (c *ClaimSet) encode() (string, error) {
 	// Reverting time back for machines whose time is not perfectly in sync.
 	// If client machine's time is in the future according
 	// to Google servers, an access token will not be issued.
-	now := time.Now().Add(-10 * time.Second)
+	now := time.Now().Add(-60 * time.Second)
 	if c.Iat == 0 {
 		c.Iat = now.Unix()
 	}
