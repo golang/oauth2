@@ -141,12 +141,12 @@ func SetAuthURLParam(key, value string) AuthCodeOption {
 // State is a token to protect the user from CSRF attacks. You must
 // always provide a non-empty string and validate that it matches the
 // the state query parameter on your redirect callback.
-// See http://tools.ietf.org/html/rfc6749#section-10.12 for more info.
+// See https://tools.ietf.org/html/rfc6749#section-10.12 for more info.
 //
 // Opts may include AccessTypeOnline or AccessTypeOffline, as well
 // as ApprovalForce.
 // It can also be used to pass the PKCE challenge.
-// See https://www.oauth.com/oauth2-servers/pkce/ for more info.
+// See https://tools.ietf.org/html/rfc7636 for more info.
 func (c *Config) AuthCodeURL(state string, opts ...AuthCodeOption) string {
 	var buf bytes.Buffer
 	buf.WriteString(c.Endpoint.AuthURL)
@@ -209,7 +209,7 @@ func (c *Config) PasswordCredentialsToken(ctx context.Context, username, passwor
 // calling Exchange, be sure to validate FormValue("state").
 //
 // Opts may include the PKCE verifier code if previously used in AuthCodeURL.
-// See https://www.oauth.com/oauth2-servers/pkce/ for more info.
+// See https://tools.ietf.org/html/rfc7636 for more info.
 func (c *Config) Exchange(ctx context.Context, code string, opts ...AuthCodeOption) (*Token, error) {
 	v := url.Values{
 		"grant_type": {"authorization_code"},
