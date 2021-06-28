@@ -218,6 +218,9 @@ func (c *Config) Exchange(ctx context.Context, code string, opts ...AuthCodeOpti
 	if c.RedirectURL != "" {
 		v.Set("redirect_uri", c.RedirectURL)
 	}
+	if len(c.Scopes) > 0 {
+		v.Set("scope", strings.Join(c.Scopes, " "))
+	}
 	for _, opt := range opts {
 		opt.setValue(v)
 	}
@@ -267,10 +270,16 @@ func (tf *tokenRefresher) Token() (*Token, error) {
 		return nil, errors.New("oauth2: token expired and refresh token is not set")
 	}
 
-	tk, err := retrieveToken(tf.ctx, tf.conf, url.Values{
+
+	v := url.Values{
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {tf.refreshToken},
-	})
+	}
+	if len(tf.conf.Scopes) > 0 {
+		v.Set("scope", strings.Join(tf.conf.Scopes, " "))
+	}
+
+	tk, err := retrieveToken(tf.ctx, tf.conf, v)
 
 	if err != nil {
 		return nil, err
