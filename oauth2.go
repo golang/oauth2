@@ -198,6 +198,24 @@ func (c *Config) PasswordCredentialsToken(ctx context.Context, username, passwor
 	return retrieveToken(ctx, c, v)
 }
 
+// The Client Credentials grant type is used by clients to obtain an access
+// token outside of the context of a user.
+//
+// This is typically used by clients to access resources about themselves
+// rather than to access a user's resources.
+// See https://tools.ietf.org/html/rfc6749#section-4.4 for more info.
+func (c *Config) ClientCredentialTokens(ctx context.Context) (*Token, error) {
+	v := url.Values{
+		"grant_type":    {"client_credentials"},
+		"client_id":     {c.ClientID},
+		"client_secret": {c.ClientSecret},
+	}
+	if len(c.Scopes) > 0 {
+		v.Set("scope", strings.Join(c.Scopes, " "))
+	}
+	return retrieveToken(ctx, c, v)
+}
+
 // Exchange converts an authorization code into a token.
 //
 // It is used after a resource provider redirects the user back
