@@ -155,6 +155,12 @@ var PayPalSandbox = oauth2.Endpoint{
 	TokenURL: "https://api.sandbox.paypal.com/v1/identity/openidconnect/tokenservice",
 }
 
+// Salesforce is the endpoint for Salesforce.
+var Salesforce = oauth2.Endpoint{
+	AuthURL:  "https://login.salesforce.com/services/oauth2/authorize",
+	TokenURL: "https://login.salesforce.com/services/oauth2/token",
+}
+
 // Slack is the endpoint for Slack.
 var Slack = oauth2.Endpoint{
 	AuthURL:  "https://slack.com/oauth/authorize",
