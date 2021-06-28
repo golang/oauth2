@@ -185,7 +185,7 @@ func cloneURLValues(v url.Values) url.Values {
 	return v2
 }
 
-func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string, v url.Values, authStyle AuthStyle) (*Token, error) {
+func PostRawRequest(ctx context.Context, clientID, clientSecret, tokenURL string, v url.Values, authStyle AuthStyle) (*http.Response, error) {
 	needsAuthStyleProbe := authStyle == 0
 	if needsAuthStyleProbe {
 		if style, ok := lookupAuthStyle(tokenURL); ok {
@@ -199,8 +199,11 @@ func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string,
 	if err != nil {
 		return nil, err
 	}
-	token, err := doTokenRoundTrip(ctx, req)
-	if err != nil && needsAuthStyleProbe {
+	resp, err := ctxhttp.Do(ctx, ContextClient(ctx), req)
+	if err != nil {
+		return nil, err // transport errors are not related to auth style
+	}
+	if resp.StatusCode >= 400 && resp.StatusCode <= 499 && needsAuthStyleProbe {
 		// If we get an error, assume the server wants the
 		// clientID & clientSecret in a different form.
 		// See https://code.google.com/p/goauth2/issues/detail?id=31 for background.
@@ -215,24 +218,27 @@ func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string,
 		// So just try both ways.
 		authStyle = AuthStyleInParams // the second way we'll try
 		req, _ = newTokenRequest(tokenURL, clientID, clientSecret, v, authStyle)
-		token, err = doTokenRoundTrip(ctx, req)
+		resp, err = ctxhttp.Do(ctx, ContextClient(ctx), req)
 	}
-	if needsAuthStyleProbe && err == nil {
+	if needsAuthStyleProbe && err == nil && (resp.StatusCode < 400 || resp.StatusCode > 499) {
 		setAuthStyle(tokenURL, authStyle)
 	}
-	// Don't overwrite `RefreshToken` with an empty value
-	// if this was a token refreshing request.
+	return resp, err
+}
+
+func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string, v url.Values, authStyle AuthStyle) (*Token, error) {
+	resp, err := PostRawRequest(ctx, clientID, clientSecret, tokenURL, v, authStyle)
+	if err != nil {
+		return nil, err
+	}
+	token, err := parseTokenResponse(resp)
 	if token != nil && token.RefreshToken == "" {
 		token.RefreshToken = v.Get("refresh_token")
 	}
 	return token, err
 }
 
-func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
-	r, err := ctxhttp.Do(ctx, ContextClient(ctx), req)
-	if err != nil {
-		return nil, err
-	}
+func parseTokenResponse(r *http.Response) (*Token, error) {
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1<<20))
 	r.Body.Close()
 	if err != nil {

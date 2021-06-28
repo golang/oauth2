@@ -224,6 +224,18 @@ func (c *Config) Exchange(ctx context.Context, code string, opts ...AuthCodeOpti
 	return retrieveToken(ctx, c, v)
 }
 
+// PostRawRequest makes a raw HTTP POST request to the given endpoint, which is assumed to be an endpoint of the
+// authorization server.
+//
+// This can be used to invoke endpoints which are non-standard, or not otherwise supported by this library (e.g., token
+// revocation), ensuring the use of a consistent logic for, e.g., automatically inferring authentication styles.
+//
+// Note that a non-2xx response is passed through as-is, without setting an error value. Nothing is ever read from the
+// response body.
+func (c *Config) PostRawRequest(ctx context.Context, endpoint string, v url.Values) (*http.Response, error) {
+	return internal.PostRawRequest(ctx, c.ClientID, c.ClientSecret, endpoint, v, internal.AuthStyle(c.Endpoint.AuthStyle))
+}
+
 // Client returns an HTTP client using the provided token.
 // The token will auto-refresh as necessary. The underlying
 // HTTP transport will be obtained using the provided context.
