@@ -209,6 +209,12 @@ var Yandex = oauth2.Endpoint{
 	TokenURL: "https://oauth.yandex.com/token",
 }
 
+// Zitadel is the endpoint for ZITADEL.
+var Zitadel = oauth2.Endpoint{
+	AuthURL:  "https://accounts.zitadel.ch/oauth/v2/authorize",
+	TokenURL: "https://api.zitadel.ch/oauth/v2/token",
+}
+
 // Zoom is the endpoint for Zoom.
 var Zoom = oauth2.Endpoint{
 	AuthURL:  "https://zoom.us/oauth/authorize",
