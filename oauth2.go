@@ -67,6 +67,10 @@ type TokenSource interface {
 	Token() (*Token, error)
 }
 
+type tokenSourceContext interface {
+	TokenContext(context.Context) (*Token, error)
+}
+
 // Endpoint represents an OAuth 2.0 provider's authorization and token
 // endpoint URLs.
 type Endpoint struct {
@@ -296,15 +300,31 @@ type reuseTokenSource struct {
 // refresh the current token (using r.Context for HTTP client
 // information) and return the new one.
 func (s *reuseTokenSource) Token() (*Token, error) {
+	return s.TokenContext(context.Background())
+}
+
+// TokenContext implements tokenSourceContext.
+func (s *reuseTokenSource) TokenContext(ctx context.Context) (*Token, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.t.Valid() {
 		return s.t, nil
 	}
-	t, err := s.new.Token()
+
+	var (
+		t   *Token
+		err error
+	)
+	tsctx, ok := s.new.(tokenSourceContext)
+	if ok {
+		t, err = tsctx.TokenContext(ctx)
+	} else {
+		t, err = s.new.Token()
+	}
 	if err != nil {
 		return nil, err
 	}
+
 	s.t = t
 	return t, nil
 }

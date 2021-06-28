@@ -74,20 +74,25 @@ func (c *Config) Client(ctx context.Context) *http.Client {
 // Most users will use Config.Client instead.
 func (c *Config) TokenSource(ctx context.Context) oauth2.TokenSource {
 	source := &tokenSource{
-		ctx:  ctx,
-		conf: c,
+		httpclient: internal.ContextClient(ctx),
+		conf:       c,
 	}
 	return oauth2.ReuseTokenSource(nil, source)
 }
 
 type tokenSource struct {
-	ctx  context.Context
-	conf *Config
+	httpclient *http.Client
+	conf       *Config
 }
 
 // Token refreshes the token by using a new client credentials request.
 // tokens received this way do not include a refresh token
 func (c *tokenSource) Token() (*oauth2.Token, error) {
+	return c.TokenContext(context.Background())
+}
+
+// TokenContext implements oauth2.tokenSourceContext.
+func (c *tokenSource) TokenContext(ctx context.Context) (*oauth2.Token, error) {
 	v := url.Values{
 		"grant_type": {"client_credentials"},
 	}
@@ -103,7 +108,8 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 		v[k] = p
 	}
 
-	tk, err := internal.RetrieveToken(c.ctx, c.conf.ClientID, c.conf.ClientSecret, c.conf.TokenURL, v, internal.AuthStyle(c.conf.AuthStyle))
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, c.httpclient)
+	tk, err := internal.RetrieveToken(ctx, c.conf.ClientID, c.conf.ClientSecret, c.conf.TokenURL, v, internal.AuthStyle(c.conf.AuthStyle))
 	if err != nil {
 		if rErr, ok := err.(*internal.RetrieveError); ok {
 			return nil, (*oauth2.RetrieveError)(rErr)
