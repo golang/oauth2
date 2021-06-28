@@ -11,6 +11,7 @@ package oauth2 // import "golang.org/x/oauth2"
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
@@ -57,6 +58,13 @@ type Config struct {
 
 	// Scope specifies optional requested permissions.
 	Scopes []string
+
+	// ClaimSet optionally enables requesting of individual Claims.
+	// It is the only way to request Claims outside the standard set.
+	// It is also the only way to request specific combinations
+	// of the standard Claims that cannot be specified using scope values.
+	// See https://openid.net/specs/openid-connect-core-1_0.html#ClaimsParameter.
+	ClaimSet *ClaimSet
 }
 
 // A TokenSource is anything that can return a token.
@@ -79,6 +87,26 @@ type Endpoint struct {
 	AuthStyle AuthStyle
 }
 
+
+// JSON keys for top-level members of the "claims" request parameter value.
+const (
+	UserInfoClaim = "userinfo"
+	IdTokenClaim  = "id_token"
+)
+
+// claim describes JSON object used to specify additional information
+// about the Claim being requested.
+type claim struct {
+	Essential bool     `json:"essential,omitempty"`
+	Value     string   `json:"value,omitempty"`
+	Values    []string `json:"values,omitempty"`
+}
+
+// ClaimSet contains all requested individual Claims.
+type ClaimSet struct {
+	claims map[string]map[string]*claim
+}
+
 // AuthStyle represents how requests for tokens are authenticated
 // to the server.
 type AuthStyle int
@@ -98,6 +126,7 @@ const (
 	// described in the OAuth2 RFC 6749 section 2.3.1.
 	AuthStyleInHeader AuthStyle = 2
 )
+
 
 var (
 	// AccessTypeOnline and AccessTypeOffline are options passed
@@ -171,6 +200,13 @@ func (c *Config) AuthCodeURL(state string, opts ...AuthCodeOption) string {
 		buf.WriteByte('&')
 	} else {
 		buf.WriteByte('?')
+	}
+	if c.ClaimSet != nil {
+		body, err := json.Marshal(c.ClaimSet)
+		if err != nil {
+			panic(err)
+		}
+		v.Set("claims", string(body))
 	}
 	buf.WriteString(v.Encode())
 	return buf.String()
@@ -247,6 +283,53 @@ func (c *Config) TokenSource(ctx context.Context, t *Token) TokenSource {
 	return &reuseTokenSource{
 		t:   t,
 		new: tkr,
+	}
+}
+
+// MarshalJSON is used to encode a private fields from ClaimSet.
+// Final output  represents actual value for "claims" request parameter.
+func (c *ClaimSet) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.claims)
+}
+
+// AddVoluntaryClaim adds the Claim being requested as a Voluntary Claim.
+// Authorization Server is not required to provide this Claim in its response.
+func (c *ClaimSet) AddVoluntaryClaim(topLevelName string, claimName string) {
+	c.initializeTopLevelMember(topLevelName)
+	c.claims[topLevelName][claimName] = nil
+}
+
+// AddClaimWithValue adds the Claim being requested to return a particular value.
+// If Claim is defined as an Essential Claim, the Authorization Server is required
+// to provide this Claim in its response.
+func (c *ClaimSet) AddClaimWithValue(topLevelName string, claimName string, essential bool, value string) {
+	c.initializeTopLevelMember(topLevelName)
+	c.claims[topLevelName][claimName] = &claim{
+		Essential: essential,
+		Value:     value,
+	}
+}
+
+// AddClaimWithValues adds the Claim being requested to return
+// one of a set of values, with the values appearing in order of preference.
+// If Claim is defined as an Essential Claim, the Authorization Server is required
+// to provide this Claim in its response.
+func (c *ClaimSet) AddClaimWithValues(topLevelName string, claimName string, essential bool, values ...string) {
+	c.initializeTopLevelMember(topLevelName)
+	c.claims[topLevelName][claimName] = &claim{
+		Essential: essential,
+		Values:    values,
+	}
+}
+
+// initializeTopLevelMember checks if top-level member is initialized
+// as a map of JSON Claims objects and initializes it, if it's needed.
+func (c *ClaimSet) initializeTopLevelMember(topLevelName string) {
+	if c.claims == nil {
+		c.claims = map[string]map[string]*claim{}
+	}
+	if c.claims[topLevelName] == nil {
+		c.claims[topLevelName] = map[string]*claim{}
 	}
 }
 
