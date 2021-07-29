@@ -7,7 +7,6 @@ package externalaccount
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,7 +19,6 @@ func TestRetrieveURLSubjectToken_Text(t *testing.T) {
 		if r.Method != "GET" {
 			t.Errorf("Unexpected request method, %v is found", r.Method)
 		}
-		fmt.Println(r.Header)
 		if r.Header.Get("Metadata") != "True" {
 			t.Errorf("Metadata header not properly included.")
 		}
