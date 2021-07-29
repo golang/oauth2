@@ -12,10 +12,6 @@ import (
 	"golang.org/x/oauth2/google/downscope"
 )
 
-func Example() {
-
-}
-
 func ExampleNewTokenSource() {
 	ctx := context.Background()
 	// Initializes an accessBoundary with one Rule.
@@ -38,7 +34,7 @@ func ExampleNewTokenSource() {
 	}
 
 	// Enables automatic token refreshing
-	_ := oauth2.ReuseTokenSource(nil, dts)
+	_ = oauth2.ReuseTokenSource(nil, dts)
 
 	// You can now use the token held in myTokenSource to make
 	// Google Cloud Storage calls, as follows:
