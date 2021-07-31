@@ -11,9 +11,9 @@ For complete documentation, see https://cloud.google.com/iam/docs/downscoping-sh
 To downscope permissions of a source credential, you need to define
 a Credential Access Boundary.  Said Boundary specifies which resources
 the newly created credential can access, an upper bound on the permissions
-it has over those resources, and optionally  attribute-base conditional
+it has over those resources, and optionally  attribute-based conditional
 access to the aforementioned resources.  For more information on IAM
-Credentials, see https://cloud.google.com/iam/docs/conditions-overview
+Conditions, see https://cloud.google.com/iam/docs/conditions-overview.
 
 This functionality would typically be used to provide a third party with
 limited access to and permissions on resources held by the owner of the root
@@ -30,7 +30,8 @@ token broker would use this package.
 The broker will use the functionality in this package to generate a downscoped
 token with the requested configuration, and then pass it back to the token
 consumer.  These downscoped access tokens can then be used to access Google
-Storage resources.
+Storage resources.  For instance, you can create a NewClient from the
+"cloud.google.com/go/storage" package and pass in option.WithTokenSource(yourTokenSource))
 */
 package downscope
 
@@ -115,7 +116,7 @@ type downscopingTokenSource struct {
 	config DownscopingConfig
 }
 
-// NewTokenSource returns an configured downscopingTokenSource.
+// NewTokenSource returns a configured downscopingTokenSource.
 func NewTokenSource(ctx context.Context, conf DownscopingConfig) (oauth2.TokenSource, error) {
 	if conf.RootSource == nil {
 		return nil, fmt.Errorf("downscope: rootSource cannot be nil")
