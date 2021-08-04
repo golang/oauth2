@@ -7,16 +7,15 @@ package downscope_test
 import (
 	"context"
 	"fmt"
+
 	"golang.org/x/oauth2/google"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google/downscope"
 )
 
-
-
 func ExampleNewTokenSource() {
-	// This shows how to generate a downscoped token.  This code would be run on the
+	// This shows how to generate a downscoped token. This code would be run on the
 	// token broker, which holds the root token used to generate the downscoped token.
 	ctx := context.Background()
 	// Initializes an accessBoundary with one Rule.
@@ -48,9 +47,9 @@ func ExampleNewTokenSource() {
 	// You can now pass tok to a token consumer however you wish, such as exposing
 	// a REST API and sending it over HTTP.
 
-	// You can instead use the token held in myTokenSource to make
+	// You can instead use the token held in dts to make
 	// Google Cloud Storage calls, as follows:
 
-	// storageClient, err := storage.NewClient(ctx, option.WithTokenSource(myTokenSource))
+	// storageClient, err := storage.NewClient(ctx, option.WithTokenSource(dts))
 
 }

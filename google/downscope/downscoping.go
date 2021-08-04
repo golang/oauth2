@@ -24,13 +24,13 @@ for their function.
 For example, a token broker can be set up on a server in a private network.
 Various workloads (token consumers) in the same network will send authenticated
 requests to that broker for downscoped tokens to access or modify specific google
-cloud storage buckets.  See the NewTokenSource example for an example of how a
+cloud storage buckets. See the NewTokenSource example for an example of how a
 token broker would use this package.
 
 The broker will use the functionality in this package to generate a downscoped
 token with the requested configuration, and then pass it back to the token
-consumer.  These downscoped access tokens can then be used to access Google
-Storage resources.  For instance, you can create a NewClient from the
+consumer. These downscoped access tokens can then be used to access Google
+Storage resources. For instance, you can create a NewClient from the
 "cloud.google.com/go/storage" package and pass in option.WithTokenSource(yourTokenSource))
 */
 package downscope
@@ -81,7 +81,7 @@ type AccessBoundaryRule struct {
 	// An Condition restricts the availability of permissions
 	// to specific Cloud Storage objects. Optional.
 	//
-	// A Condition can be used  to make permissions available for specific objects,
+	// A Condition can be used to make permissions available for specific objects,
 	// rather than all objects in a Cloud Storage bucket.
 	Condition *AvailabilityCondition `json:"availabilityCondition,omitempty"`
 }
@@ -183,7 +183,7 @@ func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
 	if resp.StatusCode != http.StatusOK {
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("downscope: unable to exchange token; %v.  Failed to read response body: %v", resp.StatusCode, err)
+			return nil, fmt.Errorf("downscope: unable to exchange token; %v. Failed to read response body: %v", resp.StatusCode, err)
 		}
 		return nil, fmt.Errorf("downscope: unable to exchange token; %v.  Server responsed: %v", resp.StatusCode, string(b))
 	}
