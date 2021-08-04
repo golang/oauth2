@@ -6,6 +6,7 @@ package downscope_test
 
 import (
 	"context"
+	"fmt"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google/downscope"
@@ -29,8 +30,13 @@ func ExampleNewTokenSource() {
 
 	dts, err := downscope.NewTokenSource(ctx, downscope.DownscopingConfig{RootSource: rootSource, Rules: accessBoundary})
 	if err != nil {
-		_ = dts
+		fmt.Printf("failed to generate downscoped token source: %v", err)
+		return
 	}
+
+	// Enables automatic token refreshing
+	_ = oauth2.ReuseTokenSource(nil, dts)
+
 	// You can now use the token held in myTokenSource to make
 	// Google Cloud Storage calls, as follows:
 
