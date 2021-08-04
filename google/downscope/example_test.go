@@ -31,6 +31,7 @@ func ExampleNewTokenSource() {
 	dts, err := downscope.NewTokenSource(ctx, downscope.DownscopingConfig{RootSource: rootSource, Rules: accessBoundary})
 	if err != nil {
 		fmt.Printf("failed to generate downscoped token source: %v", err)
+		return
 	}
 
 	// Enables automatic token refreshing
