@@ -11,7 +11,7 @@ type localTokenSource struct {
 
 func (localTokenSource) Token() (*oauth2.Token, error) {
 	var remoteToken oauth2.Token
-	// Retrieve remoteToken, an oauth2.Token, from token broker
+	// Retrieve remoteToken, an oauth2.Token, from token broker.
 	return &remoteToken, nil
 }
 
@@ -20,7 +20,6 @@ func Example() {
 	// it should send a query to a token broker requesting a downscoped token.
 	// The token broker holds the root credential that is used to generate the
 	// downscoped token.
-
 	thisTokenSource := localTokenSource{
 		requestedObject: "//storage.googleapis.com/projects/_/buckets/foo",
 		brokerURL:       "yourURL.com/internal/broker",
