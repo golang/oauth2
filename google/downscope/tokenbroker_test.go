@@ -18,7 +18,9 @@ func ExampleNewTokenSource() {
 	// This shows how to generate a downscoped token. This code would be run on the
 	// token broker, which holds the root token used to generate the downscoped token.
 	ctx := context.Background()
-	// Initializes an accessBoundary with one Rule.
+	// Initializes an accessBoundary with one Rule which restricts the downscoped
+	// token to only be able to access the bucket "foo" and only grants it the
+	// permission "storage.objectViewer".
 	accessBoundary := []downscope.AccessBoundaryRule{
 		{
 			AvailableResource:    "//storage.googleapis.com/projects/_/buckets/foo",

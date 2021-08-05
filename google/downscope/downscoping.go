@@ -9,13 +9,13 @@ can use. Please note that only Google Cloud Storage supports this feature.
 For complete documentation, see https://cloud.google.com/iam/docs/downscoping-short-lived-credentials
 
 To downscope permissions of a source credential, you need to define
-a Credential Access Boundary.  Said Boundary specifies which resources
+a Credential Access Boundary. Said Boundary specifies which resources
 the newly created credential can access, an upper bound on the permissions
-it has over those resources, and optionally  attribute-based conditional
-access to the aforementioned resources.  For more information on IAM
+it has over those resources, and optionally attribute-based conditional
+access to the aforementioned resources. For more information on IAM
 Conditions, see https://cloud.google.com/iam/docs/conditions-overview.
 
-This functionality would typically be used to provide a third party with
+This functionality can be used to provide a third party with
 limited access to and permissions on resources held by the owner of the root
 credential or internally in conjunction with the principle of least privilege
 to ensure that internal services only hold the minimum necessary privileges
@@ -185,7 +185,7 @@ func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
 		if err != nil {
 			return nil, fmt.Errorf("downscope: unable to exchange token; %v. Failed to read response body: %v", resp.StatusCode, err)
 		}
-		return nil, fmt.Errorf("downscope: unable to exchange token; %v.  Server responsed: %v", resp.StatusCode, string(b))
+		return nil, fmt.Errorf("downscope: unable to exchange token; %v. Server responsed: %v", resp.StatusCode, string(b))
 	}
 
 	var tresp downscopedTokenResponse
