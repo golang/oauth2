@@ -102,24 +102,26 @@ func TestValidateURL(t *testing.T) {
 		pattern []string
 		result  bool
 	}{
+		{"https://east.sts.googleapis.com", validTokenURLPatterns, true},
 		{"https://sts.googleapis.com", validTokenURLPatterns, true},
+		{"https://sts.asfeasfesef.googleapis.com", validTokenURLPatterns, true},
+		{"https://us-east-1-sts.googleapis.com", validTokenURLPatterns, true},
 		{"https://.sts.google.com", validTokenURLPatterns, false},
 		{"https://badsts.googleapis.com", validTokenURLPatterns, false},
-		{"https://sts.asfeasfesef.googleapis.com", validTokenURLPatterns, true},
 		{"https://sts.asfe.asfesef.googleapis.com", validTokenURLPatterns, false},
 		{"https://sts..googleapis.com", validTokenURLPatterns, false},
 		{"https://-sts.googleapis.com", validTokenURLPatterns, false},
-		{"https://us-east-1-sts.googleapis.com", validTokenURLPatterns, true},
 		{"https://us-ea.st-1-sts.googleapis.com", validTokenURLPatterns, false},
 		// Repeat for iamcredentials as well
+		{"https://east.iamcredentials.googleapis.com", validImpersonateURLPatterns, true},
 		{"https://iamcredentials.googleapis.com", validImpersonateURLPatterns, true},
+		{"https://iamcredentials.asfeasfesef.googleapis.com", validImpersonateURLPatterns, true},
+		{"https://us-east-1-iamcredentials.googleapis.com", validImpersonateURLPatterns, true},
 		{"https://.iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
 		{"https://badiamcredentials.googleapis.com", validImpersonateURLPatterns, false},
-		{"https://iamcredentials.asfeasfesef.googleapis.com", validImpersonateURLPatterns, true},
 		{"https://iamcredentials.asfe.asfesef.googleapis.com", validImpersonateURLPatterns, false},
 		{"https://iamcredentials..googleapis.com", validImpersonateURLPatterns, false},
 		{"https://-iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
-		{"https://us-east-1-iamcredentials.googleapis.com", validImpersonateURLPatterns, true},
 		{"https://us-ea.st-1-iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
 	}
 	for _, tt := range urlValidityTests {
