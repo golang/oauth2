@@ -6,6 +6,7 @@ package externalaccount
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -76,7 +77,11 @@ func TestImpersonation(t *testing.T) {
 	defer targetServer.Close()
 
 	testImpersonateConfig.TokenURL = targetServer.URL
-	ourTS := testImpersonateConfig.TokenSource(context.Background())
+	ourTS, err := testImpersonateConfig.tokenSource(context.Background(), true)
+	if err != nil {
+		fmt.Println(testImpersonateConfig.TokenURL)
+		t.Fatalf("Failed to create TokenSource: %v", err)
+	}
 
 	oldNow := now
 	defer func() { now = oldNow }()

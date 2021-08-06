@@ -95,3 +95,43 @@ func TestToken(t *testing.T) {
 	}
 
 }
+
+func TestValidateURL(t *testing.T) {
+	var urlValidityTests = []struct {
+		input   string
+		pattern []string
+		result  bool
+	}{
+		{"https://sts.googleapis.com", validTokenURLPatterns, true},
+		{"https://.sts.google.com", validTokenURLPatterns, false},
+		{"https://badsts.googleapis.com", validTokenURLPatterns, false},
+		{"https://sts.asfeasfesef.googleapis.com", validTokenURLPatterns, true},
+		{"https://sts.asfe.asfesef.googleapis.com", validTokenURLPatterns, false},
+		{"https://sts..googleapis.com", validTokenURLPatterns, false},
+		{"https://-sts.googleapis.com", validTokenURLPatterns, false},
+		{"https://us-east-1-sts.googleapis.com", validTokenURLPatterns, true},
+		{"https://us-ea.st-1-sts.googleapis.com", validTokenURLPatterns, false},
+		// Repeat for iamcredentials as well
+		{"https://iamcredentials.googleapis.com", validImpersonateURLPatterns, true},
+		{"https://.iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
+		{"https://badiamcredentials.googleapis.com", validImpersonateURLPatterns, false},
+		{"https://iamcredentials.asfeasfesef.googleapis.com", validImpersonateURLPatterns, true},
+		{"https://iamcredentials.asfe.asfesef.googleapis.com", validImpersonateURLPatterns, false},
+		{"https://iamcredentials..googleapis.com", validImpersonateURLPatterns, false},
+		{"https://-iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
+		{"https://us-east-1-iamcredentials.googleapis.com", validImpersonateURLPatterns, true},
+		{"https://us-ea.st-1-iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
+	}
+	for _, tt := range urlValidityTests {
+		t.Run(" "+tt.input, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
+			valid, err := validateURL(tt.input, tt.pattern)
+			if err != nil {
+				t.Errorf("validateURL returned an error: %v", err)
+				return
+			}
+			if valid != tt.result {
+				t.Errorf("got %v, want %v", valid, tt.result)
+			}
+		})
+	}
+}
