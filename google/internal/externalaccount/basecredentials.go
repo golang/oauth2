@@ -55,62 +55,52 @@ type Config struct {
 
 // Each element consists of a list of patterns.  validateURLs checks for matches
 // that include all elements in a given list, in that order.
+
 var (
-	validTokenURLPatterns = []string{
-		"https://[^\\.]+\\.sts\\.googleapis\\.com",
-		"https://sts\\.googleapis\\.com",
-		"https://sts\\.[^\\.]+\\.googleapis\\.com",
-		"https://[^\\.]+-sts\\.googleapis\\.com",
+	validTokenURLPatterns = []*regexp.Regexp{
+		regexp.MustCompile("https://[^\\.]+\\.sts\\.googleapis\\.com"),
+		regexp.MustCompile("https://sts\\.googleapis\\.com"),
+		regexp.MustCompile("https://sts\\.[^\\.]+\\.googleapis\\.com"),
+		regexp.MustCompile("https://[^\\.]+-sts\\.googleapis\\.com"),
 	}
-	validImpersonateURLPatterns = []string{
-		"https://[^\\.]+\\.iamcredentials\\.googleapis\\.com",
-		"https://iamcredentials\\.googleapis\\.com",
-		"https://iamcredentials\\.[^\\.]+\\.googleapis\\.com",
-		"https://[^\\.]+-iamcredentials\\.googleapis\\.com",
+	validImpersonateURLPatterns = []*regexp.Regexp{
+		regexp.MustCompile("https://[^\\.]+\\.iamcredentials\\.googleapis\\.com"),
+		regexp.MustCompile("https://iamcredentials\\.googleapis\\.com"),
+		regexp.MustCompile("https://iamcredentials\\.[^\\.]+\\.googleapis\\.com"),
+		regexp.MustCompile("https://[^\\.]+-iamcredentials\\.googleapis\\.com"),
 	}
 )
 
-func validateURL(input string, patterns []string) (bool, error) {
+func validateURL(input string, patterns []*regexp.Regexp) bool {
 	for _, pattern := range patterns {
-		valid, err := regexp.MatchString(pattern, input)
-		if err != nil {
-			return false, err
-		}
+		valid := pattern.MatchString(input)
 		if valid {
-			return true, nil
+			return true
 		}
 	}
-	return false, nil
+	return false
 }
 
 // TokenSource Returns an external account TokenSource struct. This is to be called by package google to construct a google.Credentials.
 func (c *Config) TokenSource(ctx context.Context) (oauth2.TokenSource, error) {
-	return c.tokenSource(ctx, false)
+	return c.tokenSource(ctx, validTokenURLPatterns, validImpersonateURLPatterns)
 }
 
 // tokenSource is a private function that's directly called by some of the tests,
 // because the unit test URLs are mocked, and would otherwise fail the
 // validity check.
-func (c *Config) tokenSource(ctx context.Context, testing bool) (oauth2.TokenSource, error) {
-	if !testing {
-		// Check the validity of TokenURL.
-		valid, err := validateURL(c.TokenURL, validTokenURLPatterns)
-		if err != nil {
-			return nil, err
-		}
-		if !valid {
-			return nil, fmt.Errorf("oauth2/google: invalid TokenURL provided while constructing tokenSource")
-		}
+func (c *Config) tokenSource(ctx context.Context, tokenURLValidPats []*regexp.Regexp, impersonateURLValidPats []*regexp.Regexp) (oauth2.TokenSource, error) {
+	// Check the validity of TokenURL.
+	valid := validateURL(c.TokenURL, tokenURLValidPats)
+	if !valid {
+		return nil, fmt.Errorf("oauth2/google: invalid TokenURL provided while constructing tokenSource")
+	}
 
-		// If ServiceAccountImpersonationURL is present, check its validity.
-		if c.ServiceAccountImpersonationURL != "" {
-			valid, err := validateURL(c.ServiceAccountImpersonationURL, validImpersonateURLPatterns)
-			if err != nil {
-				return nil, err
-			}
-			if !valid {
-				return nil, fmt.Errorf("oauth2/google: invalid ServiceAccountImpersonationURL provided while constructing tokenSource")
-			}
+	// If ServiceAccountImpersonationURL is present, check its validity.
+	if c.ServiceAccountImpersonationURL != "" {
+		valid := validateURL(c.ServiceAccountImpersonationURL, impersonateURLValidPats)
+		if !valid {
+			return nil, fmt.Errorf("oauth2/google: invalid ServiceAccountImpersonationURL provided while constructing tokenSource")
 		}
 	}
 

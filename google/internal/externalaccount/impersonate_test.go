@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 )
 
@@ -77,7 +78,9 @@ func TestImpersonation(t *testing.T) {
 	defer targetServer.Close()
 
 	testImpersonateConfig.TokenURL = targetServer.URL
-	ourTS, err := testImpersonateConfig.tokenSource(context.Background(), true)
+	allURLs := regexp.MustCompile(".*")
+	fmt.Println(allURLs)
+	ourTS, err := testImpersonateConfig.tokenSource(context.Background(), []*regexp.Regexp{allURLs}, []*regexp.Regexp{allURLs})
 	if err != nil {
 		fmt.Println(testImpersonateConfig.TokenURL)
 		t.Fatalf("Failed to create TokenSource: %v", err)

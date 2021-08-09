@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 	"time"
 )
@@ -96,10 +97,10 @@ func TestToken(t *testing.T) {
 
 }
 
-func TestValidateURL(t *testing.T) {
+func TestValidateURLTokenURL(t *testing.T) {
 	var urlValidityTests = []struct {
 		input   string
-		pattern []string
+		pattern []*regexp.Regexp
 		result  bool
 	}{
 		{"https://east.sts.googleapis.com", validTokenURLPatterns, true},
@@ -112,7 +113,23 @@ func TestValidateURL(t *testing.T) {
 		{"https://sts..googleapis.com", validTokenURLPatterns, false},
 		{"https://-sts.googleapis.com", validTokenURLPatterns, false},
 		{"https://us-ea.st-1-sts.googleapis.com", validTokenURLPatterns, false},
-		// Repeat for iamcredentials as well
+	}
+	for _, tt := range urlValidityTests {
+		t.Run(" "+tt.input, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
+			valid := validateURL(tt.input, tt.pattern)
+			if valid != tt.result {
+				t.Errorf("got %v, want %v", valid, tt.result)
+			}
+		})
+	}
+}
+
+func TestValidateURLImpersonateURL (t *testing.T) {
+	var urlValidityTests = []struct {
+		input   string
+		pattern []*regexp.Regexp
+		result  bool
+	}{
 		{"https://east.iamcredentials.googleapis.com", validImpersonateURLPatterns, true},
 		{"https://iamcredentials.googleapis.com", validImpersonateURLPatterns, true},
 		{"https://iamcredentials.asfeasfesef.googleapis.com", validImpersonateURLPatterns, true},
@@ -126,11 +143,7 @@ func TestValidateURL(t *testing.T) {
 	}
 	for _, tt := range urlValidityTests {
 		t.Run(" "+tt.input, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
-			valid, err := validateURL(tt.input, tt.pattern)
-			if err != nil {
-				t.Errorf("validateURL returned an error: %v", err)
-				return
-			}
+			valid := validateURL(tt.input, tt.pattern)
 			if valid != tt.result {
 				t.Errorf("got %v, want %v", valid, tt.result)
 			}

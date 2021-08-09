@@ -128,6 +128,9 @@ func TestExchangeToken_Opts(t *testing.T) {
 		}
 		var opts map[string]interface{}
 		err = json.Unmarshal([]byte(strOpts[0]), &opts)
+		if err != nil {
+			t.Fatalf("Couldn't parse received \"options\" field.")
+		}
 		if len(opts) < 2 {
 			t.Errorf("Too few options received.")
 		}

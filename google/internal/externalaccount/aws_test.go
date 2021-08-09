@@ -28,8 +28,7 @@ func setTime(testTime time.Time) func() time.Time {
 
 func setEnvironment(env map[string]string) func(string) string {
 	return func(key string) string {
-		value, _ := env[key]
-		return value
+		return env[key]
 	}
 }
 
