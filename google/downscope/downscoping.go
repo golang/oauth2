@@ -9,13 +9,13 @@ can use. Please note that only Google Cloud Storage supports this feature.
 For complete documentation, see https://cloud.google.com/iam/docs/downscoping-short-lived-credentials
 
 To downscope permissions of a source credential, you need to define
-a Credential Access Boundary.  Said Boundary specifies which resources
+a Credential Access Boundary. Said Boundary specifies which resources
 the newly created credential can access, an upper bound on the permissions
-it has over those resources, and optionally  attribute-based conditional
-access to the aforementioned resources.  For more information on IAM
+it has over those resources, and optionally attribute-based conditional
+access to the aforementioned resources. For more information on IAM
 Conditions, see https://cloud.google.com/iam/docs/conditions-overview.
 
-This functionality would typically be used to provide a third party with
+This functionality can be used to provide a third party with
 limited access to and permissions on resources held by the owner of the root
 credential or internally in conjunction with the principle of least privilege
 to ensure that internal services only hold the minimum necessary privileges
@@ -24,13 +24,13 @@ for their function.
 For example, a token broker can be set up on a server in a private network.
 Various workloads (token consumers) in the same network will send authenticated
 requests to that broker for downscoped tokens to access or modify specific google
-cloud storage buckets.  See the NewTokenSource example for an example of how a
+cloud storage buckets. See the NewTokenSource example for an example of how a
 token broker would use this package.
 
 The broker will use the functionality in this package to generate a downscoped
 token with the requested configuration, and then pass it back to the token
-consumer.  These downscoped access tokens can then be used to access Google
-Storage resources.  For instance, you can create a NewClient from the
+consumer. These downscoped access tokens can then be used to access Google
+Storage resources. For instance, you can create a NewClient from the
 "cloud.google.com/go/storage" package and pass in option.WithTokenSource(yourTokenSource))
 */
 package downscope
@@ -81,7 +81,7 @@ type AccessBoundaryRule struct {
 	// An Condition restricts the availability of permissions
 	// to specific Cloud Storage objects. Optional.
 	//
-	// A Condition can be used  to make permissions available for specific objects,
+	// A Condition can be used to make permissions available for specific objects,
 	// rather than all objects in a Cloud Storage bucket.
 	Condition *AvailabilityCondition `json:"availabilityCondition,omitempty"`
 }
@@ -183,9 +183,9 @@ func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
 	if resp.StatusCode != http.StatusOK {
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("downscope: unable to exchange token; %v.  Failed to read response body: %v", resp.StatusCode, err)
+			return nil, fmt.Errorf("downscope: unable to exchange token; %v. Failed to read response body: %v", resp.StatusCode, err)
 		}
-		return nil, fmt.Errorf("downscope: unable to exchange token; %v.  Server responsed: %v", resp.StatusCode, string(b))
+		return nil, fmt.Errorf("downscope: unable to exchange token; %v. Server responsed: %v", resp.StatusCode, string(b))
 	}
 
 	var tresp downscopedTokenResponse
