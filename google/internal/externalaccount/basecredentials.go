@@ -58,16 +58,18 @@ type Config struct {
 
 var (
 	validTokenURLPatterns = []*regexp.Regexp{
-		regexp.MustCompile("https://[^\\.]+\\.sts\\.googleapis\\.com"),
-		regexp.MustCompile("https://sts\\.googleapis\\.com"),
-		regexp.MustCompile("https://sts\\.[^\\.]+\\.googleapis\\.com"),
-		regexp.MustCompile("https://[^\\.]+-sts\\.googleapis\\.com"),
+		// The complicated part in the middle matches any number of characters that
+		// aren't period, spaces, or slashes.
+		regexp.MustCompile("^https://[^\\.\\s\\/\\\\]+\\.sts\\.googleapis\\.com"),
+		regexp.MustCompile("^https://sts\\.googleapis\\.com"),
+		regexp.MustCompile("^https://sts\\.[^\\.\\s\\/\\\\]+\\.googleapis\\.com"),
+		regexp.MustCompile("^https://[^\\.\\s\\/\\\\]+-sts\\.googleapis\\.com"),
 	}
 	validImpersonateURLPatterns = []*regexp.Regexp{
-		regexp.MustCompile("https://[^\\.]+\\.iamcredentials\\.googleapis\\.com"),
-		regexp.MustCompile("https://iamcredentials\\.googleapis\\.com"),
-		regexp.MustCompile("https://iamcredentials\\.[^\\.]+\\.googleapis\\.com"),
-		regexp.MustCompile("https://[^\\.]+-iamcredentials\\.googleapis\\.com"),
+		regexp.MustCompile("^https://[^\\.\\s\\/\\\\]+\\.iamcredentials\\.googleapis\\.com"),
+		regexp.MustCompile("^https://iamcredentials\\.googleapis\\.com"),
+		regexp.MustCompile("^https://iamcredentials\\.[^\\.\\s\\/\\\\]+\\.googleapis\\.com"),
+		regexp.MustCompile("^https://[^\\.\\s\\/\\\\]+-iamcredentials\\.googleapis\\.com"),
 	}
 )
 
