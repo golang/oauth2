@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"time"
@@ -60,22 +61,29 @@ var (
 	validTokenURLPatterns = []*regexp.Regexp{
 		// The complicated part in the middle matches any number of characters that
 		// aren't period, spaces, or slashes.
-		regexp.MustCompile("^https://[^\\.\\s\\/\\\\]+\\.sts\\.googleapis\\.com"),
-		regexp.MustCompile("^https://sts\\.googleapis\\.com"),
-		regexp.MustCompile("^https://sts\\.[^\\.\\s\\/\\\\]+\\.googleapis\\.com"),
-		regexp.MustCompile("^https://[^\\.\\s\\/\\\\]+-sts\\.googleapis\\.com"),
+		regexp.MustCompile("^https://[^\\.\\s\\/\\\\]+\\.sts\\.googleapis\\.com$"),
+		regexp.MustCompile("^https://sts\\.googleapis\\.com$"),
+		regexp.MustCompile("^https://sts\\.[^\\.\\s\\/\\\\]+\\.googleapis\\.com$"),
+		regexp.MustCompile("^https://[^\\.\\s\\/\\\\]+-sts\\.googleapis\\.com$"),
 	}
 	validImpersonateURLPatterns = []*regexp.Regexp{
-		regexp.MustCompile("^https://[^\\.\\s\\/\\\\]+\\.iamcredentials\\.googleapis\\.com"),
-		regexp.MustCompile("^https://iamcredentials\\.googleapis\\.com"),
-		regexp.MustCompile("^https://iamcredentials\\.[^\\.\\s\\/\\\\]+\\.googleapis\\.com"),
-		regexp.MustCompile("^https://[^\\.\\s\\/\\\\]+-iamcredentials\\.googleapis\\.com"),
+		regexp.MustCompile("^https://[^\\.\\s\\/\\\\]+\\.iamcredentials\\.googleapis\\.com$"),
+		regexp.MustCompile("^https://iamcredentials\\.googleapis\\.com$"),
+		regexp.MustCompile("^https://iamcredentials\\.[^\\.\\s\\/\\\\]+\\.googleapis\\.com$"),
+		regexp.MustCompile("^https://[^\\.\\s\\/\\\\]+-iamcredentials\\.googleapis\\.com$"),
 	}
 )
 
 func validateURL(input string, patterns []*regexp.Regexp) bool {
+	parsed, err := url.Parse(input)
+	if err != nil {
+		return false
+	}
+	path := parsed.Path
+	toTest := input[0 : len(input)-len(path)]
+
 	for _, pattern := range patterns {
-		valid := pattern.MatchString(input)
+		valid := pattern.MatchString(toTest)
 		if valid {
 			return true
 		}

@@ -107,12 +107,14 @@ func TestValidateURLTokenURL(t *testing.T) {
 		{"https://sts.googleapis.com", validTokenURLPatterns, true},
 		{"https://sts.asfeasfesef.googleapis.com", validTokenURLPatterns, true},
 		{"https://us-east-1-sts.googleapis.com", validTokenURLPatterns, true},
-		{"https://.sts.google.com", validTokenURLPatterns, false},
+		{"https://sts.googleapis.com/your/path/here", validTokenURLPatterns, true},
+		{"https://.sts.googleapis.com", validTokenURLPatterns, false},
 		{"https://badsts.googleapis.com", validTokenURLPatterns, false},
 		{"https://sts.asfe.asfesef.googleapis.com", validTokenURLPatterns, false},
 		{"https://sts..googleapis.com", validTokenURLPatterns, false},
 		{"https://-sts.googleapis.com", validTokenURLPatterns, false},
 		{"https://us-ea.st-1-sts.googleapis.com", validTokenURLPatterns, false},
+		{"https://sts.googleapis.com.evil.com/whatever/path", validTokenURLPatterns, false},
 	}
 	for _, tt := range urlValidityTests {
 		t.Run(" "+tt.input, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
@@ -124,7 +126,7 @@ func TestValidateURLTokenURL(t *testing.T) {
 	}
 }
 
-func TestValidateURLImpersonateURL (t *testing.T) {
+func TestValidateURLImpersonateURL(t *testing.T) {
 	var urlValidityTests = []struct {
 		input   string
 		pattern []*regexp.Regexp
@@ -134,12 +136,14 @@ func TestValidateURLImpersonateURL (t *testing.T) {
 		{"https://iamcredentials.googleapis.com", validImpersonateURLPatterns, true},
 		{"https://iamcredentials.asfeasfesef.googleapis.com", validImpersonateURLPatterns, true},
 		{"https://us-east-1-iamcredentials.googleapis.com", validImpersonateURLPatterns, true},
+		{"https://iamcredentials.googleapis.com/your/path/here", validImpersonateURLPatterns, true},
 		{"https://.iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
 		{"https://badiamcredentials.googleapis.com", validImpersonateURLPatterns, false},
 		{"https://iamcredentials.asfe.asfesef.googleapis.com", validImpersonateURLPatterns, false},
 		{"https://iamcredentials..googleapis.com", validImpersonateURLPatterns, false},
 		{"https://-iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
 		{"https://us-ea.st-1-iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
+		{"https://iamcredentials.googleapis.com.evil.com/whatever/path", validImpersonateURLPatterns, false},
 	}
 	for _, tt := range urlValidityTests {
 		t.Run(" "+tt.input, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
