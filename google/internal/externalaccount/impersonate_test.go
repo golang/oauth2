@@ -6,7 +6,6 @@ package externalaccount
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -81,7 +80,6 @@ func TestImpersonation(t *testing.T) {
 	allURLs := regexp.MustCompile(".+")
 	ourTS, err := testImpersonateConfig.tokenSource(context.Background(), []*regexp.Regexp{allURLs}, []*regexp.Regexp{allURLs}, "http")
 	if err != nil {
-		fmt.Println(testImpersonateConfig.TokenURL)
 		t.Fatalf("Failed to create TokenSource: %v", err)
 	}
 

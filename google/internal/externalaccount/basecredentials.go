@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -61,10 +62,10 @@ var (
 	validTokenURLPatterns = []*regexp.Regexp{
 		// The complicated part in the middle matches any number of characters that
 		// aren't period, spaces, or slashes.
-		regexp.MustCompile("^[^\\.\\s\\/\\\\]+\\.sts\\.googleapis\\.com$"),
-		regexp.MustCompile("^sts\\.googleapis\\.com$"),
-		regexp.MustCompile("^sts\\.[^\\.\\s\\/\\\\]+\\.googleapis\\.com$"),
-		regexp.MustCompile("^[^\\.\\s\\/\\\\]+-sts\\.googleapis\\.com$"),
+		regexp.MustCompile("(?i)^[^\\.\\s\\/\\\\]+\\.sts\\.googleapis\\.com$"),
+		regexp.MustCompile("(?i)^sts\\.googleapis\\.com$"),
+		regexp.MustCompile("(?i)^sts\\.[^\\.\\s\\/\\\\]+\\.googleapis\\.com$"),
+		regexp.MustCompile("(?i)^[^\\.\\s\\/\\\\]+-sts\\.googleapis\\.com$"),
 	}
 	validImpersonateURLPatterns = []*regexp.Regexp{
 		regexp.MustCompile("^[^\\.\\s\\/\\\\]+\\.iamcredentials\\.googleapis\\.com$"),
@@ -75,16 +76,14 @@ var (
 )
 
 func validateURL(input string, patterns []*regexp.Regexp, scheme string) bool {
-	fmt.Println(input)
 	parsed, err := url.Parse(input)
 	if err != nil {
 		return false
 	}
-	if parsed.Scheme != scheme {
+	if strings.ToLower(parsed.Scheme) != strings.ToLower(scheme) {
 		return false
 	}
 	toTest := parsed.Host
-	fmt.Println(toTest)
 
 	for _, pattern := range patterns {
 		valid := pattern.MatchString(toTest)

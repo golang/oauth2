@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 )
@@ -99,9 +100,9 @@ func TestToken(t *testing.T) {
 
 func TestValidateURLTokenURL(t *testing.T) {
 	var urlValidityTests = []struct {
-		input   string
-		pattern []*regexp.Regexp
-		result  bool
+		tokURL        string
+		pattern       []*regexp.Regexp
+		expectSuccess bool
 	}{
 		{"https://east.sts.googleapis.com", validTokenURLPatterns, true},
 		{"https://sts.googleapis.com", validTokenURLPatterns, true},
@@ -115,12 +116,60 @@ func TestValidateURLTokenURL(t *testing.T) {
 		{"https://-sts.googleapis.com", validTokenURLPatterns, false},
 		{"https://us-ea.st-1-sts.googleapis.com", validTokenURLPatterns, false},
 		{"https://sts.googleapis.com.evil.com/whatever/path", validTokenURLPatterns, false},
+		{"https://us-eas\\t-1.sts.googleapis.com", validTokenURLPatterns, false},
+		{"https:/us-ea/st-1.sts.googleapis.com", validTokenURLPatterns, false},
+		{"https:/us-east 1.sts.googleapis.com", validTokenURLPatterns, false},
+		{"https://", validTokenURLPatterns, false},
+		{"http://us-east-1.sts.googleapis.com", validTokenURLPatterns, false},
+		{"https://us-east-1.sts.googleapis.comevil.com", validTokenURLPatterns, false},
+	}
+	//for _, tt := range urlValidityTests {
+	//	t.Run(" "+tt.input, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
+	//		valid := validateURL(tt.input, tt.pattern, "https")
+	//		if valid != tt.result {
+	//			t.Errorf("got %v, want %v", valid, tt.result)
+	//		}
+	//	})
+	//}
+	//for _, el := range urlValidityTests {
+	//	el.input = strings.ToUpper(el.input)
+	//}
+	//for _, tt := range urlValidityTests {
+	//	t.Run(" "+tt.input, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
+	//		valid := validateURL(tt.input, tt.pattern, "https")
+	//		if valid != tt.result {
+	//			t.Errorf("got %v, want %v", valid, tt.result)
+	//		}
+	//	})
+	//}
+
+	ctx := context.Background()
+	for _, tt := range urlValidityTests {
+		t.Run(" "+tt.tokURL, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
+			config := testConfig
+			config.TokenURL = tt.tokURL
+			_, err := config.TokenSource(ctx)
+
+			if tt.expectSuccess && err != nil {
+				t.Errorf("got %v but want nil", err)
+			} else if !tt.expectSuccess && err == nil {
+				t.Errorf("got nil but expected an error")
+			}
+		})
+	}
+	for _, el := range urlValidityTests {
+		el.tokURL = strings.ToUpper(el.tokURL)
 	}
 	for _, tt := range urlValidityTests {
-		t.Run(" "+tt.input, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
-			valid := validateURL(tt.input, tt.pattern, "https")
-			if valid != tt.result {
-				t.Errorf("got %v, want %v", valid, tt.result)
+		t.Run(" "+tt.tokURL, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
+			config := testConfig
+			config.TokenURL = tt.tokURL
+			_, err := config.TokenSource(ctx)
+
+			if tt.expectSuccess && err != nil {
+				t.Errorf("got %v but want nil", err)
+			} else if !tt.expectSuccess && err == nil {
+				t.Errorf("got nil but expected an error")
 			}
 		})
 	}
@@ -128,9 +177,9 @@ func TestValidateURLTokenURL(t *testing.T) {
 
 func TestValidateURLImpersonateURL(t *testing.T) {
 	var urlValidityTests = []struct {
-		input   string
-		pattern []*regexp.Regexp
-		result  bool
+		impURL        string
+		pattern       []*regexp.Regexp
+		expectSuccess bool
 	}{
 		{"https://east.iamcredentials.googleapis.com", validImpersonateURLPatterns, true},
 		{"https://iamcredentials.googleapis.com", validImpersonateURLPatterns, true},
@@ -144,12 +193,42 @@ func TestValidateURLImpersonateURL(t *testing.T) {
 		{"https://-iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
 		{"https://us-ea.st-1-iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
 		{"https://iamcredentials.googleapis.com.evil.com/whatever/path", validImpersonateURLPatterns, false},
+		{"https://us-eas\\t-1.iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
+		{"https:/us-ea/st-1.iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
+		{"https:/us-east 1.iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
+		{"https://", validImpersonateURLPatterns, false},
+		{"http://us-east-1.iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
+		{"https://us-east-1.iamcredentials.googleapis.comevil.com", validImpersonateURLPatterns, false},
+	}
+	ctx := context.Background()
+	for _, tt := range urlValidityTests {
+		t.Run(" "+tt.impURL, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
+			config := testConfig
+			config.TokenURL = "https://sts.googleapis.com" // Setting the most basic acceptable tokenURL
+			config.ServiceAccountImpersonationURL = tt.impURL
+			_, err := config.TokenSource(ctx)
+
+			if tt.expectSuccess && err != nil {
+				t.Errorf("got %v but want nil", err)
+			} else if !tt.expectSuccess && err == nil {
+				t.Errorf("got nil but expected an error")
+			}
+		})
+	}
+	for _, el := range urlValidityTests {
+		el.impURL = strings.ToUpper(el.impURL)
 	}
 	for _, tt := range urlValidityTests {
-		t.Run(" "+tt.input, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
-			valid := validateURL(tt.input, tt.pattern, "https")
-			if valid != tt.result {
-				t.Errorf("got %v, want %v", valid, tt.result)
+		t.Run(" "+tt.impURL, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
+			config := testConfig
+			config.TokenURL = "https://sts.googleapis.com" // Setting the most basic acceptable tokenURL
+			config.ServiceAccountImpersonationURL = tt.impURL
+			_, err := config.TokenSource(ctx)
+
+			if tt.expectSuccess && err != nil {
+				t.Errorf("got %v but want nil", err)
+			} else if !tt.expectSuccess && err == nil {
+				t.Errorf("got nil but expected an error")
 			}
 		})
 	}
