@@ -118,7 +118,7 @@ func TestValidateURLTokenURL(t *testing.T) {
 	}
 	for _, tt := range urlValidityTests {
 		t.Run(" "+tt.input, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
-			valid := validateURL(tt.input, tt.pattern)
+			valid := validateURL(tt.input, tt.pattern, "https")
 			if valid != tt.result {
 				t.Errorf("got %v, want %v", valid, tt.result)
 			}
@@ -147,7 +147,7 @@ func TestValidateURLImpersonateURL(t *testing.T) {
 	}
 	for _, tt := range urlValidityTests {
 		t.Run(" "+tt.input, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
-			valid := validateURL(tt.input, tt.pattern)
+			valid := validateURL(tt.input, tt.pattern, "https")
 			if valid != tt.result {
 				t.Errorf("got %v, want %v", valid, tt.result)
 			}
