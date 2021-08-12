@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -101,27 +100,26 @@ func TestToken(t *testing.T) {
 func TestValidateURLTokenURL(t *testing.T) {
 	var urlValidityTests = []struct {
 		tokURL        string
-		pattern       []*regexp.Regexp
 		expectSuccess bool
 	}{
-		{"https://east.sts.googleapis.com", validTokenURLPatterns, true},
-		{"https://sts.googleapis.com", validTokenURLPatterns, true},
-		{"https://sts.asfeasfesef.googleapis.com", validTokenURLPatterns, true},
-		{"https://us-east-1-sts.googleapis.com", validTokenURLPatterns, true},
-		{"https://sts.googleapis.com/your/path/here", validTokenURLPatterns, true},
-		{"https://.sts.googleapis.com", validTokenURLPatterns, false},
-		{"https://badsts.googleapis.com", validTokenURLPatterns, false},
-		{"https://sts.asfe.asfesef.googleapis.com", validTokenURLPatterns, false},
-		{"https://sts..googleapis.com", validTokenURLPatterns, false},
-		{"https://-sts.googleapis.com", validTokenURLPatterns, false},
-		{"https://us-ea.st-1-sts.googleapis.com", validTokenURLPatterns, false},
-		{"https://sts.googleapis.com.evil.com/whatever/path", validTokenURLPatterns, false},
-		{"https://us-eas\\t-1.sts.googleapis.com", validTokenURLPatterns, false},
-		{"https:/us-ea/st-1.sts.googleapis.com", validTokenURLPatterns, false},
-		{"https:/us-east 1.sts.googleapis.com", validTokenURLPatterns, false},
-		{"https://", validTokenURLPatterns, false},
-		{"http://us-east-1.sts.googleapis.com", validTokenURLPatterns, false},
-		{"https://us-east-1.sts.googleapis.comevil.com", validTokenURLPatterns, false},
+		{"https://east.sts.googleapis.com", true},
+		{"https://sts.googleapis.com", true},
+		{"https://sts.asfeasfesef.googleapis.com", true},
+		{"https://us-east-1-sts.googleapis.com", true},
+		{"https://sts.googleapis.com/your/path/here", true},
+		{"https://.sts.googleapis.com", false},
+		{"https://badsts.googleapis.com", false},
+		{"https://sts.asfe.asfesef.googleapis.com", false},
+		{"https://sts..googleapis.com", false},
+		{"https://-sts.googleapis.com", false},
+		{"https://us-ea.st-1-sts.googleapis.com", false},
+		{"https://sts.googleapis.com.evil.com/whatever/path", false},
+		{"https://us-eas\\t-1.sts.googleapis.com", false},
+		{"https:/us-ea/st-1.sts.googleapis.com", false},
+		{"https:/us-east 1.sts.googleapis.com", false},
+		{"https://", false},
+		{"http://us-east-1.sts.googleapis.com", false},
+		{"https://us-east-1.sts.googleapis.comevil.com", false},
 	}
 	ctx := context.Background()
 	for _, tt := range urlValidityTests {
@@ -158,27 +156,26 @@ func TestValidateURLTokenURL(t *testing.T) {
 func TestValidateURLImpersonateURL(t *testing.T) {
 	var urlValidityTests = []struct {
 		impURL        string
-		pattern       []*regexp.Regexp
 		expectSuccess bool
 	}{
-		{"https://east.iamcredentials.googleapis.com", validImpersonateURLPatterns, true},
-		{"https://iamcredentials.googleapis.com", validImpersonateURLPatterns, true},
-		{"https://iamcredentials.asfeasfesef.googleapis.com", validImpersonateURLPatterns, true},
-		{"https://us-east-1-iamcredentials.googleapis.com", validImpersonateURLPatterns, true},
-		{"https://iamcredentials.googleapis.com/your/path/here", validImpersonateURLPatterns, true},
-		{"https://.iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
-		{"https://badiamcredentials.googleapis.com", validImpersonateURLPatterns, false},
-		{"https://iamcredentials.asfe.asfesef.googleapis.com", validImpersonateURLPatterns, false},
-		{"https://iamcredentials..googleapis.com", validImpersonateURLPatterns, false},
-		{"https://-iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
-		{"https://us-ea.st-1-iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
-		{"https://iamcredentials.googleapis.com.evil.com/whatever/path", validImpersonateURLPatterns, false},
-		{"https://us-eas\\t-1.iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
-		{"https:/us-ea/st-1.iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
-		{"https:/us-east 1.iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
-		{"https://", validImpersonateURLPatterns, false},
-		{"http://us-east-1.iamcredentials.googleapis.com", validImpersonateURLPatterns, false},
-		{"https://us-east-1.iamcredentials.googleapis.comevil.com", validImpersonateURLPatterns, false},
+		{"https://east.iamcredentials.googleapis.com", true},
+		{"https://iamcredentials.googleapis.com", true},
+		{"https://iamcredentials.asfeasfesef.googleapis.com", true},
+		{"https://us-east-1-iamcredentials.googleapis.com", true},
+		{"https://iamcredentials.googleapis.com/your/path/here", true},
+		{"https://.iamcredentials.googleapis.com", false},
+		{"https://badiamcredentials.googleapis.com", false},
+		{"https://iamcredentials.asfe.asfesef.googleapis.com", false},
+		{"https://iamcredentials..googleapis.com", false},
+		{"https://-iamcredentials.googleapis.com", false},
+		{"https://us-ea.st-1-iamcredentials.googleapis.com", false},
+		{"https://iamcredentials.googleapis.com.evil.com/whatever/path", false},
+		{"https://us-eas\\t-1.iamcredentials.googleapis.com", false},
+		{"https:/us-ea/st-1.iamcredentials.googleapis.com", false},
+		{"https:/us-east 1.iamcredentials.googleapis.com", false},
+		{"https://", false},
+		{"http://us-east-1.iamcredentials.googleapis.com", false},
+		{"https://us-east-1.iamcredentials.googleapis.comevil.com", false},
 	}
 	ctx := context.Background()
 	for _, tt := range urlValidityTests {
