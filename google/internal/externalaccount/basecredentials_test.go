@@ -123,26 +123,6 @@ func TestValidateURLTokenURL(t *testing.T) {
 		{"http://us-east-1.sts.googleapis.com", validTokenURLPatterns, false},
 		{"https://us-east-1.sts.googleapis.comevil.com", validTokenURLPatterns, false},
 	}
-	//for _, tt := range urlValidityTests {
-	//	t.Run(" "+tt.input, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
-	//		valid := validateURL(tt.input, tt.pattern, "https")
-	//		if valid != tt.result {
-	//			t.Errorf("got %v, want %v", valid, tt.result)
-	//		}
-	//	})
-	//}
-	//for _, el := range urlValidityTests {
-	//	el.input = strings.ToUpper(el.input)
-	//}
-	//for _, tt := range urlValidityTests {
-	//	t.Run(" "+tt.input, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
-	//		valid := validateURL(tt.input, tt.pattern, "https")
-	//		if valid != tt.result {
-	//			t.Errorf("got %v, want %v", valid, tt.result)
-	//		}
-	//	})
-	//}
-
 	ctx := context.Background()
 	for _, tt := range urlValidityTests {
 		t.Run(" "+tt.tokURL, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
