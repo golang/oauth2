@@ -28,8 +28,7 @@ func setTime(testTime time.Time) func() time.Time {
 
 func setEnvironment(env map[string]string) func(string) string {
 	return func(key string) string {
-		value, _ := env[key]
-		return value
+		return env[key]
 	}
 }
 
@@ -650,7 +649,7 @@ func TestAwsCredential_BasicRequestWithDefaultEnv(t *testing.T) {
 	getenv = setEnvironment(map[string]string{
 		"AWS_ACCESS_KEY_ID":     "AKIDEXAMPLE",
 		"AWS_SECRET_ACCESS_KEY": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
-		"AWS_DEFAULT_REGION":            "us-west-1",
+		"AWS_DEFAULT_REGION":    "us-west-1",
 	})
 
 	base, err := tfc.parse(context.Background())
@@ -688,7 +687,7 @@ func TestAwsCredential_BasicRequestWithTwoRegions(t *testing.T) {
 		"AWS_ACCESS_KEY_ID":     "AKIDEXAMPLE",
 		"AWS_SECRET_ACCESS_KEY": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
 		"AWS_REGION":            "us-west-1",
-		"AWS_DEFAULT_REGION":            "us-east-1",
+		"AWS_DEFAULT_REGION":    "us-east-1",
 	})
 
 	base, err := tfc.parse(context.Background())

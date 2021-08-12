@@ -7,12 +7,13 @@ package externalaccount
 import (
 	"context"
 	"encoding/json"
-	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	"golang.org/x/oauth2"
 )
 
 var auth = clientAuthentication{
@@ -127,6 +128,9 @@ func TestExchangeToken_Opts(t *testing.T) {
 		}
 		var opts map[string]interface{}
 		err = json.Unmarshal([]byte(strOpts[0]), &opts)
+		if err != nil {
+			t.Fatalf("Couldn't parse received \"options\" field.")
+		}
 		if len(opts) < 2 {
 			t.Errorf("Too few options received.")
 		}
