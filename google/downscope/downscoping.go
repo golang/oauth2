@@ -178,14 +178,10 @@ func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
 	defer resp.Body.Close()
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("downscope: unable to read reaponse body: %v", err)
+		return nil, fmt.Errorf("downscope: unable to read response body: %v", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		b, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, fmt.Errorf("downscope: unable to exchange token; %v. Failed to read response body: %v", resp.StatusCode, err)
-		}
-		return nil, fmt.Errorf("downscope: unable to exchange token; %v. Server responsed: %v", resp.StatusCode, string(b))
+		return nil, fmt.Errorf("downscope: unable to exchange token; %v. Server responded: %s", resp.StatusCode, respBody)
 	}
 
 	var tresp downscopedTokenResponse
