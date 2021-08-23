@@ -29,30 +29,30 @@ type impersonateTokenResponse struct {
 	ExpireTime  string `json:"expireTime"`
 }
 
-type impersonateTokenSource struct {
-	ctx context.Context
-	ts  oauth2.TokenSource
+type ImpersonateTokenSource struct {
+	Ctx context.Context
+	Ts  oauth2.TokenSource
 
-	url    string
-	scopes []string
+	Url    string
+	Scopes []string
 }
 
 // Token performs the exchange to get a temporary service account token to allow access to GCP.
-func (its impersonateTokenSource) Token() (*oauth2.Token, error) {
+func (its ImpersonateTokenSource) Token() (*oauth2.Token, error) {
 	reqBody := generateAccessTokenReq{
 		Lifetime: "3600s",
-		Scope:    its.scopes,
+		Scope:    its.Scopes,
 	}
 	b, err := json.Marshal(reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("oauth2/google: unable to marshal request: %v", err)
 	}
-	client := oauth2.NewClient(its.ctx, its.ts)
-	req, err := http.NewRequest("POST", its.url, bytes.NewReader(b))
+	client := oauth2.NewClient(its.Ctx, its.Ts)
+	req, err := http.NewRequest("POST", its.Url, bytes.NewReader(b))
 	if err != nil {
 		return nil, fmt.Errorf("oauth2/google: unable to create impersonation request: %v", err)
 	}
-	req = req.WithContext(its.ctx)
+	req = req.WithContext(its.Ctx)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
