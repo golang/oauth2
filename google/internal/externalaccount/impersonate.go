@@ -29,11 +29,17 @@ type impersonateTokenResponse struct {
 	ExpireTime  string `json:"expireTime"`
 }
 
+// ImpersonateTokenSource uses a source credential, stored in Ts, to request an access token to the provided Url
+// Scopes can be defined when the access token is requested.
 type ImpersonateTokenSource struct {
+	// execution context
 	Ctx context.Context
-	Ts  oauth2.TokenSource
+	// source credential
+	Ts oauth2.TokenSource
 
-	Url    string
+	// impersonation url to request an access token
+	Url string
+	// scopes to include in the access token request
 	Scopes []string
 }
 
