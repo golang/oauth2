@@ -92,9 +92,10 @@ func JWTConfigFromJSON(jsonKey []byte, scope ...string) (*jwt.Config, error) {
 
 // JSON key file types.
 const (
-	serviceAccountKey  = "service_account"
-	userCredentialsKey = "authorized_user"
-	externalAccountKey = "external_account"
+	serviceAccountKey          = "service_account"
+	userCredentialsKey         = "authorized_user"
+	externalAccountKey         = "external_account"
+	impersonatedServiceAccount = "impersonated_service_account"
 )
 
 // credentialsFile is the unmarshalled representation of a credentials file.
@@ -124,6 +125,9 @@ type credentialsFile struct {
 	CredentialSource               externalaccount.CredentialSource `json:"credential_source"`
 	QuotaProjectID                 string                           `json:"quota_project_id"`
 	WorkforcePoolUserProject       string                           `json:"workforce_pool_user_project"`
+
+	// Service account impersonation
+	SourceCredentials *credentialsFile `json:"source_credentials"`
 }
 
 func (f *credentialsFile) jwtConfig(scopes []string, subject string) *jwt.Config {
@@ -180,6 +184,23 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 			WorkforcePoolUserProject:       f.WorkforcePoolUserProject,
 		}
 		return cfg.TokenSource(ctx)
+	case impersonatedServiceAccount:
+		if f.SourceCredentials == nil {
+			return nil, errors.New("missing 'source_credentials' field in credentials")
+		}
+
+		sourceToken, err := f.SourceCredentials.tokenSource(ctx, params)
+		if err != nil {
+			return nil, err
+		}
+		imp := externalaccount.ImpersonateTokenSource{
+			Ctx:    ctx,
+			Url:    f.ServiceAccountImpersonationURL,
+			Scopes: params.Scopes,
+			Ts:     oauth2.ReuseTokenSource(nil, sourceToken),
+			// Delegates?? -> I don't know how to manage and how to use them here
+		}
+		return oauth2.ReuseTokenSource(nil, imp), nil
 	case "":
 		return nil, errors.New("missing 'type' field in credentials")
 	default:
