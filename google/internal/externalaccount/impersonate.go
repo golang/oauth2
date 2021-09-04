@@ -41,13 +41,16 @@ type ImpersonateTokenSource struct {
 	Url string
 	// scopes to include in the access token request
 	Scopes []string
+	// Delegates for impersonation to include in the access token request
+	Delegates []string
 }
 
 // Token performs the exchange to get a temporary service account token to allow access to GCP.
 func (its ImpersonateTokenSource) Token() (*oauth2.Token, error) {
 	reqBody := generateAccessTokenReq{
-		Lifetime: "3600s",
-		Scope:    its.Scopes,
+		Lifetime:  "3600s",
+		Scope:     its.Scopes,
+		Delegates: its.Delegates,
 	}
 	b, err := json.Marshal(reqBody)
 	if err != nil {
