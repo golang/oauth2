@@ -122,6 +122,7 @@ type credentialsFile struct {
 	TokenURLExternal               string                           `json:"token_url"`
 	TokenInfoURL                   string                           `json:"token_info_url"`
 	ServiceAccountImpersonationURL string                           `json:"service_account_impersonation_url"`
+	Delegates                      []string                         `json:"delegates"`
 	CredentialSource               externalaccount.CredentialSource `json:"credential_source"`
 	QuotaProjectID                 string                           `json:"quota_project_id"`
 	WorkforcePoolUserProject       string                           `json:"workforce_pool_user_project"`
@@ -194,11 +195,11 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 			return nil, err
 		}
 		imp := externalaccount.ImpersonateTokenSource{
-			Ctx:    ctx,
-			Url:    f.ServiceAccountImpersonationURL,
-			Scopes: params.Scopes,
-			Ts:     oauth2.ReuseTokenSource(nil, sourceToken),
-			// Delegates?? -> I don't know how to manage and how to use them here
+			Ctx:       ctx,
+			Url:       f.ServiceAccountImpersonationURL,
+			Scopes:    params.Scopes,
+			Ts:        oauth2.ReuseTokenSource(nil, sourceToken),
+			Delegates: f.Delegates,
 		}
 		return oauth2.ReuseTokenSource(nil, imp), nil
 	case "":
