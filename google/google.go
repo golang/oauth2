@@ -188,15 +188,15 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 			return nil, errors.New("missing 'source_credentials' field in credentials")
 		}
 
-		sourceToken, err := f.SourceCredentials.tokenSource(ctx, params)
+		ts, err := f.SourceCredentials.tokenSource(ctx, params)
 		if err != nil {
 			return nil, err
 		}
 		imp := externalaccount.ImpersonateTokenSource{
 			Ctx:       ctx,
-			Url:       f.ServiceAccountImpersonationURL,
+			URL:       f.ServiceAccountImpersonationURL,
 			Scopes:    params.Scopes,
-			Ts:        oauth2.ReuseTokenSource(nil, sourceToken),
+			Ts:        oauth2.ReuseTokenSource(nil, ts),
 			Delegates: f.Delegates,
 		}
 		return oauth2.ReuseTokenSource(nil, imp), nil

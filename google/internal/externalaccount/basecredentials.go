@@ -126,7 +126,7 @@ func (c *Config) tokenSource(ctx context.Context, tokenURLValidPats []*regexp.Re
 	ts.conf.Scopes = []string{"https://www.googleapis.com/auth/cloud-platform"}
 	imp := ImpersonateTokenSource{
 		Ctx:    ctx,
-		Url:    c.ServiceAccountImpersonationURL,
+		URL:    c.ServiceAccountImpersonationURL,
 		Scopes: scopes,
 		Ts:     oauth2.ReuseTokenSource(nil, ts),
 	}
