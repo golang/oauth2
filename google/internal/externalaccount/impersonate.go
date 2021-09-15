@@ -29,19 +29,24 @@ type impersonateTokenResponse struct {
 	ExpireTime  string `json:"expireTime"`
 }
 
-// ImpersonateTokenSource uses a source credential, stored in Ts, to request an access token to the provided Url
+// ImpersonateTokenSource uses a source credential, stored in Ts, to request an access token to the provided URL.
 // Scopes can be defined when the access token is requested.
 type ImpersonateTokenSource struct {
-	// execution context
+	// Ctx is the execution context of the impersonation process
+	// used to perform http call to the URL. Required
 	Ctx context.Context
-	// source credential
+	// Ts is the source credential used to generate a token on the
+	// impersonated service account. Required.
 	Ts oauth2.TokenSource
 
-	// impersonation url to request an access token
-	Url string
-	// scopes to include in the access token request
+	// URL is the endpoint to call to generate a token
+	// on behalf the service account. Required.
+	URL string
+	// Scopes that the impersonated credential should have. Required.
 	Scopes []string
-	// Delegates for impersonation to include in the access token request
+	// Delegates are the service account email addresses in a delegation chain.
+	// Each service account must be granted roles/iam.serviceAccountTokenCreator
+	// on the next service account in the chain. Optional.
 	Delegates []string
 }
 
@@ -57,7 +62,7 @@ func (its ImpersonateTokenSource) Token() (*oauth2.Token, error) {
 		return nil, fmt.Errorf("oauth2/google: unable to marshal request: %v", err)
 	}
 	client := oauth2.NewClient(its.Ctx, its.Ts)
-	req, err := http.NewRequest("POST", its.Url, bytes.NewReader(b))
+	req, err := http.NewRequest("POST", its.URL, bytes.NewReader(b))
 	if err != nil {
 		return nil, fmt.Errorf("oauth2/google: unable to create impersonation request: %v", err)
 	}
