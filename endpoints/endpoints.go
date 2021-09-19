@@ -185,6 +185,12 @@ var Twitch = oauth2.Endpoint{
 	TokenURL: "https://id.twitch.tv/oauth2/token",
 }
 
+// Twitter is the endpoint for Twitter.
+var Twitter = oauth2.Endpoint{
+	AuthURL:  "https://twitter.com/i/oauth2/authorize",
+	TokenURL: "https://api.twitter.com/2/oauth2/token",
+}
+
 // Uber is the endpoint for Uber.
 var Uber = oauth2.Endpoint{
 	AuthURL:  "https://login.uber.com/oauth/v2/authorize",
