@@ -11,6 +11,6 @@ import (
 
 // Endpoint is Facebook's OAuth 2.0 endpoint.
 var Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://www.facebook.com/v12.0/dialog/oauth",
-	TokenURL: "https://graph.facebook.com/v12.0/oauth/access_token",
+	AuthURL:  "https://www.facebook.com/dialog/oauth",
+	TokenURL: "https://graph.facebook.com/oauth/access_token",
 }
