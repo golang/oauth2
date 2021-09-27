@@ -186,8 +186,8 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 		}
 		return cfg.TokenSource(ctx)
 	case impersonatedServiceAccount:
-		if f.ServiceAccountImpersonationURL != "" && f.SourceCredentials == nil {
-			return nil, errors.New("missing 'source_credentials' field in credentials")
+		if f.ServiceAccountImpersonationURL != "" || f.SourceCredentials == nil {
+			return nil, errors.New("missing 'source_credentials' field or 'service_account_impersonation_url' in credentials")
 		}
 
 		ts, err := f.SourceCredentials.tokenSource(ctx, params)
