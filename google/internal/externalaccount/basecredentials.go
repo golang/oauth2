@@ -53,6 +53,11 @@ type Config struct {
 	QuotaProjectID string
 	// Scopes contains the desired scopes for the returned access token.
 	Scopes []string
+	// The optional workforce pool user project number when the credential
+	// corresponds to a workforce pool and not a workload identity pool.
+	// The underlying principal must still have serviceusage.services.use IAM
+	// permission to use the project for billing/quota.
+	WorkforcePoolUserProject string
 }
 
 // Each element consists of a list of patterns.  validateURLs checks for matches
@@ -224,7 +229,13 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 		ClientID:     conf.ClientID,
 		ClientSecret: conf.ClientSecret,
 	}
-	stsResp, err := exchangeToken(ts.ctx, conf.TokenURL, &stsRequest, clientAuth, header, nil)
+	var options map[string]string
+	if (ts.Config.WorkforcePoolUserProject != "") {
+		options = map[string]string{
+			"userProject": ts.Config.WorkforcePoolUserProject,
+		}
+	}
+	stsResp, err := exchangeToken(ts.ctx, conf.TokenURL, &stsRequest, clientAuth, header, options)
 	if err != nil {
 		return nil, err
 	}
