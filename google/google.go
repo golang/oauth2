@@ -123,7 +123,7 @@ type credentialsFile struct {
 	ServiceAccountImpersonationURL string                           `json:"service_account_impersonation_url"`
 	CredentialSource               externalaccount.CredentialSource `json:"credential_source"`
 	QuotaProjectID                 string                           `json:"quota_project_id"`
-	WorkforcePoolUserProject 			 string														`json:"workforce_pool_user_project"`
+	WorkforcePoolUserProject       string                           `json:"workforce_pool_user_project"`
 }
 
 func (f *credentialsFile) jwtConfig(scopes []string, subject string) *jwt.Config {
@@ -177,7 +177,7 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 			CredentialSource:               f.CredentialSource,
 			QuotaProjectID:                 f.QuotaProjectID,
 			Scopes:                         params.Scopes,
-			WorkforcePoolUserProject:				f.WorkforcePoolUserProject,
+			WorkforcePoolUserProject:       f.WorkforcePoolUserProject,
 		}
 		return cfg.TokenSource(ctx)
 	case "":

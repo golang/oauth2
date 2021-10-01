@@ -210,3 +210,41 @@ func TestValidateURLImpersonateURL(t *testing.T) {
 		})
 	}
 }
+
+func TestWorkforcePoolCreation(t *testing.T) {
+	var audienceValidatyTests = []struct {
+		audience      string
+		expectSuccess bool
+	}{
+		{"//iam.googleapis.com/locations/global/workforcePools/pool-id/providers/provider-id", true},
+		{"//iam.googleapis.com/locations/eu/workforcePools/pool-id/providers/provider-id", true},
+		{"//iam.googleapis.com/locations/eu/workforcePools/workloadIdentityPools/providers/provider-id", true},
+		{"identitynamespace:1f12345:my_provider", false},
+		{"//iam.googleapis.com/projects/123456/locations/global/workloadIdentityPools/pool-id/providers/provider-id", false},
+		{"//iam.googleapis.com/projects/123456/locations/eu/workloadIdentityPools/pool-id/providers/provider-id", false},
+		{"//iam.googleapis.com/projects/123456/locations/global/workloadIdentityPools/workforcePools/providers/provider-id", false},
+		{"//iamgoogleapis.com/locations/eu/workforcePools/pool-id/providers/provider-id", false},
+		{"//iam.googleapiscom/locations/eu/workforcePools/pool-id/providers/provider-id", false},
+		{"//iam.googleapis.com/locations/workforcePools/pool-id/providers/provider-id", false},
+		{"//iam.googleapis.com/locations/eu/workforcePool/pool-id/providers/provider-id", false},
+		{"//iam.googleapis.com/locations//workforcePool/pool-id/providers/provider-id", false},
+	}
+
+	ctx := context.Background()
+	for _, tt := range audienceValidatyTests {
+		t.Run(" "+tt.audience, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
+			config := testConfig
+			config.TokenURL = "https://sts.googleapis.com" // Setting the most basic acceptable tokenURL
+			config.ServiceAccountImpersonationURL = "https://iamcredentials.googleapis.com"
+			config.Audience = tt.audience
+			config.WorkforcePoolUserProject = "myProject"
+			_, err := config.TokenSource(ctx)
+
+			if tt.expectSuccess && err != nil {
+				t.Errorf("got %v but want nil", err)
+			} else if !tt.expectSuccess && err == nil {
+				t.Errorf("got nil but expected an error")
+			}
+		})
+	}
+}
