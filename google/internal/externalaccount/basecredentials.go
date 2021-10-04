@@ -127,7 +127,7 @@ func (c *Config) tokenSource(ctx context.Context, tokenURLValidPats []*regexp.Re
 	if c.WorkforcePoolUserProject != "" {
 		valid := validateWorkforceAudience(c.Audience)
 		if !valid {
-			return nil, fmt.Errorf("oauth2/google: invalid Workforce Pool Audience provided while constructing tokenSource")
+			return nil, fmt.Errorf("oauth2/google: workforce_pool_user_project should not be set for non-workforce pool credentials")
 		}
 	}
 
@@ -241,7 +241,9 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 		ClientSecret: conf.ClientSecret,
 	}
 	var options map[string]interface{}
-	if conf.WorkforcePoolUserProject != "" {
+	// Do not pass workforce_pool_user_project when client authentication is used.
+	// The client ID is sufficient for determining the user project.
+	if conf.WorkforcePoolUserProject != "" && conf.ClientID == "" {
 		options = map[string]interface{}{
 			"userProject": conf.WorkforcePoolUserProject,
 		}
