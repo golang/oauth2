@@ -37,10 +37,10 @@ var testConfig = Config{
 }
 
 var (
-	baseCredsRequestBody                          = "audience=32555940559.apps.googleusercontent.com&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&requested_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdevstorage.full_control&subject_token=street123&subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Ajwt"
+	baseCredsRequestBody                          = "audience=32555940559.apps.googleusercontent.com&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&requested_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdevstorage.full_control&subject_token=street123&subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aid_token"
 	baseCredsResponseBody                         = `{"access_token":"Sample.Access.Token","issued_token_type":"urn:ietf:params:oauth:token-type:access_token","token_type":"Bearer","expires_in":3600,"scope":"https://www.googleapis.com/auth/cloud-platform"}`
-	workforcePoolRequestBodyWithClientId          = "audience=%2F%2Fiam.googleapis.com%2Flocations%2Feu%2FworkforcePools%2Fpool-id%2Fproviders%2Fprovider-id&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&requested_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdevstorage.full_control&subject_token=street123&subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Ajwt"
-	workforcePoolRequestBodyWithoutClientId       = "audience=%2F%2Fiam.googleapis.com%2Flocations%2Feu%2FworkforcePools%2Fpool-id%2Fproviders%2Fprovider-id&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&options=%7B%22userProject%22%3A%22myProject%22%7D&requested_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdevstorage.full_control&subject_token=street123&subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Ajwt"
+	workforcePoolRequestBodyWithClientId          = "audience=%2F%2Fiam.googleapis.com%2Flocations%2Feu%2FworkforcePools%2Fpool-id%2Fproviders%2Fprovider-id&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&requested_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdevstorage.full_control&subject_token=street123&subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aid_token"
+	workforcePoolRequestBodyWithoutClientId       = "audience=%2F%2Fiam.googleapis.com%2Flocations%2Feu%2FworkforcePools%2Fpool-id%2Fproviders%2Fprovider-id&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&options=%7B%22userProject%22%3A%22myProject%22%7D&requested_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdevstorage.full_control&subject_token=street123&subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aid_token"
 	correctAT                                     = "Sample.Access.Token"
 	expiry                                  int64 = 234852
 )
@@ -110,8 +110,7 @@ func validateToken(t *testing.T, tok *oauth2.Token) {
 func TestToken(t *testing.T) {
 	config := Config{
 		Audience:         "32555940559.apps.googleusercontent.com",
-		SubjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
-		TokenInfoURL:     "http://localhost:8080/v1/tokeninfo",
+		SubjectTokenType: "urn:ietf:params:oauth:token-type:id_token",
 		ClientSecret:     "notsosecret",
 		ClientID:         "rbrgnognrhongo3bi4gb9ghg9g",
 		CredentialSource: testBaseCredSource,
@@ -137,8 +136,7 @@ func TestToken(t *testing.T) {
 func TestWorkforcePoolTokenWithClientID(t *testing.T) {
 	config := Config{
 		Audience:                 "//iam.googleapis.com/locations/eu/workforcePools/pool-id/providers/provider-id",
-		SubjectTokenType:         "urn:ietf:params:oauth:token-type:jwt",
-		TokenInfoURL:             "http://localhost:8080/v1/tokeninfo",
+		SubjectTokenType:         "urn:ietf:params:oauth:token-type:id_token",
 		ClientSecret:             "notsosecret",
 		ClientID:                 "rbrgnognrhongo3bi4gb9ghg9g",
 		CredentialSource:         testBaseCredSource,
@@ -165,8 +163,7 @@ func TestWorkforcePoolTokenWithClientID(t *testing.T) {
 func TestWorkforcePoolTokenWithoutClientID(t *testing.T) {
 	config := Config{
 		Audience:                 "//iam.googleapis.com/locations/eu/workforcePools/pool-id/providers/provider-id",
-		SubjectTokenType:         "urn:ietf:params:oauth:token-type:jwt",
-		TokenInfoURL:             "http://localhost:8080/v1/tokeninfo",
+		SubjectTokenType:         "urn:ietf:params:oauth:token-type:id_token",
 		ClientSecret:             "notsosecret",
 		CredentialSource:         testBaseCredSource,
 		Scopes:                   []string{"https://www.googleapis.com/auth/devstorage.full_control"},
@@ -192,8 +189,7 @@ func TestWorkforcePoolTokenWithoutClientID(t *testing.T) {
 func TestNonworkforceWithWorkforcePoolUserProject(t *testing.T) {
 	config := Config{
 		Audience:                 "32555940559.apps.googleusercontent.com",
-		SubjectTokenType:         "urn:ietf:params:oauth:token-type:jwt",
-		TokenInfoURL:             "http://localhost:8080/v1/tokeninfo",
+		SubjectTokenType:         "urn:ietf:params:oauth:token-type:id_token",
 		TokenURL:                 "https://sts.googleapis.com",
 		ClientSecret:             "notsosecret",
 		ClientID:                 "rbrgnognrhongo3bi4gb9ghg9g",
