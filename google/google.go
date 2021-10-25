@@ -198,10 +198,10 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 			Ctx:       ctx,
 			URL:       f.ServiceAccountImpersonationURL,
 			Scopes:    params.Scopes,
-			Ts:        oauth2.ReuseTokenSource(nil, ts),
+			Ts:        ts,
 			Delegates: f.Delegates,
 		}
-		return imp, nil
+		return oauth2.ReuseTokenSource(nil, imp), nil
 	case "":
 		return nil, errors.New("missing 'type' field in credentials")
 	default:
