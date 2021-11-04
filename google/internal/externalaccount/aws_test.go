@@ -540,6 +540,9 @@ func TestAwsCredential_BasicRequest(t *testing.T) {
 	oldGetenv := getenv
 	defer func() { getenv = oldGetenv }()
 	getenv = setEnvironment(map[string]string{})
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
 
 	base, err := tfc.parse(context.Background())
 	if err != nil {
@@ -560,7 +563,7 @@ func TestAwsCredential_BasicRequest(t *testing.T) {
 	)
 
 	if got, want := out, expected; !reflect.DeepEqual(got, want) {
-		t.Errorf("subjectToken = %q, want %q", got, want)
+		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
 	}
 }
 
@@ -575,6 +578,9 @@ func TestAwsCredential_BasicRequestWithoutSecurityToken(t *testing.T) {
 	oldGetenv := getenv
 	defer func() { getenv = oldGetenv }()
 	getenv = setEnvironment(map[string]string{})
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
 
 	base, err := tfc.parse(context.Background())
 	if err != nil {
@@ -595,7 +601,7 @@ func TestAwsCredential_BasicRequestWithoutSecurityToken(t *testing.T) {
 	)
 
 	if got, want := out, expected; !reflect.DeepEqual(got, want) {
-		t.Errorf("subjectToken = %q, want %q", got, want)
+		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
 	}
 }
 
@@ -613,6 +619,9 @@ func TestAwsCredential_BasicRequestWithEnv(t *testing.T) {
 		"AWS_SECRET_ACCESS_KEY": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
 		"AWS_REGION":            "us-west-1",
 	})
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
 
 	base, err := tfc.parse(context.Background())
 	if err != nil {
@@ -633,7 +642,7 @@ func TestAwsCredential_BasicRequestWithEnv(t *testing.T) {
 	)
 
 	if got, want := out, expected; !reflect.DeepEqual(got, want) {
-		t.Errorf("subjectToken = %q, want %q", got, want)
+		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
 	}
 }
 
@@ -651,6 +660,9 @@ func TestAwsCredential_BasicRequestWithDefaultEnv(t *testing.T) {
 		"AWS_SECRET_ACCESS_KEY": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
 		"AWS_DEFAULT_REGION":    "us-west-1",
 	})
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
 
 	base, err := tfc.parse(context.Background())
 	if err != nil {
@@ -670,7 +682,7 @@ func TestAwsCredential_BasicRequestWithDefaultEnv(t *testing.T) {
 	)
 
 	if got, want := out, expected; !reflect.DeepEqual(got, want) {
-		t.Errorf("subjectToken = %q, want %q", got, want)
+		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
 	}
 }
 
@@ -689,6 +701,9 @@ func TestAwsCredential_BasicRequestWithTwoRegions(t *testing.T) {
 		"AWS_REGION":            "us-west-1",
 		"AWS_DEFAULT_REGION":    "us-east-1",
 	})
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
 
 	base, err := tfc.parse(context.Background())
 	if err != nil {
@@ -708,7 +723,7 @@ func TestAwsCredential_BasicRequestWithTwoRegions(t *testing.T) {
 	)
 
 	if got, want := out, expected; !reflect.DeepEqual(got, want) {
-		t.Errorf("subjectToken = %q, want %q", got, want)
+		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
 	}
 }
 
