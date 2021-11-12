@@ -77,6 +77,10 @@ type Endpoint struct {
 	// client ID & client secret sent. The zero value means to
 	// auto-detect.
 	AuthStyle AuthStyle
+
+	// RefreshWithScope specifies if scope should be passed
+	// with a request to refresh an access token
+	RefreshWithScope bool
 }
 
 // AuthStyle represents how requests for tokens are authenticated
@@ -267,10 +271,16 @@ func (tf *tokenRefresher) Token() (*Token, error) {
 		return nil, errors.New("oauth2: token expired and refresh token is not set")
 	}
 
-	tk, err := retrieveToken(tf.ctx, tf.conf, url.Values{
+	v := url.Values{
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {tf.refreshToken},
-	})
+	}
+
+	if tf.conf.Endpoint.RefreshWithScope && len(tf.conf.Scopes) > 0 {
+		v.Set("scope", strings.Join(tf.conf.Scopes, " "))
+	}
+
+	tk, err := retrieveToken(tf.ctx, tf.conf, v)
 
 	if err != nil {
 		return nil, err

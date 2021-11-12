@@ -542,6 +542,25 @@ func TestRefreshToken_RefreshTokenPreservation(t *testing.T) {
 	}
 }
 
+func TestRefreshToken_RefreshWithScope(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := ioutil.ReadAll(r.Body)
+		if string(body) != "grant_type=refresh_token&refresh_token=REFRESH_TOKEN&scope=scope1+scope2" {
+			t.Errorf("Unexpected refresh token payload %q", body)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"access_token": "foo", "refresh_token": "bar"}`)
+	}))
+	defer ts.Close()
+	conf := newConf(ts.URL)
+	conf.Endpoint.RefreshWithScope = true
+	tkr := conf.TokenSource(context.Background(), &Token{RefreshToken: "REFRESH_TOKEN"})
+	_, err := tkr.Token()
+	if err != nil {
+		t.Fatalf("got err = %v; want none", err)
+	}
+}
+
 func TestConfigClientWithToken(t *testing.T) {
 	tok := &Token{
 		AccessToken: "abc123",
