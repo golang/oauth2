@@ -141,12 +141,12 @@ func SetAuthURLParam(key, value string) AuthCodeOption {
 // State is a token to protect the user from CSRF attacks. You must
 // always provide a non-empty string and validate that it matches the
 // the state query parameter on your redirect callback.
-// See https://tools.ietf.org/html/rfc6749#section-10.12 for more info.
+// See https://datatracker.ietf.org/doc/html/rfc6749#section-10.12 for more info.
 //
 // Opts may include AccessTypeOnline or AccessTypeOffline, as well
 // as ApprovalForce.
 // It can also be used to pass the PKCE challenge.
-// See https://tools.ietf.org/html/rfc7636 for more info.
+// See https://datatracker.ietf.org/doc/html/rfc7636 for more info.
 func (c *Config) AuthCodeURL(state string, opts ...AuthCodeOption) string {
 	var buf bytes.Buffer
 	buf.WriteString(c.Endpoint.AuthURL)
@@ -183,7 +183,7 @@ func (c *Config) AuthCodeURL(state string, opts ...AuthCodeOption) string {
 // degree of trust between the resource owner and the client (e.g., the client
 // is part of the device operating system or a highly privileged application),
 // and when other authorization grant types are not available."
-// See https://tools.ietf.org/html/rfc6749#section-4.3 for more info.
+// See https://datatracker.ietf.org/doc/html/rfc6749#section-4.3 for more info.
 //
 // The provided context optionally controls which HTTP client is used. See the HTTPClient variable.
 func (c *Config) PasswordCredentialsToken(ctx context.Context, username, password string) (*Token, error) {
@@ -209,7 +209,7 @@ func (c *Config) PasswordCredentialsToken(ctx context.Context, username, passwor
 // calling Exchange, be sure to validate FormValue("state").
 //
 // Opts may include the PKCE verifier code if previously used in AuthCodeURL.
-// See https://tools.ietf.org/html/rfc7636 for more info.
+// See https://datatracker.ietf.org/doc/html/rfc7636 for more info.
 func (c *Config) Exchange(ctx context.Context, code string, opts ...AuthCodeOption) (*Token, error) {
 	v := url.Values{
 		"grant_type": {"authorization_code"},
