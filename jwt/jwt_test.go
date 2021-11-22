@@ -6,6 +6,10 @@ package jwt
 
 import (
 	"context"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -16,6 +20,7 @@ import (
 	"testing"
 
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/internal"
 	"golang.org/x/oauth2/jws"
 )
 
@@ -231,6 +236,23 @@ func TestJWTFetch_AssertionPayload(t *testing.T) {
 				"private0": "claim0",
 				"private1": "claim1",
 			},
+		},
+		{
+			Email: "aaa2@xxx.com",
+			SignerProvider: func(_ string) (Signer, error) {
+				key, err := internal.ParseKey(dummyPrivateKey)
+				if err != nil {
+					return nil, err
+				}
+
+				return func(data []byte) (sig []byte, err error) {
+					h := sha256.New()
+					h.Write(data)
+					return rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, h.Sum(nil))
+				}, err
+			},
+			PrivateKeyID: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+			TokenURL:     ts.URL,
 		},
 	} {
 		t.Run(conf.Email, func(t *testing.T) {
