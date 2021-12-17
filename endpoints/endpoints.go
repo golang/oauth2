@@ -19,7 +19,7 @@ var Amazon = oauth2.Endpoint{
 
 // Battlenet is the endpoint for Battlenet.
 var Battlenet = oauth2.Endpoint{
-	AuthURL: "https://battle.net/oauth/authorize",
+	AuthURL:  "https://battle.net/oauth/authorize",
 	TokenURL: "https://battle.net/oauth/token",
 }
 
@@ -213,6 +213,12 @@ var Yandex = oauth2.Endpoint{
 var Zoom = oauth2.Endpoint{
 	AuthURL:  "https://zoom.us/oauth/authorize",
 	TokenURL: "https://zoom.us/oauth/token",
+}
+
+// Baidu is the endpoint for Baidu.
+var Baidu = oauth2.Endpoint{
+	AuthURL:  "http://openapi.baidu.com/oauth/2.0/authorize",
+	TokenURL: "https://openapi.baidu.com/oauth/2.0/token",
 }
 
 // AzureAD returns a new oauth2.Endpoint for the given tenant at Azure Active Directory.
