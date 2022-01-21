@@ -189,15 +189,18 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 		if f.ServiceAccountImpersonationURL == "" || f.SourceCredentials == nil {
 			return nil, errors.New("missing 'source_credentials' field or 'service_account_impersonation_url' in credentials")
 		}
-
 		ts, err := f.SourceCredentials.tokenSource(ctx, params)
 		if err != nil {
 			return nil, err
 		}
+		scopes := params.Scopes
+		if len(scopes) == 0 {
+			scopes = []string{"https://www.googleapis.com/auth/cloud-platform"}
+		}
 		imp := externalaccount.ImpersonateTokenSource{
 			Ctx:       ctx,
 			URL:       f.ServiceAccountImpersonationURL,
-			Scopes:    params.Scopes,
+			Scopes:    scopes,
 			Ts:        ts,
 			Delegates: f.Delegates,
 		}
