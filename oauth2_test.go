@@ -29,6 +29,7 @@ func (t *mockTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 
 func newConf(url string) *Config {
 	return &Config{
+		Audience:     "AUDIENCE",
 		ClientID:     "CLIENT_ID",
 		ClientSecret: "CLIENT_SECRET",
 		RedirectURL:  "REDIRECT_URL",
@@ -400,7 +401,7 @@ func TestPasswordCredentialsTokenRequest(t *testing.T) {
 		if err != nil {
 			t.Errorf("Failed reading request body: %s.", err)
 		}
-		expected = "grant_type=password&password=password1&scope=scope1+scope2&username=user1"
+		expected = "audience=AUDIENCE&grant_type=password&password=password1&scope=scope1+scope2&username=user1"
 		if string(body) != expected {
 			t.Errorf("res.Body = %q; want %q", string(body), expected)
 		}

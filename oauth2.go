@@ -39,6 +39,10 @@ func RegisterBrokenAuthHeaderProvider(tokenURL string) {}
 // For the client credentials 2-legged OAuth2 flow, see the clientcredentials
 // package (https://golang.org/x/oauth2/clientcredentials).
 type Config struct {
+	// Audience optionally specifies the intended audience of the
+	// request.
+	Audience string
+
 	// ClientID is the application's ID.
 	ClientID string
 
@@ -195,6 +199,9 @@ func (c *Config) PasswordCredentialsToken(ctx context.Context, username, passwor
 	if len(c.Scopes) > 0 {
 		v.Set("scope", strings.Join(c.Scopes, " "))
 	}
+	if c.Audience != "" {
+		v.Set("audience", c.Audience)
+	}
 	return retrieveToken(ctx, c, v)
 }
 
@@ -271,7 +278,6 @@ func (tf *tokenRefresher) Token() (*Token, error) {
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {tf.refreshToken},
 	})
-
 	if err != nil {
 		return nil, err
 	}
