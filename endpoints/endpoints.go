@@ -155,6 +155,12 @@ var PayPalSandbox = oauth2.Endpoint{
 	TokenURL: "https://api.sandbox.paypal.com/v1/identity/openidconnect/tokenservice",
 }
 
+// Pinterest is the endpoint for Pinterest.
+var Pinterest = oauth2.Endpoint{
+	AuthURL:  "https://www.pinterest.com/oauth",
+	TokenURL: "https://api.pinterest.com/v5/oauth/token",
+}
+
 // Slack is the endpoint for Slack.
 var Slack = oauth2.Endpoint{
 	AuthURL:  "https://slack.com/oauth/authorize",
