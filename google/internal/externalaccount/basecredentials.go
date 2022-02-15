@@ -175,7 +175,7 @@ type CredentialSource struct {
 	RegionURL                   string `json:"region_url"`
 	RegionalCredVerificationURL string `json:"regional_cred_verification_url"`
 	CredVerificationURL         string `json:"cred_verification_url"`
-	IMDSv2SessionTokenURL       string `json:"aws_session_token_url"`
+	IMDSv2SessionTokenURL       string `json:"imdsv2_session_token_url"`
 	Format                      format `json:"format"`
 }
 

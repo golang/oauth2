@@ -590,14 +590,14 @@ func TestAwsCredential_BasicRequest(t *testing.T) {
 func TestAwsCredential_IMDSv2(t *testing.T) {
 	validateSessionTokenHeaders := func(r *http.Request) {
 		if r.URL.Path == "/latest/api/token" {
-			header := r.Header.Get(awsSessionTtlHeader)
-			if header != awsSessionTtl {
-				t.Errorf("%q = \n%q\n want \n%q", awsSessionTtlHeader, header, awsSessionTtl)
+			headerValue := r.Header.Get(awsImdsV2SessionTtlHeader)
+			if headerValue != awsImdsV2SessionTtl {
+				t.Errorf("%q = \n%q\n want \n%q", awsImdsV2SessionTtlHeader, headerValue, awsImdsV2SessionTtl)
 			}
 		} else {
-			header := r.Header.Get(awsSessionTokenHeader)
-			if header != "sessiontoken" {
-				t.Errorf("%q = \n%q\n want \n%q", awsSessionTokenHeader, header, "sessiontoken")
+			headerValue := r.Header.Get(awsImdsV2SessionTokenHeader)
+			if headerValue != "sessiontoken" {
+				t.Errorf("%q = \n%q\n want \n%q", awsImdsV2SessionTokenHeader, headerValue, "sessiontoken")
 			}
 		}
 	}
