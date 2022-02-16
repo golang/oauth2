@@ -241,23 +241,19 @@ func (c *Config) AuthDevice(ctx context.Context, opts ...AuthCodeOption) (*Devic
 	return retrieveDeviceAuth(ctx, c, v)
 }
 
-// Poll does a polling to exchange an device code for a token.
+// Poll for a token using the device authorization flow.
 func (c *Config) Poll(ctx context.Context, da *DeviceAuth, opts ...AuthCodeOption) (*Token, error) {
 	v := url.Values{
 		"client_id":   {c.ClientID},
 		"grant_type":  {"urn:ietf:params:oauth:grant-type:device_code"},
 		"device_code": {da.DeviceCode},
-		"code":        {da.DeviceCode},
-	}
-	if len(c.Scopes) > 0 {
-		v.Set("scope", strings.Join(c.Scopes, " "))
 	}
 	for _, opt := range opts {
 		opt.setValue(v)
 	}
 
 	// If no interval was provided, the client MUST use a reasonable default polling interval.
-	// See https://tools.ietf.org/html/draft-ietf-oauth-device-flow-07#section-3.5
+	// See https://datatracker.ietf.org/doc/html/rfc8628#section-3.5
 	interval := da.Interval
 	if interval == 0 {
 		interval = 5
@@ -279,6 +275,9 @@ func (c *Config) Poll(ctx context.Context, da *DeviceAuth, opts ...AuthCodeOptio
 			interval += 5
 			fallthrough
 		case errAuthorizationPending:
+			// nop
+		default:
+			return nil, err
 		}
 	}
 }
