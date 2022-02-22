@@ -230,6 +230,18 @@ func AzureAD(tenant string) oauth2.Endpoint {
 	}
 }
 
+// AzureADB2CEndpoint returns a new oauth2.Endpoint for the given tenant and policy at Azure Active Directory B2C.
+// policy is the Azure B2C User flow name Example: `B2C_1_SignUpSignIn`.
+// For more information see:
+// https://docs.microsoft.com/en-us/azure/active-directory-b2c/tokens-overview#endpoints
+
+func AzureADB2CEndpoint(tenant string, policy string) oauth2.Endpoint {
+	return oauth2.Endpoint{
+		AuthURL:  "https://" + tenant + ".b2clogin.com/" + tenant + ".onmicrosoft.com/" + policy + "/oauth2/v2.0/authorize",
+		TokenURL: "https://" + tenant + ".b2clogin.com/" + tenant + ".onmicrosoft.com/" + policy + "/oauth2/v2.0/token",
+	}
+}
+
 // HipChatServer returns a new oauth2.Endpoint for a HipChat Server instance
 // running on the given domain or host.
 func HipChatServer(host string) oauth2.Endpoint {
