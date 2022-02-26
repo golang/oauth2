@@ -392,14 +392,23 @@ func (cs *awsCredentialSource) getSecurityCredentials() (result awsSecurityCrede
 		}
 	}
 
-	roleName, err := cs.getMetadataRoleName()
-	if err != nil {
-		return
-	}
+	var credentials awsSecurityCredentials
+	if containerCredsProviderEnv := getenv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"); containerCredsProviderEnv != "" {
+		credentials, err = cs.getContainerMetadataSecurityCredentials()
+		if err != nil {
+			return
+		}
+	} else {
+		var roleName string
+		roleName, err = cs.getMetadataRoleName()
+		if err != nil {
+			return
+		}
 
-	credentials, err := cs.getMetadataSecurityCredentials(roleName)
-	if err != nil {
-		return
+		credentials, err = cs.getEC2MetadataSecurityCredentials(roleName)
+		if err != nil {
+			return
+		}
 	}
 
 	if credentials.AccessKeyID == "" {
@@ -413,10 +422,18 @@ func (cs *awsCredentialSource) getSecurityCredentials() (result awsSecurityCrede
 	return credentials, nil
 }
 
-func (cs *awsCredentialSource) getMetadataSecurityCredentials(roleName string) (awsSecurityCredentials, error) {
+func (cs *awsCredentialSource) getContainerMetadataSecurityCredentials() (awsSecurityCredentials, error) {
+	return cs.getMetadataSecurityCredentials(cs.CredVerificationURL)
+}
+
+func (cs *awsCredentialSource) getEC2MetadataSecurityCredentials(roleName string) (awsSecurityCredentials, error) {
+	return cs.getMetadataSecurityCredentials(fmt.Sprintf("%s/%s", cs.CredVerificationURL, roleName))
+}
+
+func (cs *awsCredentialSource) getMetadataSecurityCredentials(securityCredentialURL string) (awsSecurityCredentials, error) {
 	var result awsSecurityCredentials
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", cs.CredVerificationURL, roleName), nil)
+	req, err := http.NewRequest("GET", securityCredentialURL, nil)
 	if err != nil {
 		return result, err
 	}

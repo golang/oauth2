@@ -422,9 +422,14 @@ type testAwsServer struct {
 }
 
 func createAwsTestServer(url, regionURL, regionalCredVerificationURL, rolename, region string, credentials map[string]string) *testAwsServer {
+	securityCredentialURL := fmt.Sprintf("%s/%s", url, rolename)
+	if containerCredsProviderEnv := getenv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"); containerCredsProviderEnv != "" {
+		securityCredentialURL = url
+	}
+
 	server := &testAwsServer{
 		url:                         url,
-		securityCredentialURL:       fmt.Sprintf("%s/%s", url, rolename),
+		securityCredentialURL:       securityCredentialURL,
 		regionURL:                   regionURL,
 		regionalCredVerificationURL: regionalCredVerificationURL,
 		Credentials:                 credentials,
@@ -461,10 +466,10 @@ func createDefaultAwsTestServer() *testAwsServer {
 
 func (server *testAwsServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch p := r.URL.Path; p {
-	case server.url:
-		server.WriteRolename(w)
 	case server.securityCredentialURL:
 		server.WriteSecurityCredentials(w)
+	case server.url:
+		server.WriteRolename(w)
 	case server.regionURL:
 		server.WriteRegion(w)
 	}
@@ -720,6 +725,45 @@ func TestAwsCredential_BasicRequestWithTwoRegions(t *testing.T) {
 		"AKIDEXAMPLE",
 		"wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
 		"",
+	)
+
+	if got, want := out, expected; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
+	}
+}
+
+func TestAwsCredential_BasicRequestWithContainerCredsEnv(t *testing.T) {
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{
+		"AWS_CONTAINER_CREDENTIALS_RELATIVE_URI": "/v2/credentials/790e6073-8eb7-4835-b438-919b679e8879",
+	})
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
+
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+
+	expected := getExpectedSubjectToken(
+		"https://sts.us-east-2.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+		"us-east-2",
+		accessKeyID,
+		secretAccessKey,
+		securityToken,
 	)
 
 	if got, want := out, expected; !reflect.DeepEqual(got, want) {
