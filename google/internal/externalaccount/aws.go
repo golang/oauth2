@@ -53,11 +53,11 @@ const (
 	awsSecurityTokenHeader = "x-amz-security-token"
 
 	// The name of the header containing the session token for metadata endpoint calls
-	awsImdsV2SessionTokenHeader = "X-aws-ec2-metadata-token"
+	awsIMDSv2SessionTokenHeader = "X-aws-ec2-metadata-token"
 
-	awsImdsV2SessionTtlHeader = "X-aws-ec2-metadata-token-ttl-seconds"
+	awsIMDSv2SessionTtlHeader = "X-aws-ec2-metadata-token-ttl-seconds"
 
-	awsImdsV2SessionTtl = "300"
+	awsIMDSv2SessionTtl = "300"
 
 	// The AWS authorization header name for the auto-generated date.
 	awsDateHeader = "x-amz-date"
@@ -276,14 +276,14 @@ func (cs awsCredentialSource) doRequest(req *http.Request) (*http.Response, erro
 
 func (cs awsCredentialSource) subjectToken() (string, error) {
 	if cs.requestSigner == nil {
-		awsSessionToken, err := cs.getAwsSessionToken()
+		awsSessionToken, err := cs.getAWSSessionToken()
 		if err != nil {
 			return "", err
 		}
 
 		headers := make(map[string]string)
 		if awsSessionToken != "" {
-			headers[awsImdsV2SessionTokenHeader] = awsSessionToken
+			headers[awsIMDSv2SessionTokenHeader] = awsSessionToken
 		}
 
 		awsSecurityCredentials, err := cs.getSecurityCredentials(headers)
@@ -358,7 +358,7 @@ func (cs awsCredentialSource) subjectToken() (string, error) {
 	return url.QueryEscape(string(result)), nil
 }
 
-func (cs *awsCredentialSource) getAwsSessionToken() (string, error) {
+func (cs *awsCredentialSource) getAWSSessionToken() (string, error) {
 	if cs.IMDSv2SessionTokenURL == "" {
 		return "", nil
 	}
@@ -368,7 +368,7 @@ func (cs *awsCredentialSource) getAwsSessionToken() (string, error) {
 		return "", err
 	}
 
-	req.Header.Add(awsImdsV2SessionTtlHeader, awsImdsV2SessionTtl)
+	req.Header.Add(awsIMDSv2SessionTtlHeader, awsIMDSv2SessionTtl)
 
 	resp, err := cs.doRequest(req)
 	if err != nil {
