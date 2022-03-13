@@ -41,6 +41,12 @@ var Facebook = oauth2.Endpoint{
 	TokenURL: "https://graph.facebook.com/v3.2/oauth/access_token",
 }
 
+// Line is the endpoint for Line.
+var Line = oauth2.Endpoint{
+	AuthURL:  "https://access.line.me/oauth2/v2.1/authorize",
+	TokenURL: "https://api.line.me/oauth2/v2.1/token",
+}
+
 // Foursquare is the endpoint for Foursquare.
 var Foursquare = oauth2.Endpoint{
 	AuthURL:  "https://foursquare.com/oauth2/authorize",
