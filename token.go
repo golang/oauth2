@@ -33,6 +33,10 @@ type Token struct {
 	// the requests.
 	AccessToken string `json:"access_token"`
 
+	// IdToken is the token that authorizes and authenticates
+	// the requests.
+	IdToken string `json:"id_token"`
+
 	// TokenType is the type of token.
 	// The Type method returns either this or "Bearer", the default.
 	TokenType string `json:"token_type,omitempty"`
