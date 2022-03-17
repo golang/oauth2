@@ -48,7 +48,9 @@ type CredentialsParams struct {
 	// Scopes is the list OAuth scopes. Required.
 	// Example: https://www.googleapis.com/auth/cloud-platform
 	Scopes []string
-
+	// Audience is the OAuth audience. Not Required
+	// Needed for PCE
+	Audience *string
 	// Subject is the user email used for domain wide delegation (see
 	// https://developers.google.com/identity/protocols/oauth2/service-account#delegatingauthority).
 	// Optional.
@@ -201,6 +203,13 @@ func CredentialsFromJSONWithParams(ctx context.Context, jsonData []byte, params 
 func CredentialsFromJSON(ctx context.Context, jsonData []byte, scopes ...string) (*Credentials, error) {
 	var params CredentialsParams
 	params.Scopes = scopes
+	return CredentialsFromJSONWithParams(ctx, jsonData, params)
+}
+// CredentialsFromJSON invokes CredentialsFromJSONWithParams with the specified scopes and audience.
+func CredentialsFromJSONWithAudience(ctx context.Context, jsonData []byte, audience string, scopes ...string) (*Credentials, error) {
+	var params CredentialsParams
+	params.Scopes = scopes
+	params.Audience = &audience
 	return CredentialsFromJSONWithParams(ctx, jsonData, params)
 }
 

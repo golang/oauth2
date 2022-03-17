@@ -146,3 +146,16 @@ func ExampleCredentialsFromJSON() {
 	}
 	_ = creds // TODO: Use creds.
 }
+
+func ExampleCredentialsFromJSONwithAudience() {
+	ctx := context.Background()
+	data, err := ioutil.ReadFile("/path/to/key-file.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	creds, err := google.CredentialsFromJSONWithAudience(ctx, data, "https://oauth2.googleapis.com/token", "https://www.googleapis.com/auth/bigquery")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_ = creds // TODO: Use creds.
+}

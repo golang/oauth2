@@ -87,7 +87,7 @@ func JWTConfigFromJSON(jsonKey []byte, scope ...string) (*jwt.Config, error) {
 		return nil, fmt.Errorf("google: read JWT from JSON credentials: 'type' field is %q (expected %q)", f.Type, serviceAccountKey)
 	}
 	scope = append([]string(nil), scope...) // copy
-	return f.jwtConfig(scope, ""), nil
+	return f.jwtConfig(nil, scope, ""), nil
 }
 
 // JSON key file types.
@@ -131,7 +131,7 @@ type credentialsFile struct {
 	SourceCredentials *credentialsFile `json:"source_credentials"`
 }
 
-func (f *credentialsFile) jwtConfig(scopes []string, subject string) *jwt.Config {
+func (f *credentialsFile) jwtConfig(audience *string, scopes []string, subject string) *jwt.Config {
 	cfg := &jwt.Config{
 		Email:        f.ClientEmail,
 		PrivateKey:   []byte(f.PrivateKey),
@@ -140,6 +140,9 @@ func (f *credentialsFile) jwtConfig(scopes []string, subject string) *jwt.Config
 		TokenURL:     f.TokenURL,
 		Audience:     f.Audience,
 		Subject:      subject, // This is the user email to impersonate
+	}
+	if audience != nil {
+		cfg.Audience = *audience
 	}
 	if cfg.TokenURL == "" {
 		cfg.TokenURL = JWTTokenURL
@@ -150,7 +153,7 @@ func (f *credentialsFile) jwtConfig(scopes []string, subject string) *jwt.Config
 func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsParams) (oauth2.TokenSource, error) {
 	switch f.Type {
 	case serviceAccountKey:
-		cfg := f.jwtConfig(params.Scopes, params.Subject)
+		cfg := f.jwtConfig(params.Audience, params.Scopes, params.Subject)
 		return cfg.TokenSource(ctx), nil
 	case userCredentialsKey:
 		cfg := &oauth2.Config{
