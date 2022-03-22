@@ -277,7 +277,7 @@ func (tf *tokenRefresher) Token() (*Token, error) {
 	}
 	
 	if tf.conf.RefreshRedirectURL != "" {
-		values["redirect_uri"]: {tf.config.RefreshRedirectURL}
+		values["redirect_uri"] = {tf.config.RefreshRedirectURL}
 	}
 	
 	tk, err := retrieveToken(tf.ctx, tf.conf, values)
