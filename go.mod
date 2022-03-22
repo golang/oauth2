@@ -1,4 +1,4 @@
-module golang.org/x/oauth2
+module github.com/davids-codex/oauth2
 
 go 1.11
 
