@@ -267,10 +267,16 @@ func (tf *tokenRefresher) Token() (*Token, error) {
 		return nil, errors.New("oauth2: token expired and refresh token is not set")
 	}
 
-	tk, err := retrieveToken(tf.ctx, tf.conf, url.Values{
+	values := url.Values{
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {tf.refreshToken},
-	})
+	}
+	
+	if tf.conf.RedirectURL != "" {
+		values["redirect_uri"]: {tf.config.RedirectURL}
+	}
+	
+	tk, err := retrieveToken(tf.ctx, tf.conf, values)
 
 	if err != nil {
 		return nil, err
