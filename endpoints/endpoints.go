@@ -35,6 +35,18 @@ var Cern = oauth2.Endpoint{
 	TokenURL: "https://oauth.web.cern.ch/OAuth/Token",
 }
 
+// Dexcom is the endpoint for Dexcom.
+var Dexcom = oauth2.Endpoint{
+	AuthURL:  "https://api.dexcom.com/v2/oauth2/login",
+	TokenURL: "https://api.dexcom.com/v2/oauth2/token",
+}
+
+// DexcomSandbox is the endpoint for Dexcom Sandbox.
+var DexcomSandbox = oauth2.Endpoint{
+	AuthURL:  "https://sandbox-api.dexcom.com/v2/oauth2/login",
+	TokenURL: "https://sandbox-api.dexcom.com/v2/oauth2/token",
+}
+
 // Facebook is the endpoint for Facebook.
 var Facebook = oauth2.Endpoint{
 	AuthURL:  "https://www.facebook.com/v3.2/dialog/oauth",
