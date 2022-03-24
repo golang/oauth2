@@ -55,8 +55,9 @@ type Config struct {
 	// the OAuth flow, after the resource owner's URLs.
 	RedirectURL string
 
-	// RefreshRedirectURL is the redirect URL used to obtain
-	// a new refresh token from an endpoint.
+	// RefreshRedirectURL is the (optional) redirect URL used to obtain
+	// a new refresh token from an endpoint. If present, the redirect_uri
+	// parameter will be added to the refresh request.
 	RefreshRedirectURL string
 	
 	// Scope specifies optional requested permissions.
