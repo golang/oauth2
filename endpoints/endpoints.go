@@ -17,6 +17,12 @@ var Amazon = oauth2.Endpoint{
 	TokenURL: "https://api.amazon.com/auth/o2/token",
 }
 
+// Battlenet is the endpoint for Battlenet.
+var Battlenet = oauth2.Endpoint{
+	AuthURL:  "https://battle.net/oauth/authorize",
+	TokenURL: "https://battle.net/oauth/token",
+}
+
 // Bitbucket is the endpoint for Bitbucket.
 var Bitbucket = oauth2.Endpoint{
 	AuthURL:  "https://bitbucket.org/site/oauth2/authorize",
@@ -167,6 +173,12 @@ var StackOverflow = oauth2.Endpoint{
 	TokenURL: "https://stackoverflow.com/oauth/access_token",
 }
 
+// Strava is the endpoint for Strava.
+var Strava = oauth2.Endpoint{
+	AuthURL:  "https://www.strava.com/oauth/authorize",
+	TokenURL: "https://www.strava.com/oauth/token",
+}
+
 // Twitch is the endpoint for Twitch.
 var Twitch = oauth2.Endpoint{
 	AuthURL:  "https://id.twitch.tv/oauth2/authorize",
@@ -195,6 +207,12 @@ var Yahoo = oauth2.Endpoint{
 var Yandex = oauth2.Endpoint{
 	AuthURL:  "https://oauth.yandex.com/authorize",
 	TokenURL: "https://oauth.yandex.com/token",
+}
+
+// Zoom is the endpoint for Zoom.
+var Zoom = oauth2.Endpoint{
+	AuthURL:  "https://zoom.us/oauth/authorize",
+	TokenURL: "https://zoom.us/oauth/token",
 }
 
 // AzureAD returns a new oauth2.Endpoint for the given tenant at Azure Active Directory.
