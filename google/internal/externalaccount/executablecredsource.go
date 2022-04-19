@@ -56,7 +56,7 @@ func CreateExecutableCredential(ec ExecutableConfig, config *Config, ctx context
 	return
 }
 
-type subjectTokenResponse struct {
+type executableResponse struct {
 	Version        *int    `json:"version"`
 	Success        *bool   `json:"success"`
 	TokenType      *string `json:"token_type"`
@@ -68,7 +68,7 @@ type subjectTokenResponse struct {
 }
 
 func parseSubjectToken(response []byte) (string, error) {
-	var result subjectTokenResponse
+	var result executableResponse
 	if err := json.Unmarshal(response, &result); err != nil {
 		return "", errors.New("oauth2/google: Unable to parse response JSON.")
 	}
@@ -132,20 +132,11 @@ func parseSubjectToken(response []byte) (string, error) {
 }
 
 func (cs executableCredentialSource) subjectToken() (string, error) {
-	if token, ok := cs.getTokenFromInMemoryCaching(); ok {
-		return token, nil
-	}
-
 	if token, ok := cs.getTokenFromOutputFile(); ok {
 		return token, nil
 	}
 
 	return cs.getTokenFromExecutableCommand()
-}
-
-func (cs executableCredentialSource) getTokenFromInMemoryCaching() (string, bool) {
-	// TODO
-	return "", false
 }
 
 func (cs executableCredentialSource) getTokenFromOutputFile() (string, bool) {
@@ -176,22 +167,13 @@ func (cs executableCredentialSource) getNewEnvironmentVariables() map[string]str
 		}
 	}
 
-	if cs.isInteractive() {
-		result["GOOGLE_EXTERNAL_ACCOUNT_INTERACTIVE"] = "1"
-	} else {
-		result["GOOGLE_EXTERNAL_ACCOUNT_INTERACTIVE"] = "0"
-	}
+	result["GOOGLE_EXTERNAL_ACCOUNT_INTERACTIVE"] = "0"
 
 	if cs.OutputFile != "" {
 		result["GOOGLE_EXTERNAL_ACCOUNT_OUTPUT_FILE"] = cs.OutputFile
 	}
 
 	return result
-}
-
-func (cs executableCredentialSource) isInteractive() bool {
-	// Currently, executableCredentialSource does not yet support interactive mode.
-	return false
 }
 
 func (cs executableCredentialSource) getTokenFromExecutableCommand() (string, error) {

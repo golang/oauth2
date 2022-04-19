@@ -67,7 +67,7 @@ func areSlicesEquivalent(a, b []string) bool {
 	}
 
 OUTER:
-	for i, aa := range a {
+	for _, aa := range a {
 		for _, bb := range b {
 			if aa == bb {
 				continue OUTER
@@ -315,7 +315,7 @@ func TestRetrieveExecutableSubjectTokenMissingVersion(t *testing.T) {
 	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
 		deadline, deadlineSet = ctx.Deadline()
-		return json.Marshal(subjectTokenResponse{
+		return json.Marshal(executableResponse{
 			Success: Bool(true),
 		})
 	}
@@ -361,7 +361,7 @@ func TestRetrieveExecutableSubjectTokenMissingSuccess(t *testing.T) {
 	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
 		deadline, deadlineSet = ctx.Deadline()
-		return json.Marshal(subjectTokenResponse{
+		return json.Marshal(executableResponse{
 			Version: Int(1),
 		})
 	}
@@ -407,7 +407,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithFields(t *testing
 	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
 		deadline, deadlineSet = ctx.Deadline()
-		return json.Marshal(subjectTokenResponse{
+		return json.Marshal(executableResponse{
 			Success: Bool(false),
 			Version: Int(1),
 			Code:    String("404"),
@@ -456,7 +456,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithCode(t *testing.T
 	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
 		deadline, deadlineSet = ctx.Deadline()
-		return json.Marshal(subjectTokenResponse{
+		return json.Marshal(executableResponse{
 			Success: Bool(false),
 			Version: Int(1),
 			Code:    String("404"),
@@ -504,7 +504,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithMessage(t *testin
 	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
 		deadline, deadlineSet = ctx.Deadline()
-		return json.Marshal(subjectTokenResponse{
+		return json.Marshal(executableResponse{
 			Success: Bool(false),
 			Version: Int(1),
 			Message: String("Token Not Found"),
@@ -552,7 +552,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithoutFields(t *test
 	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
 		deadline, deadlineSet = ctx.Deadline()
-		return json.Marshal(subjectTokenResponse{
+		return json.Marshal(executableResponse{
 			Success: Bool(false),
 			Version: Int(1),
 		})
@@ -599,7 +599,7 @@ func TestRetrieveExecutableSubjectTokenNewerVersion(t *testing.T) {
 	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
 		deadline, deadlineSet = ctx.Deadline()
-		return json.Marshal(subjectTokenResponse{
+		return json.Marshal(executableResponse{
 			Success: Bool(true),
 			Version: Int(2),
 		})
@@ -646,7 +646,7 @@ func TestRetrieveExecutableSubjectTokenExpired(t *testing.T) {
 	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
 		deadline, deadlineSet = ctx.Deadline()
-		return json.Marshal(subjectTokenResponse{
+		return json.Marshal(executableResponse{
 			Success:        Bool(true),
 			Version:        Int(1),
 			ExpirationTime: Int64(now().Unix() - 1),
@@ -695,7 +695,7 @@ func TestRetrieveExecutableSubjectTokenJwt(t *testing.T) {
 	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
 		deadline, deadlineSet = ctx.Deadline()
-		return json.Marshal(subjectTokenResponse{
+		return json.Marshal(executableResponse{
 			Success:        Bool(true),
 			Version:        Int(1),
 			ExpirationTime: Int64(now().Unix() + 3600),
@@ -746,7 +746,7 @@ func TestRetrieveExecutableSubjectTokenJwtMissingIdToken(t *testing.T) {
 	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
 		deadline, deadlineSet = ctx.Deadline()
-		return json.Marshal(subjectTokenResponse{
+		return json.Marshal(executableResponse{
 			Success:        Bool(true),
 			Version:        Int(1),
 			ExpirationTime: Int64(now().Unix() + 3600),
@@ -795,7 +795,7 @@ func TestRetrieveExecutableSubjectTokenIdToken(t *testing.T) {
 	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
 		deadline, deadlineSet = ctx.Deadline()
-		return json.Marshal(subjectTokenResponse{
+		return json.Marshal(executableResponse{
 			Success:        Bool(true),
 			Version:        Int(1),
 			ExpirationTime: Int64(now().Unix() + 3600),
@@ -846,7 +846,7 @@ func TestRetrieveExecutableSubjectTokenSaml(t *testing.T) {
 	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
 		deadline, deadlineSet = ctx.Deadline()
-		return json.Marshal(subjectTokenResponse{
+		return json.Marshal(executableResponse{
 			Success:        Bool(true),
 			Version:        Int(1),
 			ExpirationTime: Int64(now().Unix() + 3600),
@@ -897,7 +897,7 @@ func TestRetrieveExecutableSubjectTokenSamlMissingResponse(t *testing.T) {
 	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
 		deadline, deadlineSet = ctx.Deadline()
-		return json.Marshal(subjectTokenResponse{
+		return json.Marshal(executableResponse{
 			Success:        Bool(true),
 			Version:        Int(1),
 			ExpirationTime: Int64(now().Unix() + 3600),
