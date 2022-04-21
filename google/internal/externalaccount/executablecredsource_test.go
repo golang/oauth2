@@ -8,6 +8,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 )
@@ -317,7 +319,7 @@ func TestRetrieveExecutableSubjectTokenInvalidFormat(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), jsonParsingError().Error(); got != want {
+	if got, want := err.Error(), jsonParsingError(executableSource).Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -363,7 +365,7 @@ func TestRetrieveExecutableSubjectTokenMissingVersion(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), missingFieldError("version").Error(); got != want {
+	if got, want := err.Error(), missingFieldError(executableSource, "version").Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -409,7 +411,7 @@ func TestRetrieveExecutableSubjectTokenMissingSuccess(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), missingFieldError("success").Error(); got != want {
+	if got, want := err.Error(), missingFieldError(executableSource, "success").Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -458,7 +460,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithFields(t *testing
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), userDefinedError("404", "Token Not Found").Error(); got != want {
+	if got, want := err.Error(), userDefinedError(executableSource, "404", "Token Not Found").Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -506,7 +508,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithCode(t *testing.T
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), malformedFailureError().Error(); got != want {
+	if got, want := err.Error(), malformedFailureError(executableSource).Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -554,7 +556,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithMessage(t *testin
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), malformedFailureError().Error(); got != want {
+	if got, want := err.Error(), malformedFailureError(executableSource).Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -601,7 +603,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithoutFields(t *test
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), malformedFailureError().Error(); got != want {
+	if got, want := err.Error(), malformedFailureError(executableSource).Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -648,7 +650,7 @@ func TestRetrieveExecutableSubjectTokenNewerVersion(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), unsupportedVersionError(2).Error(); got != want {
+	if got, want := err.Error(), unsupportedVersionError(executableSource, 2).Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -696,7 +698,7 @@ func TestRetrieveExecutableSubjectTokenMissingExpiration(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), missingFieldError("expiration_time").Error(); got != want {
+	if got, want := err.Error(), missingFieldError(executableSource, "expiration_time").Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -744,7 +746,7 @@ func TestRetrieveExecutableSubjectTokenTokenTypeMissing(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), missingFieldError("token_type").Error(); got != want {
+	if got, want := err.Error(), missingFieldError(executableSource, "token_type").Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -793,7 +795,7 @@ func TestRetrieveExecutableSubjectTokenInvalidTokenType(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), tokenTypeError().Error(); got != want {
+	if got, want := err.Error(), tokenTypeError(executableSource).Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -942,7 +944,7 @@ func TestRetrieveExecutableSubjectTokenJwtMissingIdToken(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), missingFieldError("id_token").Error(); got != want {
+	if got, want := err.Error(), missingFieldError(executableSource, "id_token").Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -1093,7 +1095,7 @@ func TestRetrieveExecutableSubjectTokenSamlMissingResponse(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), missingFieldError("saml_response").Error(); got != want {
+	if got, want := err.Error(), missingFieldError(executableSource, "saml_response").Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -1101,5 +1103,907 @@ func TestRetrieveExecutableSubjectTokenSamlMissingResponse(t *testing.T) {
 		t.Errorf("Command run without a deadline")
 	} else if deadline != now().Add(5*time.Second) {
 		t.Errorf("Command run with incorrect deadline")
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenInvalidFormat(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if _, err = outputFile.Write([]byte("tokentokentoken")); err != nil {
+		t.Fatalf("error writing to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), jsonParsingError(outputFileSource).Error(); got != want {
+		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenMissingVersion(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Success: Bool(true),
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), missingFieldError(outputFileSource, "version").Error(); got != want {
+		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenMissingSuccess(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Version: 1,
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), missingFieldError(outputFileSource, "success").Error(); got != want {
+		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenUnsuccessfulResponseWithFields(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Success: Bool(false),
+		Version: 1,
+		Code:    "404",
+		Message: "Token Not Found",
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), userDefinedError(outputFileSource, "404", "Token Not Found").Error(); got != want {
+		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenUnsuccessfulResponseWithCode(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Success: Bool(false),
+		Version: 1,
+		Code:    "404",
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), malformedFailureError(outputFileSource).Error(); got != want {
+		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenUnsuccessfulResponseWithMessage(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Success: Bool(false),
+		Version: 1,
+		Message: "Token Not Found",
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), malformedFailureError(outputFileSource).Error(); got != want {
+		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenUnsuccessfulResponseWithoutFields(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Success: Bool(false),
+		Version: 1,
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), malformedFailureError(outputFileSource).Error(); got != want {
+		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenNewerVersion(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Success: Bool(true),
+		Version: 2,
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), unsupportedVersionError(outputFileSource, 2).Error(); got != want {
+		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenJwt(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Success:        Bool(true),
+		Version:        1,
+		ExpirationTime: now().Unix() + 3600,
+		TokenType:      "urn:ietf:params:oauth:token-type:jwt",
+		IdToken:        "tokentokentoken",
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+
+	if got, want := out, "tokentokentoken"; got != want {
+		t.Errorf("Incorrect token received.\nExpected: %s\nRecieved: %s", want, got)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenJwtMissingIdToken(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Success:        Bool(true),
+		Version:        1,
+		ExpirationTime: now().Unix() + 3600,
+		TokenType:      "urn:ietf:params:oauth:token-type:jwt",
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), missingFieldError(outputFileSource, "id_token").Error(); got != want {
+		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenIdToken(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Success:        Bool(true),
+		Version:        1,
+		ExpirationTime: now().Unix() + 3600,
+		TokenType:      "urn:ietf:params:oauth:token-type:id_token",
+		IdToken:        "tokentokentoken",
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+
+	if got, want := out, "tokentokentoken"; got != want {
+		t.Errorf("Incorrect token received.\nExpected: %s\nRecieved: %s", want, got)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenSaml(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Success:        Bool(true),
+		Version:        1,
+		ExpirationTime: now().Unix() + 3600,
+		TokenType:      "urn:ietf:params:oauth:token-type:saml2",
+		SamlResponse:   "tokentokentoken",
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+
+	if got, want := out, "tokentokentoken"; got != want {
+		t.Errorf("Incorrect token received.\nExpected: %s\nRecieved: %s", want, got)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenSamlMissingResponse(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Success:        Bool(true),
+		Version:        1,
+		ExpirationTime: now().Unix() + 3600,
+		TokenType:      "urn:ietf:params:oauth:token-type:saml2",
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), missingFieldError(outputFileSource, "saml_response").Error(); got != want {
+		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenMissingExpiration(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Success:   Bool(true),
+		Version:   1,
+		TokenType: "urn:ietf:params:oauth:token-type:jwt",
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), missingFieldError(outputFileSource, "expiration_time").Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenTokenTypeMissing(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Success:        Bool(true),
+		Version:        1,
+		ExpirationTime: now().Unix(),
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), missingFieldError(outputFileSource, "token_type").Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenInvalidTokenType(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		t.Fatalf("Executable called when it should not have been")
+		return []byte{}, nil
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Success:        Bool(true),
+		Version:        1,
+		ExpirationTime: now().Unix(),
+		TokenType:      "urn:ietf:params:oauth:token-type:invalid",
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), tokenTypeError(outputFileSource).Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
+	}
+}
+
+func TestRetrieveOutputFileSubjectTokenExpired(t *testing.T) {
+	outputFile, err := ioutil.TempFile("testdata", "result.*.json")
+	if err != nil {
+		t.Fatalf("Tempfile failed: %v", err)
+	}
+	defer os.Remove(outputFile.Name())
+
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: Int(5000),
+			OutputFile:    outputFile.Name(),
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	deadline, deadlineSet := now(), false
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		deadline, deadlineSet = ctx.Deadline()
+		return json.Marshal(executableResponse{
+			Success:        Bool(true),
+			Version:        1,
+			ExpirationTime: now().Unix() + 3600,
+			TokenType:      "urn:ietf:params:oauth:token-type:jwt",
+			IdToken:        "tokentokentoken",
+		})
+	}
+
+	if err = json.NewEncoder(outputFile).Encode(executableResponse{
+		Success:        Bool(true),
+		Version:        1,
+		ExpirationTime: now().Unix() - 1,
+		TokenType:      "urn:ietf:params:oauth:token-type:jwt",
+	}); err != nil {
+		t.Fatalf("Error encoding to file: %v", err)
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+
+	if !deadlineSet {
+		t.Errorf("Command run without a deadline")
+	} else if deadline != now().Add(5*time.Second) {
+		t.Errorf("Command run with incorrect deadline")
+	}
+
+	if got, want := out, "tokentokentoken"; got != want {
+		t.Errorf("Incorrect token received.\nExpected: %s\nRecieved: %s", want, got)
 	}
 }

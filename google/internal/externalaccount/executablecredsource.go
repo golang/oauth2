@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
@@ -22,34 +24,43 @@ const (
 	defaultTimeout                = 30 * time.Second
 	timeoutMinimum                = 5 * time.Second
 	timeoutMaximum                = 120 * time.Second
+	executableSource              = "response"
+	outputFileSource              = "output file"
 )
 
-func missingFieldError(field string) error {
-	return fmt.Errorf("oauth2/google: response missing `%v` field", field)
+func missingFieldError(source, field string) error {
+	return fmt.Errorf("oauth2/google: %v missing `%v` field", source, field)
 }
 
-func jsonParsingError() error {
-	return errors.New("oauth2/google: unable to parse response JSON")
+func jsonParsingError(source string) error {
+	return fmt.Errorf("oauth2/google: unable to parse %v JSON", source)
 }
 
-func malformedFailureError() error {
-	return errors.New("oauth2/google: response must include `error` and `message` fields when unsuccessful")
+func malformedFailureError(source string) error {
+	return fmt.Errorf("oauth2/google: %v must include `error` and `message` fields when unsuccessful", source)
 }
 
-func userDefinedError(code, message string) error {
-	return fmt.Errorf("oauth2/google: executable returned unsuccessful response: (%v) %v", code, message)
+func userDefinedError(source, code, message string) error {
+	return fmt.Errorf("oauth2/google: %v contains unsuccessful response: (%v) %v", source, code, message)
 }
 
-func unsupportedVersionError(version int) error {
-	return fmt.Errorf("oauth2/google: executable returned unsupported version: %v", version)
+func unsupportedVersionError(source string, version int) error {
+	return fmt.Errorf("oauth2/google: %v contains unsupported version: %v", source, version)
+}
+
+type timeoutException struct {
+}
+
+func (t timeoutException) Error() string {
+	return "oauth2/google: the token returned by the executable is expired"
 }
 
 func tokenExpiredError() error {
-	return errors.New("oauth2/google: the token returned by the executable is expired")
+	return timeoutException{}
 }
 
-func tokenTypeError() error {
-	return errors.New("oauth2/google: executable returned unsupported token type")
+func tokenTypeError(source string) error {
+	return fmt.Errorf("oauth2/google: %v contains unsupported token type", source)
 }
 
 func timeoutError() error {
@@ -141,37 +152,37 @@ type executableResponse struct {
 	Message        string `json:"message,omitempty"`
 }
 
-func parseSubjectToken(response []byte) (string, error) {
+func parseSubjectTokenFromSource(response []byte, source string) (string, error) {
 	var result executableResponse
 	if err := json.Unmarshal(response, &result); err != nil {
-		return "", jsonParsingError()
+		return "", jsonParsingError(source)
 	}
 
 	if result.Version == 0 {
-		return "", missingFieldError("version")
+		return "", missingFieldError(source, "version")
 	}
 
 	if result.Success == nil {
-		return "", missingFieldError("success")
+		return "", missingFieldError(source, "success")
 	}
 
 	if !*result.Success {
 		if result.Code == "" || result.Message == "" {
-			return "", malformedFailureError()
+			return "", malformedFailureError(source)
 		}
-		return "", userDefinedError(result.Code, result.Message)
+		return "", userDefinedError(source, result.Code, result.Message)
 	}
 
 	if result.Version > executableSupportedMaxVersion || result.Version < 0 {
-		return "", unsupportedVersionError(result.Version)
+		return "", unsupportedVersionError(source, result.Version)
 	}
 
 	if result.ExpirationTime == 0 {
-		return "", missingFieldError("expiration_time")
+		return "", missingFieldError(source, "expiration_time")
 	}
 
 	if result.TokenType == "" {
-		return "", missingFieldError("token_type")
+		return "", missingFieldError(source, "token_type")
 	}
 
 	if result.ExpirationTime < now().Unix() {
@@ -180,32 +191,61 @@ func parseSubjectToken(response []byte) (string, error) {
 
 	if result.TokenType == "urn:ietf:params:oauth:token-type:jwt" || result.TokenType == "urn:ietf:params:oauth:token-type:id_token" {
 		if result.IdToken == "" {
-			return "", missingFieldError("id_token")
+			return "", missingFieldError(source, "id_token")
 		}
 		return result.IdToken, nil
 	}
 
 	if result.TokenType == "urn:ietf:params:oauth:token-type:saml2" {
 		if result.SamlResponse == "" {
-			return "", missingFieldError("saml_response")
+			return "", missingFieldError(source, "saml_response")
 		}
 		return result.SamlResponse, nil
 	}
 
-	return "", tokenTypeError()
+	return "", tokenTypeError(source)
 }
 
 func (cs executableCredentialSource) subjectToken() (string, error) {
-	if token, ok := cs.getTokenFromOutputFile(); ok {
-		return token, nil
+	if token, err, ok := cs.getTokenFromOutputFile(); ok {
+		return token, err
 	}
 
 	return cs.getTokenFromExecutableCommand()
 }
 
-func (cs executableCredentialSource) getTokenFromOutputFile() (string, bool) {
-	// TODO
-	return "", false
+func (cs executableCredentialSource) getTokenFromOutputFile() (string, error, bool) {
+	if cs.OutputFile == "" {
+		// This ExecutableCredentialSource doesn't use an OutputFile
+		return "", nil, false
+	}
+
+	file, err := os.Open(cs.OutputFile)
+	if err != nil {
+		// No OutputFile found. Hasn't been created yet, so skip it.
+		return "", nil, false
+	}
+
+	data, err := ioutil.ReadAll(io.LimitReader(file, 1<<20))
+	if err != nil {
+		// An error reading the file. Not necessarily under the developer's control, so ignore it
+		return "", nil, false
+	}
+
+	token, err := parseSubjectTokenFromSource(data, outputFileSource)
+
+	if err == nil {
+		// Token parsing succeeded.  Use found token.
+		return token, nil, true
+	}
+
+	if _, ok := err.(timeoutException); ok {
+		// Cached token expired.  Go through regular flow to find new token.
+		return "", nil, false
+	}
+
+	// There was an error in the cached token, and the developer should be aware of it.
+	return "", err, true
 }
 
 func (cs executableCredentialSource) getEnvironment() []string {
@@ -249,6 +289,6 @@ func (cs executableCredentialSource) getTokenFromExecutableCommand() (string, er
 	if output, err := runCommand(ctx, cs.Command, cs.getEnvironment()); err != nil {
 		return "", err
 	} else {
-		return parseSubjectToken(output)
+		return parseSubjectTokenFromSource(output, executableSource)
 	}
 }
