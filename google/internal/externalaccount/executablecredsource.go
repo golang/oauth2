@@ -63,8 +63,8 @@ type executableResponse struct {
 	ExpirationTime *int64  `json:"expiration_time"`
 	IdToken        *string `json:"id_token"`
 	SamlResponse   *string `json:"saml_response"`
-	Code           *string `json:"code"`
-	Message        *string `json:"message"`
+	Code           string  `json:"code"`
+	Message        string  `json:"message"`
 }
 
 func parseSubjectToken(response []byte) (string, error) {
@@ -82,20 +82,10 @@ func parseSubjectToken(response []byte) (string, error) {
 	}
 
 	if !*result.Success {
-		details := ""
-		if result.Code != nil {
-			details += fmt.Sprintf("(%v)", *result.Code)
+		if result.Code == "" || result.Message == "" {
+			return "", errors.New("oauth2/google: Response must include `error` and `message` fields when unsuccessful.")
 		}
-		if result.Message != nil {
-			if details != "" {
-				details += " "
-			}
-			details += *result.Message
-		}
-		if details == "" {
-			details = "Unknown Error"
-		}
-		return "", fmt.Errorf("oauth2/google: Executable returned unsuccessful response: %v.", details)
+		return "", fmt.Errorf("oauth2/google: Executable returned unsuccessful response: (%v) %v.", result.Code, result.Message)
 	}
 
 	if *result.Version > EXECUTABLE_SUPPORTED_MAX_VERSION {

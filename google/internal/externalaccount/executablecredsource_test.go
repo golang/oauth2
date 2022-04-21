@@ -410,8 +410,8 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithFields(t *testing
 		return json.Marshal(executableResponse{
 			Success: Bool(false),
 			Version: Int(1),
-			Code:    String("404"),
-			Message: String("Token Not Found"),
+			Code:    "404",
+			Message: "Token Not Found",
 		})
 	}
 
@@ -459,7 +459,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithCode(t *testing.T
 		return json.Marshal(executableResponse{
 			Success: Bool(false),
 			Version: Int(1),
-			Code:    String("404"),
+			Code:    "404",
 		})
 	}
 
@@ -472,7 +472,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithCode(t *testing.T
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: Executable returned unsuccessful response: (404)."; got != want {
+	if got, want := err.Error(), "oauth2/google: Response must include `error` and `message` fields when unsuccessful."; got != want {
 		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
 	}
 
@@ -507,7 +507,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithMessage(t *testin
 		return json.Marshal(executableResponse{
 			Success: Bool(false),
 			Version: Int(1),
-			Message: String("Token Not Found"),
+			Message: "Token Not Found",
 		})
 	}
 
@@ -520,7 +520,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithMessage(t *testin
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: Executable returned unsuccessful response: Token Not Found."; got != want {
+	if got, want := err.Error(), "oauth2/google: Response must include `error` and `message` fields when unsuccessful."; got != want {
 		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
 	}
 
@@ -567,7 +567,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithoutFields(t *test
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: Executable returned unsuccessful response: Unknown Error."; got != want {
+	if got, want := err.Error(), "oauth2/google: Response must include `error` and `message` fields when unsuccessful."; got != want {
 		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
 	}
 
