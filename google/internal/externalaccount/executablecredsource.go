@@ -15,10 +15,56 @@ import (
 	"time"
 )
 
-var (
-	EXECUTABLE_SUPPORTED_MAX_VERSION = 1
+const (
+	executableSupportedMaxVersion = 1
+	defaultTimeout                = 30 * time.Second
 )
 
+func missingFieldError(field string) error {
+	return fmt.Errorf("oauth2/google: response missing `%v` field", field)
+}
+
+func jsonParsingError() error {
+	return errors.New("oauth2/google: unable to parse response JSON")
+}
+
+func malformedFailureError() error {
+	return errors.New("oauth2/google: response must include `error` and `message` fields when unsuccessful")
+}
+
+func userDefinedError(code, message string) error {
+	return fmt.Errorf("oauth2/google: executable returned unsuccessful response: (%v) %v", code, message)
+}
+
+func unsupportedVersionError(version int) error {
+	return fmt.Errorf("oauth2/google: executable returned unsupported version: %v", version)
+}
+
+func tokenExpiredError() error {
+	return errors.New("oauth2/google: the token returned by the executable is expired")
+}
+
+func tokenTypeError() error {
+	return errors.New("oauth2/google: executable returned unsupported token type")
+}
+
+func timeoutError() error {
+	return errors.New("oauth2/google: executable command timed out")
+}
+
+func exitCodeError(exitCode int) error {
+	return fmt.Errorf("oauth2/google: executable command failed with exit code %v", exitCode)
+}
+
+func executableError(err error) error {
+	return fmt.Errorf("oauth2/google: executable command failed: %v", err.Error())
+}
+
+func executablesDisallowedError() error {
+	return errors.New("Executables need to be explicitly allowed (set GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES to '1') to run")
+}
+
+// baseEnv is an alias of os.Environ used for testing
 var baseEnv = os.Environ
 
 // runCommand is basically an alias of exec.CommandContext for testing.
@@ -46,7 +92,7 @@ type executableCredentialSource struct {
 func CreateExecutableCredential(ec ExecutableConfig, config *Config, ctx context.Context) (result executableCredentialSource) {
 	result.Command = ec.Command
 	if ec.TimeoutMillis == 0 {
-		result.Timeout = 30 * time.Second
+		result.Timeout = defaultTimeout
 	} else {
 		result.Timeout = time.Duration(ec.TimeoutMillis) * time.Millisecond
 	}
@@ -57,68 +103,68 @@ func CreateExecutableCredential(ec ExecutableConfig, config *Config, ctx context
 }
 
 type executableResponse struct {
-	Version        *int    `json:"version"`
-	Success        *bool   `json:"success"`
-	TokenType      *string `json:"token_type"`
-	ExpirationTime *int64  `json:"expiration_time"`
-	IdToken        *string `json:"id_token"`
-	SamlResponse   *string `json:"saml_response"`
-	Code           string  `json:"code"`
-	Message        string  `json:"message"`
+	Version        *int    `json:"version,omitempty"`
+	Success        *bool   `json:"success,omitempty"`
+	TokenType      *string `json:"token_type,omitempty"`
+	ExpirationTime *int64  `json:"expiration_time,omitempty"`
+	IdToken        *string `json:"id_token,omitempty"`
+	SamlResponse   *string `json:"saml_response,omitempty"`
+	Code           string  `json:"code,omitempty"`
+	Message        string  `json:"message,omitempty"`
 }
 
 func parseSubjectToken(response []byte) (string, error) {
 	var result executableResponse
 	if err := json.Unmarshal(response, &result); err != nil {
-		return "", errors.New("oauth2/google: Unable to parse response JSON.")
+		return "", jsonParsingError()
 	}
 
 	if result.Version == nil {
-		return "", errors.New("oauth2/google: Response missing version field.")
+		return "", missingFieldError("version")
 	}
 
 	if result.Success == nil {
-		return "", errors.New("oauth2/google: Response missing success field.")
+		return "", missingFieldError("success")
 	}
 
 	if !*result.Success {
 		if result.Code == "" || result.Message == "" {
-			return "", errors.New("oauth2/google: Response must include `error` and `message` fields when unsuccessful.")
+			return "", malformedFailureError()
 		}
-		return "", fmt.Errorf("oauth2/google: Executable returned unsuccessful response: (%v) %v.", result.Code, result.Message)
+		return "", userDefinedError(result.Code, result.Message)
 	}
 
-	if *result.Version > EXECUTABLE_SUPPORTED_MAX_VERSION {
-		return "", fmt.Errorf("oauth2/google: Executable returned unsupported version: %v.", *result.Version)
+	if *result.Version > executableSupportedMaxVersion {
+		return "", unsupportedVersionError(*result.Version)
 	}
 
 	if result.ExpirationTime == nil {
-		return "", errors.New("oauth2/google: Response missing expiration_time field.")
+		return "", missingFieldError("expiration_time")
 	}
 
 	if result.TokenType == nil {
-		return "", errors.New("oauth2/google: Response missing token_type field.")
+		return "", missingFieldError("token_type")
 	}
 
 	if *result.ExpirationTime < now().Unix() {
-		return "", errors.New("oauth2/google: The token returned by the executable is expired.")
+		return "", tokenExpiredError()
 	}
 
 	if *result.TokenType == "urn:ietf:params:oauth:token-type:jwt" || *result.TokenType == "urn:ietf:params:oauth:token-type:id_token" {
 		if result.IdToken == nil {
-			return "", errors.New("oauth2/google: Response missing id_token field.")
+			return "", missingFieldError("id_token")
 		}
 		return *result.IdToken, nil
 	}
 
 	if *result.TokenType == "urn:ietf:params:oauth:token-type:saml2" {
 		if result.SamlResponse == nil {
-			return "", errors.New("oauth2/google: Response missing saml_response field.")
+			return "", missingFieldError("saml_response")
 		}
 		return *result.SamlResponse, nil
 	}
 
-	return "", errors.New("Executable returned unsupported token type.")
+	return "", tokenTypeError()
 }
 
 func (cs executableCredentialSource) subjectToken() (string, error) {
@@ -169,7 +215,7 @@ func (cs executableCredentialSource) getNewEnvironmentVariables() map[string]str
 func (cs executableCredentialSource) getTokenFromExecutableCommand() (string, error) {
 	// For security reasons, we need our consumers to set this environment variable to allow executables to be run.
 	if getenv("GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES") != "1" {
-		return "", errors.New("Executables need to be explicitly allowed (set GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES to '1') to run.")
+		return "", executablesDisallowedError()
 	}
 
 	ctx, cancel := context.WithDeadline(cs.ctx, now().Add(cs.Timeout))
@@ -177,12 +223,12 @@ func (cs executableCredentialSource) getTokenFromExecutableCommand() (string, er
 
 	if output, err := runCommand(ctx, cs.Command, cs.getEnvironment()); err != nil {
 		if err == context.DeadlineExceeded {
-			return "", fmt.Errorf("oauth2/google: executable command timed out.")
+			return "", timeoutError()
 		}
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return "", fmt.Errorf("oauth2/google: executable command failed with exit code %v.", exitError.ExitCode())
+			return "", exitCodeError(exitError.ExitCode())
 		}
-		return "", fmt.Errorf("oauth2/google: executable command failed: %v.", err.Error())
+		return "", executableError(err)
 	} else {
 		return parseSubjectToken(output)
 	}

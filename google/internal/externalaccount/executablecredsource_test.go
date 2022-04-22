@@ -7,6 +7,7 @@ package externalaccount
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -56,7 +57,7 @@ func TestCreateExecutableCredential_WithoutTimeout(t *testing.T) {
 	if ecs.Command != "blarg" {
 		t.Errorf("ecs.Command got %v but want %v", ecs.Command, "blarg")
 	}
-	if ecs.Timeout != 30000*time.Millisecond {
+	if ecs.Timeout != defaultTimeout {
 		t.Errorf("ecs.Timeout got %v but want %v", ecs.Timeout, 30000*time.Millisecond)
 	}
 }
@@ -78,18 +79,18 @@ OUTER:
 	return true
 }
 
-func TestMinimalExectuableCredentialGetEnvironment(t *testing.T) {
+func TestMinimalExecutableCredentialGetEnvironment(t *testing.T) {
 	config := Config{
 		Audience:         "//iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/pool/providers/oidc",
 		SubjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
 		CredentialSource: CredentialSource{
-			Executable: ExecutableConfig{
+			Executable: &ExecutableConfig{
 				Command: "blarg",
 			},
 		},
 	}
 
-	ecs := CreateExecutableCredential(config.CredentialSource.Executable, &config, context.Background())
+	ecs := CreateExecutableCredential(*config.CredentialSource.Executable, &config, context.Background())
 
 	oldBaseEnv := baseEnv
 	defer func() { baseEnv = oldBaseEnv }()
@@ -105,7 +106,7 @@ func TestMinimalExectuableCredentialGetEnvironment(t *testing.T) {
 	}
 
 	if got, want := ecs.getEnvironment(), expectedEnvironment; !areSlicesEquivalent(got, want) {
-		t.Errorf("Incorrect environment received.\nExpected: %s\nRecieved: %s", want, got)
+		t.Errorf("Incorrect environment received.\nReceived: %s\nExpected: %s", got, want)
 	}
 }
 
@@ -115,14 +116,14 @@ func TestExectuableCredentialGetEnvironmentMalformedImpersonationUrl(t *testing.
 		ServiceAccountImpersonationURL: "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/test@project.iam.gserviceaccount.com:generateAccessToken",
 		SubjectTokenType:               "urn:ietf:params:oauth:token-type:jwt",
 		CredentialSource: CredentialSource{
-			Executable: ExecutableConfig{
+			Executable: &ExecutableConfig{
 				Command:    "blarg",
 				OutputFile: "/path/to/generated/cached/credentials",
 			},
 		},
 	}
 
-	ecs := CreateExecutableCredential(config.CredentialSource.Executable, &config, context.Background())
+	ecs := CreateExecutableCredential(*config.CredentialSource.Executable, &config, context.Background())
 
 	oldBaseEnv := baseEnv
 	defer func() { baseEnv = oldBaseEnv }()
@@ -140,23 +141,24 @@ func TestExectuableCredentialGetEnvironmentMalformedImpersonationUrl(t *testing.
 	}
 
 	if got, want := ecs.getEnvironment(), expectedEnvironment; !areSlicesEquivalent(got, want) {
-		t.Errorf("Incorrect environment received.\nExpected: %s\nRecieved: %s", want, got)
+		t.Errorf("Incorrect environment received.\nReceived: %s\nExpected: %s", got, want)
 	}
 }
+
 func TestExectuableCredentialGetEnvironment(t *testing.T) {
 	config := Config{
 		Audience:                       "//iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/pool/providers/oidc",
 		ServiceAccountImpersonationURL: "test@project.iam.gserviceaccount.com",
 		SubjectTokenType:               "urn:ietf:params:oauth:token-type:jwt",
 		CredentialSource: CredentialSource{
-			Executable: ExecutableConfig{
+			Executable: &ExecutableConfig{
 				Command:    "blarg",
 				OutputFile: "/path/to/generated/cached/credentials",
 			},
 		},
 	}
 
-	ecs := CreateExecutableCredential(config.CredentialSource.Executable, &config, context.Background())
+	ecs := CreateExecutableCredential(*config.CredentialSource.Executable, &config, context.Background())
 
 	oldBaseEnv := baseEnv
 	defer func() { baseEnv = oldBaseEnv }()
@@ -173,13 +175,13 @@ func TestExectuableCredentialGetEnvironment(t *testing.T) {
 	}
 
 	if got, want := ecs.getEnvironment(), expectedEnvironment; !areSlicesEquivalent(got, want) {
-		t.Errorf("Incorrect environment received.\nExpected: %s\nRecieved: %s", want, got)
+		t.Errorf("Incorrect environment received.\nReceived: %s\nExpected: %s", got, want)
 	}
 }
 
 func TestRetrieveExecutableSubjectTokenWithoutEnvironmentVariablesSet(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -201,14 +203,58 @@ func TestRetrieveExecutableSubjectTokenWithoutEnvironmentVariablesSet(t *testing
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "Executables need to be explicitly allowed (set GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES to '1') to run."; got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	if got, want := err.Error(), executablesDisallowedError().Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
+	}
+}
+
+func TestRetrieveExecutableSubjectExecutableErrorOccurs(t *testing.T) {
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: 5000,
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	deadline, deadlineSet := now(), false
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		deadline, deadlineSet = ctx.Deadline()
+		return nil, errors.New("foo")
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), executableError(errors.New("foo")).Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
+	}
+
+	if !deadlineSet {
+		t.Errorf("Command run without a deadline")
+	} else if deadline != now().Add(5*time.Second) {
+		t.Errorf("Command run with incorrect deadline")
 	}
 }
 
 func TestRetrieveExecutableSubjectTokenTimeoutOccurs(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -239,8 +285,8 @@ func TestRetrieveExecutableSubjectTokenTimeoutOccurs(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: executable command timed out."; got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	if got, want := err.Error(), timeoutError().Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
 	if !deadlineSet {
@@ -252,7 +298,7 @@ func TestRetrieveExecutableSubjectTokenTimeoutOccurs(t *testing.T) {
 
 func TestRetrieveExecutableSubjectTokenInvalidFormat(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -283,8 +329,8 @@ func TestRetrieveExecutableSubjectTokenInvalidFormat(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: Unable to parse response JSON."; got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	if got, want := err.Error(), jsonParsingError().Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
 	if !deadlineSet {
@@ -296,7 +342,7 @@ func TestRetrieveExecutableSubjectTokenInvalidFormat(t *testing.T) {
 
 func TestRetrieveExecutableSubjectTokenMissingVersion(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -329,8 +375,8 @@ func TestRetrieveExecutableSubjectTokenMissingVersion(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: Response missing version field."; got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	if got, want := err.Error(), missingFieldError("version").Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
 	if !deadlineSet {
@@ -342,7 +388,7 @@ func TestRetrieveExecutableSubjectTokenMissingVersion(t *testing.T) {
 
 func TestRetrieveExecutableSubjectTokenMissingSuccess(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -375,8 +421,8 @@ func TestRetrieveExecutableSubjectTokenMissingSuccess(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: Response missing success field."; got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	if got, want := err.Error(), missingFieldError("success").Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
 	if !deadlineSet {
@@ -388,7 +434,7 @@ func TestRetrieveExecutableSubjectTokenMissingSuccess(t *testing.T) {
 
 func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithFields(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -424,8 +470,8 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithFields(t *testing
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: Executable returned unsuccessful response: (404) Token Not Found."; got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	if got, want := err.Error(), userDefinedError("404", "Token Not Found").Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
 	if !deadlineSet {
@@ -437,7 +483,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithFields(t *testing
 
 func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithCode(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -472,8 +518,8 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithCode(t *testing.T
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: Response must include `error` and `message` fields when unsuccessful."; got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	if got, want := err.Error(), malformedFailureError().Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
 	if !deadlineSet {
@@ -485,7 +531,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithCode(t *testing.T
 
 func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithMessage(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -520,8 +566,8 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithMessage(t *testin
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: Response must include `error` and `message` fields when unsuccessful."; got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	if got, want := err.Error(), malformedFailureError().Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
 	if !deadlineSet {
@@ -533,7 +579,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithMessage(t *testin
 
 func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithoutFields(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -567,8 +613,8 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithoutFields(t *test
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: Response must include `error` and `message` fields when unsuccessful."; got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	if got, want := err.Error(), malformedFailureError().Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
 	if !deadlineSet {
@@ -580,7 +626,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithoutFields(t *test
 
 func TestRetrieveExecutableSubjectTokenNewerVersion(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -614,8 +660,153 @@ func TestRetrieveExecutableSubjectTokenNewerVersion(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: Executable returned unsupported version: 2."; got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	if got, want := err.Error(), unsupportedVersionError(2).Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
+	}
+
+	if !deadlineSet {
+		t.Errorf("Command run without a deadline")
+	} else if deadline != now().Add(5*time.Second) {
+		t.Errorf("Command run with incorrect deadline")
+	}
+}
+
+func TestRetrieveExecutableSubjectTokenMissingExpiration(t *testing.T) {
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: 5000,
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	deadline, deadlineSet := now(), false
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		deadline, deadlineSet = ctx.Deadline()
+		return json.Marshal(executableResponse{
+			Success:   Bool(true),
+			Version:   Int(1),
+			TokenType: String("urn:ietf:params:oauth:token-type:jwt"),
+		})
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), missingFieldError("expiration_time").Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
+	}
+
+	if !deadlineSet {
+		t.Errorf("Command run without a deadline")
+	} else if deadline != now().Add(5*time.Second) {
+		t.Errorf("Command run with incorrect deadline")
+	}
+}
+
+func TestRetrieveExecutableSubjectTokenTokenTypeMissing(t *testing.T) {
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: 5000,
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	deadline, deadlineSet := now(), false
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		deadline, deadlineSet = ctx.Deadline()
+		return json.Marshal(executableResponse{
+			Success:        Bool(true),
+			Version:        Int(1),
+			ExpirationTime: Int64(now().Unix()),
+		})
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), missingFieldError("token_type").Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
+	}
+
+	if !deadlineSet {
+		t.Errorf("Command run without a deadline")
+	} else if deadline != now().Add(5*time.Second) {
+		t.Errorf("Command run with incorrect deadline")
+	}
+}
+
+func TestRetrieveExecutableSubjectTokenInvalidTokenType(t *testing.T) {
+	cs := CredentialSource{
+		Executable: &ExecutableConfig{
+			Command:       "blarg",
+			TimeoutMillis: 5000,
+		},
+	}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
+	defer func() {
+		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
+	}()
+
+	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
+	now = setTime(defaultTime)
+	deadline, deadlineSet := now(), false
+	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+		deadline, deadlineSet = ctx.Deadline()
+		return json.Marshal(executableResponse{
+			Success:        Bool(true),
+			Version:        Int(1),
+			ExpirationTime: Int64(now().Unix()),
+			TokenType:      String("urn:ietf:params:oauth:token-type:invalid"),
+		})
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), tokenTypeError().Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
 	if !deadlineSet {
@@ -627,7 +818,7 @@ func TestRetrieveExecutableSubjectTokenNewerVersion(t *testing.T) {
 
 func TestRetrieveExecutableSubjectTokenExpired(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -663,8 +854,8 @@ func TestRetrieveExecutableSubjectTokenExpired(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: The token returned by the executable is expired."; got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	if got, want := err.Error(), tokenExpiredError().Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
 	if !deadlineSet {
@@ -676,7 +867,7 @@ func TestRetrieveExecutableSubjectTokenExpired(t *testing.T) {
 
 func TestRetrieveExecutableSubjectTokenJwt(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -721,13 +912,13 @@ func TestRetrieveExecutableSubjectTokenJwt(t *testing.T) {
 	}
 
 	if got, want := out, "tokentokentoken"; got != want {
-		t.Errorf("Incorrect token received.\nExpected: %s\nRecieved: %s", want, got)
+		t.Errorf("Incorrect token received.\nReceived: %s\nExpected: %s", got, want)
 	}
 }
 
 func TestRetrieveExecutableSubjectTokenJwtMissingIdToken(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -763,8 +954,8 @@ func TestRetrieveExecutableSubjectTokenJwtMissingIdToken(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: Response missing id_token field."; got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	if got, want := err.Error(), missingFieldError("id_token").Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
 	if !deadlineSet {
@@ -776,7 +967,7 @@ func TestRetrieveExecutableSubjectTokenJwtMissingIdToken(t *testing.T) {
 
 func TestRetrieveExecutableSubjectTokenIdToken(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -821,13 +1012,13 @@ func TestRetrieveExecutableSubjectTokenIdToken(t *testing.T) {
 	}
 
 	if got, want := out, "tokentokentoken"; got != want {
-		t.Errorf("Incorrect token received.\nExpected: %s\nRecieved: %s", want, got)
+		t.Errorf("Incorrect token received.\nReceived: %s\nExpected: %s", got, want)
 	}
 }
 
 func TestRetrieveExecutableSubjectTokenSaml(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -872,13 +1063,13 @@ func TestRetrieveExecutableSubjectTokenSaml(t *testing.T) {
 	}
 
 	if got, want := out, "tokentokentoken"; got != want {
-		t.Errorf("Incorrect token received.\nExpected: %s\nRecieved: %s", want, got)
+		t.Errorf("Incorrect token received.\nReceived: %s\nExpected: %s", got, want)
 	}
 }
 
 func TestRetrieveExecutableSubjectTokenSamlMissingResponse(t *testing.T) {
 	cs := CredentialSource{
-		Executable: ExecutableConfig{
+		Executable: &ExecutableConfig{
 			Command:       "blarg",
 			TimeoutMillis: 5000,
 		},
@@ -914,8 +1105,8 @@ func TestRetrieveExecutableSubjectTokenSamlMissingResponse(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: Response missing saml_response field."; got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+	if got, want := err.Error(), missingFieldError("saml_response").Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
 	if !deadlineSet {
