@@ -38,7 +38,7 @@ func TestCreateExecutableCredential(t *testing.T) {
 		TimeoutMillis: 50000,
 	}
 
-	ecs := CreateExecutableCredential(ec, nil, context.Background())
+	ecs := CreateExecutableCredential(context.Background(), &ec, nil)
 	if ecs.Command != "blarg" {
 		t.Errorf("ecs.Command got %v but want %v", ecs.Command, "blarg")
 	}
@@ -52,7 +52,7 @@ func TestCreateExecutableCredential_WithoutTimeout(t *testing.T) {
 		Command: "blarg",
 	}
 
-	ecs := CreateExecutableCredential(ec, nil, context.Background())
+	ecs := CreateExecutableCredential(context.Background(), &ec, nil)
 	if ecs.Command != "blarg" {
 		t.Errorf("ecs.Command got %v but want %v", ecs.Command, "blarg")
 	}
@@ -89,7 +89,7 @@ func TestMinimalExecutableCredentialGetEnvironment(t *testing.T) {
 		},
 	}
 
-	ecs := CreateExecutableCredential(*config.CredentialSource.Executable, &config, context.Background())
+	ecs := CreateExecutableCredential(context.Background(), config.CredentialSource.Executable, &config)
 
 	oldBaseEnv := baseEnv
 	defer func() { baseEnv = oldBaseEnv }()
@@ -122,7 +122,7 @@ func TestExectuableCredentialGetEnvironmentMalformedImpersonationUrl(t *testing.
 		},
 	}
 
-	ecs := CreateExecutableCredential(*config.CredentialSource.Executable, &config, context.Background())
+	ecs := CreateExecutableCredential(context.Background(), config.CredentialSource.Executable, &config)
 
 	oldBaseEnv := baseEnv
 	defer func() { baseEnv = oldBaseEnv }()
@@ -157,7 +157,7 @@ func TestExectuableCredentialGetEnvironment(t *testing.T) {
 		},
 	}
 
-	ecs := CreateExecutableCredential(*config.CredentialSource.Executable, &config, context.Background())
+	ecs := CreateExecutableCredential(context.Background(), config.CredentialSource.Executable, &config)
 
 	oldBaseEnv := baseEnv
 	defer func() { baseEnv = oldBaseEnv }()

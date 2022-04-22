@@ -102,7 +102,7 @@ type executableCredentialSource struct {
 
 // CreateExecutableCredential creates an executableCredentialSource given an ExecutableConfig.
 // It also performs defaulting and type conversions.
-func CreateExecutableCredential(ec ExecutableConfig, config *Config, ctx context.Context) (result executableCredentialSource) {
+func CreateExecutableCredential(ctx context.Context, ec *ExecutableConfig, config *Config) (result executableCredentialSource) {
 	result.Command = ec.Command
 	if ec.TimeoutMillis == 0 {
 		result.Timeout = defaultTimeout
