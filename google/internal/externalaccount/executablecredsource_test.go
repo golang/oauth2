@@ -7,7 +7,6 @@ package externalaccount
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -205,94 +204,6 @@ func TestRetrieveExecutableSubjectTokenWithoutEnvironmentVariablesSet(t *testing
 	}
 	if got, want := err.Error(), executablesDisallowedError().Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
-	}
-}
-
-func TestRetrieveExecutableSubjectExecutableErrorOccurs(t *testing.T) {
-	cs := CredentialSource{
-		Executable: &ExecutableConfig{
-			Command:       "blarg",
-			TimeoutMillis: 5000,
-		},
-	}
-
-	tfc := testFileConfig
-	tfc.CredentialSource = cs
-
-	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
-	defer func() {
-		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
-	}()
-
-	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
-	now = setTime(defaultTime)
-	deadline, deadlineSet := now(), false
-	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
-		deadline, deadlineSet = ctx.Deadline()
-		return nil, errors.New("foo")
-	}
-
-	base, err := tfc.parse(context.Background())
-	if err != nil {
-		t.Fatalf("parse() failed %v", err)
-	}
-
-	_, err = base.subjectToken()
-	if err == nil {
-		t.Fatalf("Expected error but found none")
-	}
-	if got, want := err.Error(), executableError(errors.New("foo")).Error(); got != want {
-		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
-	}
-
-	if !deadlineSet {
-		t.Errorf("Command run without a deadline")
-	} else if deadline != now().Add(5*time.Second) {
-		t.Errorf("Command run with incorrect deadline")
-	}
-}
-
-func TestRetrieveExecutableSubjectTokenTimeoutOccurs(t *testing.T) {
-	cs := CredentialSource{
-		Executable: &ExecutableConfig{
-			Command:       "blarg",
-			TimeoutMillis: 5000,
-		},
-	}
-
-	tfc := testFileConfig
-	tfc.CredentialSource = cs
-
-	oldGetenv, oldNow, oldRunCommand := getenv, now, runCommand
-	defer func() {
-		getenv, now, runCommand = oldGetenv, oldNow, oldRunCommand
-	}()
-
-	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
-	now = setTime(defaultTime)
-	deadline, deadlineSet := now(), false
-	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
-		deadline, deadlineSet = ctx.Deadline()
-		return nil, context.DeadlineExceeded
-	}
-
-	base, err := tfc.parse(context.Background())
-	if err != nil {
-		t.Fatalf("parse() failed %v", err)
-	}
-
-	_, err = base.subjectToken()
-	if err == nil {
-		t.Fatalf("Expected error but found none")
-	}
-	if got, want := err.Error(), timeoutError().Error(); got != want {
-		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
-	}
-
-	if !deadlineSet {
-		t.Errorf("Command run without a deadline")
-	} else if deadline != now().Add(5*time.Second) {
-		t.Errorf("Command run with incorrect deadline")
 	}
 }
 

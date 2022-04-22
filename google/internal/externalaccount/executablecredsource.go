@@ -76,7 +76,20 @@ var runCommand = func(ctx context.Context, command string, env []string) ([]byte
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
-	return response, err
+
+	if err == nil {
+		return response, nil
+	}
+
+	if err == context.DeadlineExceeded {
+		return []byte{}, timeoutError()
+	}
+
+	if exitError, ok := err.(*exec.ExitError); ok {
+		return []byte{}, exitCodeError(exitError.ExitCode())
+	}
+
+	return []byte{}, executableError(err)
 }
 
 type executableCredentialSource struct {
@@ -222,13 +235,7 @@ func (cs executableCredentialSource) getTokenFromExecutableCommand() (string, er
 	defer cancel()
 
 	if output, err := runCommand(ctx, cs.Command, cs.getEnvironment()); err != nil {
-		if err == context.DeadlineExceeded {
-			return "", timeoutError()
-		}
-		if exitError, ok := err.(*exec.ExitError); ok {
-			return "", exitCodeError(exitError.ExitCode())
-		}
-		return "", executableError(err)
+		return "", err
 	} else {
 		return parseSubjectToken(output)
 	}
