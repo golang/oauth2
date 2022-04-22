@@ -20,6 +20,8 @@ var serviceAccountImpersonationCompiler = regexp.MustCompile("https://iamcredent
 const (
 	executableSupportedMaxVersion = 1
 	defaultTimeout                = 30 * time.Second
+	timeoutMinimum                = 5 * time.Second
+	timeoutMaximum                = 120 * time.Second
 )
 
 func missingFieldError(field string) error {
@@ -63,7 +65,15 @@ func executableError(err error) error {
 }
 
 func executablesDisallowedError() error {
-	return errors.New("Executables need to be explicitly allowed (set GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES to '1') to run")
+	return errors.New("oauth2/google: Executables need to be explicitly allowed (set GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES to '1') to run")
+}
+
+func timeoutRangeError() error {
+	return errors.New("oauth2/google: Invalid `timeout_millis` field. Executable timeout must be between 5 and 120 seconds.")
+}
+
+func commandMissingError() error {
+	return errors.New("oauth2/google: Missing `command` field. Executable command must be provided.")
 }
 
 // baseEnv is an alias of os.Environ used for testing
@@ -100,12 +110,19 @@ type executableCredentialSource struct {
 
 // CreateExecutableCredential creates an executableCredentialSource given an ExecutableConfig.
 // It also performs defaulting and type conversions.
-func CreateExecutableCredential(ctx context.Context, ec *ExecutableConfig, config *Config) (result executableCredentialSource) {
+func CreateExecutableCredential(ctx context.Context, ec *ExecutableConfig, config *Config) (result executableCredentialSource, err error) {
+	if ec.Command == "" {
+		err = commandMissingError()
+	}
 	result.Command = ec.Command
-	if ec.TimeoutMillis == 0 {
+	if ec.TimeoutMillis == nil {
 		result.Timeout = defaultTimeout
 	} else {
-		result.Timeout = time.Duration(ec.TimeoutMillis) * time.Millisecond
+		result.Timeout = time.Duration(*ec.TimeoutMillis) * time.Millisecond
+		if result.Timeout < timeoutMinimum || result.Timeout > timeoutMaximum {
+			err = timeoutRangeError()
+			return
+		}
 	}
 	result.OutputFile = ec.OutputFile
 	result.ctx = ctx

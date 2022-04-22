@@ -183,7 +183,7 @@ type CredentialSource struct {
 
 type ExecutableConfig struct {
 	Command       string `json:"command"`
-	TimeoutMillis int    `json:"timeout_millis"`
+	TimeoutMillis *int   `json:"timeout_millis"`
 	OutputFile    string `json:"output_file"`
 }
 
@@ -214,7 +214,7 @@ func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 	} else if c.CredentialSource.URL != "" {
 		return urlCredentialSource{URL: c.CredentialSource.URL, Headers: c.CredentialSource.Headers, Format: c.CredentialSource.Format, ctx: ctx}, nil
 	} else if c.CredentialSource.Executable != nil {
-		return CreateExecutableCredential(ctx, c.CredentialSource.Executable, c), nil
+		return CreateExecutableCredential(ctx, c.CredentialSource.Executable, c)
 	}
 	return nil, fmt.Errorf("oauth2/google: unable to parse credential source")
 }

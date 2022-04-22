@@ -31,10 +31,13 @@ func String(s string) *string {
 func TestCreateExecutableCredential(t *testing.T) {
 	ec := ExecutableConfig{
 		Command:       "blarg",
-		TimeoutMillis: 50000,
+		TimeoutMillis: Int(50000),
 	}
 
-	ecs := CreateExecutableCredential(context.Background(), &ec, nil)
+	ecs, err := CreateExecutableCredential(context.Background(), &ec, nil)
+	if err != nil {
+		t.Fatalf("creation failed %v", err)
+	}
 	if ecs.Command != "blarg" {
 		t.Errorf("ecs.Command got %v but want %v", ecs.Command, "blarg")
 	}
@@ -48,12 +51,81 @@ func TestCreateExecutableCredential_WithoutTimeout(t *testing.T) {
 		Command: "blarg",
 	}
 
-	ecs := CreateExecutableCredential(context.Background(), &ec, nil)
+	ecs, err := CreateExecutableCredential(context.Background(), &ec, nil)
+	if err != nil {
+		t.Fatalf("creation failed %v", err)
+	}
 	if ecs.Command != "blarg" {
 		t.Errorf("ecs.Command got %v but want %v", ecs.Command, "blarg")
 	}
 	if ecs.Timeout != defaultTimeout {
 		t.Errorf("ecs.Timeout got %v but want %v", ecs.Timeout, 30000*time.Millisecond)
+	}
+}
+
+func TestCreateExectuableCredential_WithoutCommand(t *testing.T) {
+	ec := ExecutableConfig{}
+
+	_, err := CreateExecutableCredential(context.Background(), &ec, nil)
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), commandMissingError().Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
+	}
+}
+
+func TestCreateExectuableCredential_TimeoutTooLow(t *testing.T) {
+	ec := ExecutableConfig{
+		Command:       "blarg",
+		TimeoutMillis: Int(4999),
+	}
+
+	_, err := CreateExecutableCredential(context.Background(), &ec, nil)
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), timeoutRangeError().Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
+	}
+}
+
+func TestCreateExectuableCredential_TimeoutLow(t *testing.T) {
+	ec := ExecutableConfig{
+		Command:       "blarg",
+		TimeoutMillis: Int(5000),
+	}
+
+	_, err := CreateExecutableCredential(context.Background(), &ec, nil)
+	if err != nil {
+		t.Fatalf("creation failed %v", err)
+	}
+}
+
+func TestCreateExectuableCredential_TimeoutHigh(t *testing.T) {
+	ec := ExecutableConfig{
+		Command:       "blarg",
+		TimeoutMillis: Int(120000),
+	}
+
+	_, err := CreateExecutableCredential(context.Background(), &ec, nil)
+	if err != nil {
+		t.Fatalf("creation failed %v", err)
+	}
+}
+
+func TestCreateExectuableCredential_TimeoutTooHigh(t *testing.T) {
+	ec := ExecutableConfig{
+		Command:       "blarg",
+		TimeoutMillis: Int(120001),
+	}
+
+	_, err := CreateExecutableCredential(context.Background(), &ec, nil)
+	if err == nil {
+		t.Fatalf("Expected error but found none")
+	}
+	if got, want := err.Error(), timeoutRangeError().Error(); got != want {
+		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 }
 
@@ -85,7 +157,10 @@ func TestMinimalExecutableCredentialGetEnvironment(t *testing.T) {
 		},
 	}
 
-	ecs := CreateExecutableCredential(context.Background(), config.CredentialSource.Executable, &config)
+	ecs, err := CreateExecutableCredential(context.Background(), config.CredentialSource.Executable, &config)
+	if err != nil {
+		t.Fatalf("creation failed %v", err)
+	}
 
 	oldBaseEnv := baseEnv
 	defer func() { baseEnv = oldBaseEnv }()
@@ -118,7 +193,10 @@ func TestExectuableCredentialGetEnvironmentMalformedImpersonationUrl(t *testing.
 		},
 	}
 
-	ecs := CreateExecutableCredential(context.Background(), config.CredentialSource.Executable, &config)
+	ecs, err := CreateExecutableCredential(context.Background(), config.CredentialSource.Executable, &config)
+	if err != nil {
+		t.Fatalf("creation failed %v", err)
+	}
 
 	oldBaseEnv := baseEnv
 	defer func() { baseEnv = oldBaseEnv }()
@@ -153,7 +231,10 @@ func TestExectuableCredentialGetEnvironment(t *testing.T) {
 		},
 	}
 
-	ecs := CreateExecutableCredential(context.Background(), config.CredentialSource.Executable, &config)
+	ecs, err := CreateExecutableCredential(context.Background(), config.CredentialSource.Executable, &config)
+	if err != nil {
+		t.Fatalf("creation failed %v", err)
+	}
 
 	oldBaseEnv := baseEnv
 	defer func() { baseEnv = oldBaseEnv }()
@@ -178,7 +259,7 @@ func TestRetrieveExecutableSubjectTokenWithoutEnvironmentVariablesSet(t *testing
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -207,7 +288,7 @@ func TestRetrieveExecutableSubjectTokenInvalidFormat(t *testing.T) {
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -251,7 +332,7 @@ func TestRetrieveExecutableSubjectTokenMissingVersion(t *testing.T) {
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -297,7 +378,7 @@ func TestRetrieveExecutableSubjectTokenMissingSuccess(t *testing.T) {
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -343,7 +424,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithFields(t *testing
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -392,7 +473,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithCode(t *testing.T
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -440,7 +521,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithMessage(t *testin
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -488,7 +569,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithoutFields(t *test
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -535,7 +616,7 @@ func TestRetrieveExecutableSubjectTokenNewerVersion(t *testing.T) {
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -582,7 +663,7 @@ func TestRetrieveExecutableSubjectTokenMissingExpiration(t *testing.T) {
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -630,7 +711,7 @@ func TestRetrieveExecutableSubjectTokenTokenTypeMissing(t *testing.T) {
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -678,7 +759,7 @@ func TestRetrieveExecutableSubjectTokenInvalidTokenType(t *testing.T) {
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -727,7 +808,7 @@ func TestRetrieveExecutableSubjectTokenExpired(t *testing.T) {
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -776,7 +857,7 @@ func TestRetrieveExecutableSubjectTokenJwt(t *testing.T) {
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -827,7 +908,7 @@ func TestRetrieveExecutableSubjectTokenJwtMissingIdToken(t *testing.T) {
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -876,7 +957,7 @@ func TestRetrieveExecutableSubjectTokenIdToken(t *testing.T) {
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -927,7 +1008,7 @@ func TestRetrieveExecutableSubjectTokenSaml(t *testing.T) {
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
@@ -978,7 +1059,7 @@ func TestRetrieveExecutableSubjectTokenSamlMissingResponse(t *testing.T) {
 	cs := CredentialSource{
 		Executable: &ExecutableConfig{
 			Command:       "blarg",
-			TimeoutMillis: 5000,
+			TimeoutMillis: Int(5000),
 		},
 	}
 
