@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+var serviceAccountImpersonationCompiler = regexp.MustCompile("https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/(.*@.*):generateAccessToken")
+
 const (
 	executableSupportedMaxVersion = 1
 	defaultTimeout                = 30 * time.Second
@@ -57,7 +59,7 @@ func exitCodeError(exitCode int) error {
 }
 
 func executableError(err error) error {
-	return fmt.Errorf("oauth2/google: executable command failed: %v", err.Error())
+	return fmt.Errorf("oauth2/google: executable command failed: %v", err)
 }
 
 func executablesDisallowedError() error {
@@ -73,10 +75,6 @@ var runCommand = func(ctx context.Context, command string, env []string) ([]byte
 	cmd.Env = env
 
 	response, err := cmd.Output()
-	if ctx.Err() != nil {
-		return nil, ctx.Err()
-	}
-
 	if err == nil {
 		return response, nil
 	}
@@ -200,8 +198,6 @@ func (cs executableCredentialSource) getEnvironment() []string {
 	}
 	return result
 }
-
-var serviceAccountImpersonationCompiler = regexp.MustCompile("https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/(.*@.*):generateAccessToken")
 
 func (cs executableCredentialSource) getNewEnvironmentVariables() map[string]string {
 	result := map[string]string{

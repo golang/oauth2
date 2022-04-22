@@ -28,10 +28,6 @@ func String(s string) *string {
 	return &s
 }
 
-var emptyEnv = func() []string {
-	return []string{}
-}
-
 func TestCreateExecutableCredential(t *testing.T) {
 	ec := ExecutableConfig{
 		Command:       "blarg",
