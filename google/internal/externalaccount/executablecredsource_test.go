@@ -396,7 +396,7 @@ func TestRetrieveExecutableSubjectTokenMissingSuccess(t *testing.T) {
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
 		deadline, deadlineSet = ctx.Deadline()
 		return json.Marshal(executableResponse{
-			Version: Int(1),
+			Version: 1,
 		})
 	}
 
@@ -443,7 +443,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithFields(t *testing
 		deadline, deadlineSet = ctx.Deadline()
 		return json.Marshal(executableResponse{
 			Success: Bool(false),
-			Version: Int(1),
+			Version: 1,
 			Code:    "404",
 			Message: "Token Not Found",
 		})
@@ -492,7 +492,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithCode(t *testing.T
 		deadline, deadlineSet = ctx.Deadline()
 		return json.Marshal(executableResponse{
 			Success: Bool(false),
-			Version: Int(1),
+			Version: 1,
 			Code:    "404",
 		})
 	}
@@ -540,7 +540,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithMessage(t *testin
 		deadline, deadlineSet = ctx.Deadline()
 		return json.Marshal(executableResponse{
 			Success: Bool(false),
-			Version: Int(1),
+			Version: 1,
 			Message: "Token Not Found",
 		})
 	}
@@ -588,7 +588,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithoutFields(t *test
 		deadline, deadlineSet = ctx.Deadline()
 		return json.Marshal(executableResponse{
 			Success: Bool(false),
-			Version: Int(1),
+			Version: 1,
 		})
 	}
 
@@ -635,7 +635,7 @@ func TestRetrieveExecutableSubjectTokenNewerVersion(t *testing.T) {
 		deadline, deadlineSet = ctx.Deadline()
 		return json.Marshal(executableResponse{
 			Success: Bool(true),
-			Version: Int(2),
+			Version: 2,
 		})
 	}
 
@@ -682,8 +682,8 @@ func TestRetrieveExecutableSubjectTokenMissingExpiration(t *testing.T) {
 		deadline, deadlineSet = ctx.Deadline()
 		return json.Marshal(executableResponse{
 			Success:   Bool(true),
-			Version:   Int(1),
-			TokenType: String("urn:ietf:params:oauth:token-type:jwt"),
+			Version:   1,
+			TokenType: "urn:ietf:params:oauth:token-type:jwt",
 		})
 	}
 
@@ -730,8 +730,8 @@ func TestRetrieveExecutableSubjectTokenTokenTypeMissing(t *testing.T) {
 		deadline, deadlineSet = ctx.Deadline()
 		return json.Marshal(executableResponse{
 			Success:        Bool(true),
-			Version:        Int(1),
-			ExpirationTime: Int64(now().Unix()),
+			Version:        1,
+			ExpirationTime: now().Unix(),
 		})
 	}
 
@@ -778,9 +778,9 @@ func TestRetrieveExecutableSubjectTokenInvalidTokenType(t *testing.T) {
 		deadline, deadlineSet = ctx.Deadline()
 		return json.Marshal(executableResponse{
 			Success:        Bool(true),
-			Version:        Int(1),
-			ExpirationTime: Int64(now().Unix()),
-			TokenType:      String("urn:ietf:params:oauth:token-type:invalid"),
+			Version:        1,
+			ExpirationTime: now().Unix(),
+			TokenType:      "urn:ietf:params:oauth:token-type:invalid",
 		})
 	}
 
@@ -827,9 +827,9 @@ func TestRetrieveExecutableSubjectTokenExpired(t *testing.T) {
 		deadline, deadlineSet = ctx.Deadline()
 		return json.Marshal(executableResponse{
 			Success:        Bool(true),
-			Version:        Int(1),
-			ExpirationTime: Int64(now().Unix() - 1),
-			TokenType:      String("urn:ietf:params:oauth:token-type:jwt"),
+			Version:        1,
+			ExpirationTime: now().Unix() - 1,
+			TokenType:      "urn:ietf:params:oauth:token-type:jwt",
 		})
 	}
 
@@ -876,10 +876,10 @@ func TestRetrieveExecutableSubjectTokenJwt(t *testing.T) {
 		deadline, deadlineSet = ctx.Deadline()
 		return json.Marshal(executableResponse{
 			Success:        Bool(true),
-			Version:        Int(1),
-			ExpirationTime: Int64(now().Unix() + 3600),
-			TokenType:      String("urn:ietf:params:oauth:token-type:jwt"),
-			IdToken:        String("tokentokentoken"),
+			Version:        1,
+			ExpirationTime: now().Unix() + 3600,
+			TokenType:      "urn:ietf:params:oauth:token-type:jwt",
+			IdToken:        "tokentokentoken",
 		})
 	}
 
@@ -927,9 +927,9 @@ func TestRetrieveExecutableSubjectTokenJwtMissingIdToken(t *testing.T) {
 		deadline, deadlineSet = ctx.Deadline()
 		return json.Marshal(executableResponse{
 			Success:        Bool(true),
-			Version:        Int(1),
-			ExpirationTime: Int64(now().Unix() + 3600),
-			TokenType:      String("urn:ietf:params:oauth:token-type:jwt"),
+			Version:        1,
+			ExpirationTime: now().Unix() + 3600,
+			TokenType:      "urn:ietf:params:oauth:token-type:jwt",
 		})
 	}
 
@@ -976,10 +976,10 @@ func TestRetrieveExecutableSubjectTokenIdToken(t *testing.T) {
 		deadline, deadlineSet = ctx.Deadline()
 		return json.Marshal(executableResponse{
 			Success:        Bool(true),
-			Version:        Int(1),
-			ExpirationTime: Int64(now().Unix() + 3600),
-			TokenType:      String("urn:ietf:params:oauth:token-type:id_token"),
-			IdToken:        String("tokentokentoken"),
+			Version:        1,
+			ExpirationTime: now().Unix() + 3600,
+			TokenType:      "urn:ietf:params:oauth:token-type:id_token",
+			IdToken:        "tokentokentoken",
 		})
 	}
 
@@ -1027,10 +1027,10 @@ func TestRetrieveExecutableSubjectTokenSaml(t *testing.T) {
 		deadline, deadlineSet = ctx.Deadline()
 		return json.Marshal(executableResponse{
 			Success:        Bool(true),
-			Version:        Int(1),
-			ExpirationTime: Int64(now().Unix() + 3600),
-			TokenType:      String("urn:ietf:params:oauth:token-type:saml2"),
-			SamlResponse:   String("tokentokentoken"),
+			Version:        1,
+			ExpirationTime: now().Unix() + 3600,
+			TokenType:      "urn:ietf:params:oauth:token-type:saml2",
+			SamlResponse:   "tokentokentoken",
 		})
 	}
 
@@ -1078,9 +1078,9 @@ func TestRetrieveExecutableSubjectTokenSamlMissingResponse(t *testing.T) {
 		deadline, deadlineSet = ctx.Deadline()
 		return json.Marshal(executableResponse{
 			Success:        Bool(true),
-			Version:        Int(1),
-			ExpirationTime: Int64(now().Unix() + 3600),
-			TokenType:      String("urn:ietf:params:oauth:token-type:saml2"),
+			Version:        1,
+			ExpirationTime: now().Unix() + 3600,
+			TokenType:      "urn:ietf:params:oauth:token-type:saml2",
 		})
 	}
 

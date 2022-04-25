@@ -65,15 +65,15 @@ func executableError(err error) error {
 }
 
 func executablesDisallowedError() error {
-	return errors.New("oauth2/google: Executables need to be explicitly allowed (set GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES to '1') to run")
+	return errors.New("oauth2/google: executables need to be explicitly allowed (set GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES to '1') to run")
 }
 
 func timeoutRangeError() error {
-	return errors.New("oauth2/google: Invalid `timeout_millis` field. Executable timeout must be between 5 and 120 seconds.")
+	return errors.New("oauth2/google: invalid `timeout_millis` field. Executable timeout must be between 5 and 120 seconds")
 }
 
 func commandMissingError() error {
-	return errors.New("oauth2/google: Missing `command` field. Executable command must be provided.")
+	return errors.New("oauth2/google: missing `command` field. Executable command must be provided")
 }
 
 // baseEnv is an alias of os.Environ used for testing
@@ -90,14 +90,14 @@ var runCommand = func(ctx context.Context, command string, env []string) ([]byte
 	}
 
 	if err == context.DeadlineExceeded {
-		return []byte{}, timeoutError()
+		return nil, timeoutError()
 	}
 
 	if exitError, ok := err.(*exec.ExitError); ok {
-		return []byte{}, exitCodeError(exitError.ExitCode())
+		return nil, exitCodeError(exitError.ExitCode())
 	}
 
-	return []byte{}, executableError(err)
+	return nil, executableError(err)
 }
 
 type executableCredentialSource struct {
@@ -131,14 +131,14 @@ func CreateExecutableCredential(ctx context.Context, ec *ExecutableConfig, confi
 }
 
 type executableResponse struct {
-	Version        *int    `json:"version,omitempty"`
-	Success        *bool   `json:"success,omitempty"`
-	TokenType      *string `json:"token_type,omitempty"`
-	ExpirationTime *int64  `json:"expiration_time,omitempty"`
-	IdToken        *string `json:"id_token,omitempty"`
-	SamlResponse   *string `json:"saml_response,omitempty"`
-	Code           string  `json:"code,omitempty"`
-	Message        string  `json:"message,omitempty"`
+	Version        int    `json:"version,omitempty"`
+	Success        *bool  `json:"success,omitempty"`
+	TokenType      string `json:"token_type,omitempty"`
+	ExpirationTime int64  `json:"expiration_time,omitempty"`
+	IdToken        string `json:"id_token,omitempty"`
+	SamlResponse   string `json:"saml_response,omitempty"`
+	Code           string `json:"code,omitempty"`
+	Message        string `json:"message,omitempty"`
 }
 
 func parseSubjectToken(response []byte) (string, error) {
@@ -147,7 +147,7 @@ func parseSubjectToken(response []byte) (string, error) {
 		return "", jsonParsingError()
 	}
 
-	if result.Version == nil {
+	if result.Version == 0 {
 		return "", missingFieldError("version")
 	}
 
@@ -162,34 +162,34 @@ func parseSubjectToken(response []byte) (string, error) {
 		return "", userDefinedError(result.Code, result.Message)
 	}
 
-	if *result.Version > executableSupportedMaxVersion {
-		return "", unsupportedVersionError(*result.Version)
+	if result.Version > executableSupportedMaxVersion || result.Version < 0 {
+		return "", unsupportedVersionError(result.Version)
 	}
 
-	if result.ExpirationTime == nil {
+	if result.ExpirationTime == 0 {
 		return "", missingFieldError("expiration_time")
 	}
 
-	if result.TokenType == nil {
+	if result.TokenType == "" {
 		return "", missingFieldError("token_type")
 	}
 
-	if *result.ExpirationTime < now().Unix() {
+	if result.ExpirationTime < now().Unix() {
 		return "", tokenExpiredError()
 	}
 
-	if *result.TokenType == "urn:ietf:params:oauth:token-type:jwt" || *result.TokenType == "urn:ietf:params:oauth:token-type:id_token" {
-		if result.IdToken == nil {
+	if result.TokenType == "urn:ietf:params:oauth:token-type:jwt" || result.TokenType == "urn:ietf:params:oauth:token-type:id_token" {
+		if result.IdToken == "" {
 			return "", missingFieldError("id_token")
 		}
-		return *result.IdToken, nil
+		return result.IdToken, nil
 	}
 
-	if *result.TokenType == "urn:ietf:params:oauth:token-type:saml2" {
-		if result.SamlResponse == nil {
+	if result.TokenType == "urn:ietf:params:oauth:token-type:saml2" {
+		if result.SamlResponse == "" {
 			return "", missingFieldError("saml_response")
 		}
-		return *result.SamlResponse, nil
+		return result.SamlResponse, nil
 	}
 
 	return "", tokenTypeError()
@@ -218,8 +218,9 @@ func (cs executableCredentialSource) getEnvironment() []string {
 
 func (cs executableCredentialSource) getNewEnvironmentVariables() map[string]string {
 	result := map[string]string{
-		"GOOGLE_EXTERNAL_ACCOUNT_AUDIENCE":   cs.config.Audience,
-		"GOOGLE_EXTERNAL_ACCOUNT_TOKEN_TYPE": cs.config.SubjectTokenType,
+		"GOOGLE_EXTERNAL_ACCOUNT_AUDIENCE":    cs.config.Audience,
+		"GOOGLE_EXTERNAL_ACCOUNT_TOKEN_TYPE":  cs.config.SubjectTokenType,
+		"GOOGLE_EXTERNAL_ACCOUNT_INTERACTIVE": "0",
 	}
 
 	if cs.config.ServiceAccountImpersonationURL != "" {
@@ -228,8 +229,6 @@ func (cs executableCredentialSource) getNewEnvironmentVariables() map[string]str
 			result["GOOGLE_EXTERNAL_ACCOUNT_IMPERSONATED_EMAIL"] = matches[1]
 		}
 	}
-
-	result["GOOGLE_EXTERNAL_ACCOUNT_INTERACTIVE"] = "0"
 
 	if cs.OutputFile != "" {
 		result["GOOGLE_EXTERNAL_ACCOUNT_OUTPUT_FILE"] = cs.OutputFile
