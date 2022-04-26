@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -81,7 +82,8 @@ var baseEnv = os.Environ
 
 // runCommand is basically an alias of exec.CommandContext for testing.
 var runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, command)
+	splitCommand := strings.Fields(command)
+	cmd := exec.CommandContext(ctx, splitCommand[0], splitCommand[1:]...)
 	cmd.Env = env
 
 	response, err := cmd.Output()
