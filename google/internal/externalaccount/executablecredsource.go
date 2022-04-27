@@ -28,35 +28,36 @@ const (
 	outputFileSource              = "output file"
 )
 
+type nonCacheableError struct {
+	message string
+}
+
+func (nce nonCacheableError) Error() string {
+	return nce.message
+}
+
 func missingFieldError(source, field string) error {
 	return fmt.Errorf("oauth2/google: %v missing `%v` field", source, field)
 }
 
-func jsonParsingError(source string) error {
-	return fmt.Errorf("oauth2/google: unable to parse %v JSON", source)
+func jsonParsingError(source, data string) error {
+	return fmt.Errorf("oauth2/google: unable to parse %v\nResponse: %v", source, data)
 }
 
-func malformedFailureError(source string) error {
-	return fmt.Errorf("oauth2/google: %v must include `error` and `message` fields when unsuccessful", source)
+func malformedFailureError() error {
+	return nonCacheableError{"oauth2/google: response must include `error` and `message` fields when unsuccessful"}
 }
 
-func userDefinedError(source, code, message string) error {
-	return fmt.Errorf("oauth2/google: %v contains unsuccessful response: (%v) %v", source, code, message)
+func userDefinedError(code, message string) error {
+	return nonCacheableError{fmt.Sprintf("oauth2/google: response contains unsuccessful response: (%v) %v", code, message)}
 }
 
 func unsupportedVersionError(source string, version int) error {
 	return fmt.Errorf("oauth2/google: %v contains unsupported version: %v", source, version)
 }
 
-type timeoutException struct {
-}
-
-func (t timeoutException) Error() string {
-	return "oauth2/google: the token returned by the executable is expired"
-}
-
 func tokenExpiredError() error {
-	return timeoutException{}
+	return nonCacheableError{"oauth2/google: the token returned by the executable is expired"}
 }
 
 func tokenTypeError(source string) error {
@@ -155,7 +156,7 @@ type executableResponse struct {
 func parseSubjectTokenFromSource(response []byte, source string) (string, error) {
 	var result executableResponse
 	if err := json.Unmarshal(response, &result); err != nil {
-		return "", jsonParsingError(source)
+		return "", jsonParsingError(source, string(response))
 	}
 
 	if result.Version == 0 {
@@ -168,9 +169,9 @@ func parseSubjectTokenFromSource(response []byte, source string) (string, error)
 
 	if !*result.Success {
 		if result.Code == "" || result.Message == "" {
-			return "", malformedFailureError(source)
+			return "", malformedFailureError()
 		}
-		return "", userDefinedError(source, result.Code, result.Message)
+		return "", userDefinedError(result.Code, result.Message)
 	}
 
 	if result.Version > executableSupportedMaxVersion || result.Version < 0 {
@@ -227,8 +228,8 @@ func (cs executableCredentialSource) getTokenFromOutputFile() (string, error, bo
 	}
 
 	data, err := ioutil.ReadAll(io.LimitReader(file, 1<<20))
-	if err != nil {
-		// An error reading the file. Not necessarily under the developer's control, so ignore it
+	if err != nil || len(data) == 0 {
+		// Cachefile exists, but no data found. Get new credential.
 		return "", nil, false
 	}
 
@@ -239,8 +240,9 @@ func (cs executableCredentialSource) getTokenFromOutputFile() (string, error, bo
 		return token, nil, true
 	}
 
-	if _, ok := err.(timeoutException); ok {
-		// Cached token expired.  Go through regular flow to find new token.
+	if _, ok := err.(nonCacheableError); ok {
+		// If the cached token is expired we need a new token,
+		// and if the cache contains a failure, we need to try again.
 		return "", nil, false
 	}
 

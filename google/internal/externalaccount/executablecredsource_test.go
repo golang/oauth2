@@ -319,7 +319,7 @@ func TestRetrieveExecutableSubjectTokenInvalidFormat(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), jsonParsingError(executableSource).Error(); got != want {
+	if got, want := err.Error(), jsonParsingError(executableSource, "tokentokentoken").Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -460,7 +460,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithFields(t *testing
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), userDefinedError(executableSource, "404", "Token Not Found").Error(); got != want {
+	if got, want := err.Error(), userDefinedError("404", "Token Not Found").Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -508,7 +508,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithCode(t *testing.T
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), malformedFailureError(executableSource).Error(); got != want {
+	if got, want := err.Error(), malformedFailureError().Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -556,7 +556,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithMessage(t *testin
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), malformedFailureError(executableSource).Error(); got != want {
+	if got, want := err.Error(), malformedFailureError().Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -603,7 +603,7 @@ func TestRetrieveExecutableSubjectTokenUnsuccessfulResponseWithoutFields(t *test
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), malformedFailureError(executableSource).Error(); got != want {
+	if got, want := err.Error(), malformedFailureError().Error(); got != want {
 		t.Errorf("Incorrect error received.\nReceived: %s\nExpected: %s", got, want)
 	}
 
@@ -1149,7 +1149,7 @@ func TestRetrieveOutputFileSubjectTokenInvalidFormat(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), jsonParsingError(outputFileSource).Error(); got != want {
+	if got, want := err.Error(), jsonParsingError(outputFileSource, "tokentokentoken").Error(); got != want {
 		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
 	}
 }
@@ -1279,9 +1279,16 @@ func TestRetrieveOutputFileSubjectTokenUnsuccessfulResponseWithFields(t *testing
 
 	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
 	now = setTime(defaultTime)
+	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
-		t.Fatalf("Executable called when it should not have been")
-		return []byte{}, nil
+		deadline, deadlineSet = ctx.Deadline()
+		return json.Marshal(executableResponse{
+			Success:        Bool(true),
+			Version:        1,
+			ExpirationTime: now().Unix() + 3600,
+			TokenType:      "urn:ietf:params:oauth:token-type:jwt",
+			IdToken:        "tokentokentoken",
+		})
 	}
 
 	if err = json.NewEncoder(outputFile).Encode(executableResponse{
@@ -1298,12 +1305,19 @@ func TestRetrieveOutputFileSubjectTokenUnsuccessfulResponseWithFields(t *testing
 		t.Fatalf("parse() failed %v", err)
 	}
 
-	_, err = base.subjectToken()
-	if err == nil {
-		t.Fatalf("Expected error but found none")
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
 	}
-	if got, want := err.Error(), userDefinedError(outputFileSource, "404", "Token Not Found").Error(); got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+
+	if !deadlineSet {
+		t.Errorf("Command run without a deadline")
+	} else if deadline != now().Add(5*time.Second) {
+		t.Errorf("Command run with incorrect deadline")
+	}
+
+	if got, want := out, "tokentokentoken"; got != want {
+		t.Errorf("Incorrect token received.\nExpected: %s\nRecieved: %s", want, got)
 	}
 }
 
@@ -1332,9 +1346,16 @@ func TestRetrieveOutputFileSubjectTokenUnsuccessfulResponseWithCode(t *testing.T
 
 	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
 	now = setTime(defaultTime)
+	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
-		t.Fatalf("Executable called when it should not have been")
-		return []byte{}, nil
+		deadline, deadlineSet = ctx.Deadline()
+		return json.Marshal(executableResponse{
+			Success:        Bool(true),
+			Version:        1,
+			ExpirationTime: now().Unix() + 3600,
+			TokenType:      "urn:ietf:params:oauth:token-type:jwt",
+			IdToken:        "tokentokentoken",
+		})
 	}
 
 	if err = json.NewEncoder(outputFile).Encode(executableResponse{
@@ -1350,12 +1371,19 @@ func TestRetrieveOutputFileSubjectTokenUnsuccessfulResponseWithCode(t *testing.T
 		t.Fatalf("parse() failed %v", err)
 	}
 
-	_, err = base.subjectToken()
-	if err == nil {
-		t.Fatalf("Expected error but found none")
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
 	}
-	if got, want := err.Error(), malformedFailureError(outputFileSource).Error(); got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+
+	if !deadlineSet {
+		t.Errorf("Command run without a deadline")
+	} else if deadline != now().Add(5*time.Second) {
+		t.Errorf("Command run with incorrect deadline")
+	}
+
+	if got, want := out, "tokentokentoken"; got != want {
+		t.Errorf("Incorrect token received.\nExpected: %s\nRecieved: %s", want, got)
 	}
 }
 
@@ -1384,9 +1412,16 @@ func TestRetrieveOutputFileSubjectTokenUnsuccessfulResponseWithMessage(t *testin
 
 	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
 	now = setTime(defaultTime)
+	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
-		t.Fatalf("Executable called when it should not have been")
-		return []byte{}, nil
+		deadline, deadlineSet = ctx.Deadline()
+		return json.Marshal(executableResponse{
+			Success:        Bool(true),
+			Version:        1,
+			ExpirationTime: now().Unix() + 3600,
+			TokenType:      "urn:ietf:params:oauth:token-type:jwt",
+			IdToken:        "tokentokentoken",
+		})
 	}
 
 	if err = json.NewEncoder(outputFile).Encode(executableResponse{
@@ -1402,12 +1437,19 @@ func TestRetrieveOutputFileSubjectTokenUnsuccessfulResponseWithMessage(t *testin
 		t.Fatalf("parse() failed %v", err)
 	}
 
-	_, err = base.subjectToken()
-	if err == nil {
-		t.Fatalf("Expected error but found none")
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
 	}
-	if got, want := err.Error(), malformedFailureError(outputFileSource).Error(); got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+
+	if !deadlineSet {
+		t.Errorf("Command run without a deadline")
+	} else if deadline != now().Add(5*time.Second) {
+		t.Errorf("Command run with incorrect deadline")
+	}
+
+	if got, want := out, "tokentokentoken"; got != want {
+		t.Errorf("Incorrect token received.\nExpected: %s\nRecieved: %s", want, got)
 	}
 }
 
@@ -1436,9 +1478,16 @@ func TestRetrieveOutputFileSubjectTokenUnsuccessfulResponseWithoutFields(t *test
 
 	getenv = setEnvironment(map[string]string{"GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES": "1"})
 	now = setTime(defaultTime)
+	deadline, deadlineSet := now(), false
 	runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
-		t.Fatalf("Executable called when it should not have been")
-		return []byte{}, nil
+		deadline, deadlineSet = ctx.Deadline()
+		return json.Marshal(executableResponse{
+			Success:        Bool(true),
+			Version:        1,
+			ExpirationTime: now().Unix() + 3600,
+			TokenType:      "urn:ietf:params:oauth:token-type:jwt",
+			IdToken:        "tokentokentoken",
+		})
 	}
 
 	if err = json.NewEncoder(outputFile).Encode(executableResponse{
@@ -1453,12 +1502,19 @@ func TestRetrieveOutputFileSubjectTokenUnsuccessfulResponseWithoutFields(t *test
 		t.Fatalf("parse() failed %v", err)
 	}
 
-	_, err = base.subjectToken()
-	if err == nil {
-		t.Fatalf("Expected error but found none")
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
 	}
-	if got, want := err.Error(), malformedFailureError(outputFileSource).Error(); got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+
+	if !deadlineSet {
+		t.Errorf("Command run without a deadline")
+	} else if deadline != now().Add(5*time.Second) {
+		t.Errorf("Command run with incorrect deadline")
+	}
+
+	if got, want := out, "tokentokentoken"; got != want {
+		t.Errorf("Incorrect token received.\nExpected: %s\nRecieved: %s", want, got)
 	}
 }
 
