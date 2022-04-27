@@ -226,6 +226,7 @@ func (cs executableCredentialSource) getTokenFromOutputFile() (string, error, bo
 		// No OutputFile found. Hasn't been created yet, so skip it.
 		return "", nil, false
 	}
+	defer file.Close()
 
 	data, err := ioutil.ReadAll(io.LimitReader(file, 1<<20))
 	if err != nil || len(data) == 0 {
@@ -234,20 +235,18 @@ func (cs executableCredentialSource) getTokenFromOutputFile() (string, error, bo
 	}
 
 	token, err := parseSubjectTokenFromSource(data, outputFileSource)
+	if err != nil {
+		if _, ok := err.(nonCacheableError); ok {
+			// If the cached token is expired we need a new token,
+			// and if the cache contains a failure, we need to try again.
+			return "", nil, false
+		}
 
-	if err == nil {
-		// Token parsing succeeded.  Use found token.
-		return token, nil, true
+		// There was an error in the cached token, and the developer should be aware of it.
+		return "", err, true
 	}
-
-	if _, ok := err.(nonCacheableError); ok {
-		// If the cached token is expired we need a new token,
-		// and if the cache contains a failure, we need to try again.
-		return "", nil, false
-	}
-
-	// There was an error in the cached token, and the developer should be aware of it.
-	return "", err, true
+	// Token parsing succeeded.  Use found token.
+	return token, nil, true
 }
 
 func (cs executableCredentialSource) getEnvironment() []string {
