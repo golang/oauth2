@@ -217,7 +217,7 @@ func (cs executableCredentialSource) subjectToken() (string, error) {
 
 func (cs executableCredentialSource) getTokenFromOutputFile() (string, error, bool) {
 	if cs.OutputFile == "" {
-		// This ExecutableCredentialSource doesn't use an OutputFile
+		// This ExecutableCredentialSource doesn't use an OutputFile.
 		return "", nil, false
 	}
 
