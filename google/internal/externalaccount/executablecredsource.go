@@ -89,7 +89,7 @@ var runCommand = func(ctx context.Context, command string, env []string) ([]byte
 		return response, nil
 	}
 
-	if ctx.Err() != nil && errors.Is(ctx.Err(), context.DeadlineExceeded) {
+	if ctx.Err() == context.DeadlineExceeded {
 		return nil, timeoutError()
 	}
 
