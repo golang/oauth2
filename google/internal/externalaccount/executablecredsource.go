@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
@@ -23,34 +25,44 @@ const (
 	defaultTimeout                = 30 * time.Second
 	timeoutMinimum                = 5 * time.Second
 	timeoutMaximum                = 120 * time.Second
+	executableSource              = "response"
+	outputFileSource              = "output file"
 )
 
-func missingFieldError(field string) error {
-	return fmt.Errorf("oauth2/google: response missing `%v` field", field)
+type nonCacheableError struct {
+	message string
 }
 
-func jsonParsingError() error {
-	return errors.New("oauth2/google: unable to parse response JSON")
+func (nce nonCacheableError) Error() string {
+	return nce.message
+}
+
+func missingFieldError(source, field string) error {
+	return fmt.Errorf("oauth2/google: %v missing `%v` field", source, field)
+}
+
+func jsonParsingError(source, data string) error {
+	return fmt.Errorf("oauth2/google: unable to parse %v\nResponse: %v", source, data)
 }
 
 func malformedFailureError() error {
-	return errors.New("oauth2/google: response must include `error` and `message` fields when unsuccessful")
+	return nonCacheableError{"oauth2/google: response must include `error` and `message` fields when unsuccessful"}
 }
 
 func userDefinedError(code, message string) error {
-	return fmt.Errorf("oauth2/google: executable returned unsuccessful response: (%v) %v", code, message)
+	return nonCacheableError{fmt.Sprintf("oauth2/google: response contains unsuccessful response: (%v) %v", code, message)}
 }
 
-func unsupportedVersionError(version int) error {
-	return fmt.Errorf("oauth2/google: executable returned unsupported version: %v", version)
+func unsupportedVersionError(source string, version int) error {
+	return fmt.Errorf("oauth2/google: %v contains unsupported version: %v", source, version)
 }
 
 func tokenExpiredError() error {
-	return errors.New("oauth2/google: the token returned by the executable is expired")
+	return nonCacheableError{"oauth2/google: the token returned by the executable is expired"}
 }
 
-func tokenTypeError() error {
-	return errors.New("oauth2/google: executable returned unsupported token type")
+func tokenTypeError(source string) error {
+	return fmt.Errorf("oauth2/google: %v contains unsupported token type", source)
 }
 
 func timeoutError() error {
@@ -143,18 +155,18 @@ type executableResponse struct {
 	Message        string `json:"message,omitempty"`
 }
 
-func parseSubjectToken(response []byte) (string, error) {
+func parseSubjectTokenFromSource(response []byte, source string) (string, error) {
 	var result executableResponse
 	if err := json.Unmarshal(response, &result); err != nil {
-		return "", jsonParsingError()
+		return "", jsonParsingError(source, string(response))
 	}
 
 	if result.Version == 0 {
-		return "", missingFieldError("version")
+		return "", missingFieldError(source, "version")
 	}
 
 	if result.Success == nil {
-		return "", missingFieldError("success")
+		return "", missingFieldError(source, "success")
 	}
 
 	if !*result.Success {
@@ -165,15 +177,15 @@ func parseSubjectToken(response []byte) (string, error) {
 	}
 
 	if result.Version > executableSupportedMaxVersion || result.Version < 0 {
-		return "", unsupportedVersionError(result.Version)
+		return "", unsupportedVersionError(source, result.Version)
 	}
 
 	if result.ExpirationTime == 0 {
-		return "", missingFieldError("expiration_time")
+		return "", missingFieldError(source, "expiration_time")
 	}
 
 	if result.TokenType == "" {
-		return "", missingFieldError("token_type")
+		return "", missingFieldError(source, "token_type")
 	}
 
 	if result.ExpirationTime < now().Unix() {
@@ -182,32 +194,61 @@ func parseSubjectToken(response []byte) (string, error) {
 
 	if result.TokenType == "urn:ietf:params:oauth:token-type:jwt" || result.TokenType == "urn:ietf:params:oauth:token-type:id_token" {
 		if result.IdToken == "" {
-			return "", missingFieldError("id_token")
+			return "", missingFieldError(source, "id_token")
 		}
 		return result.IdToken, nil
 	}
 
 	if result.TokenType == "urn:ietf:params:oauth:token-type:saml2" {
 		if result.SamlResponse == "" {
-			return "", missingFieldError("saml_response")
+			return "", missingFieldError(source, "saml_response")
 		}
 		return result.SamlResponse, nil
 	}
 
-	return "", tokenTypeError()
+	return "", tokenTypeError(source)
 }
 
 func (cs executableCredentialSource) subjectToken() (string, error) {
-	if token, ok := cs.getTokenFromOutputFile(); ok {
-		return token, nil
+	if token, err, ok := cs.getTokenFromOutputFile(); ok {
+		return token, err
 	}
 
 	return cs.getTokenFromExecutableCommand()
 }
 
-func (cs executableCredentialSource) getTokenFromOutputFile() (string, bool) {
-	// TODO
-	return "", false
+func (cs executableCredentialSource) getTokenFromOutputFile() (string, error, bool) {
+	if cs.OutputFile == "" {
+		// This ExecutableCredentialSource doesn't use an OutputFile.
+		return "", nil, false
+	}
+
+	file, err := os.Open(cs.OutputFile)
+	if err != nil {
+		// No OutputFile found. Hasn't been created yet, so skip it.
+		return "", nil, false
+	}
+	defer file.Close()
+
+	data, err := ioutil.ReadAll(io.LimitReader(file, 1<<20))
+	if err != nil || len(data) == 0 {
+		// Cachefile exists, but no data found. Get new credential.
+		return "", nil, false
+	}
+
+	token, err := parseSubjectTokenFromSource(data, outputFileSource)
+	if err != nil {
+		if _, ok := err.(nonCacheableError); ok {
+			// If the cached token is expired we need a new token,
+			// and if the cache contains a failure, we need to try again.
+			return "", nil, false
+		}
+
+		// There was an error in the cached token, and the developer should be aware of it.
+		return "", err, true
+	}
+	// Token parsing succeeded.  Use found token.
+	return token, nil, true
 }
 
 func (cs executableCredentialSource) getEnvironment() []string {
@@ -251,6 +292,6 @@ func (cs executableCredentialSource) getTokenFromExecutableCommand() (string, er
 	if output, err := runCommand(ctx, cs.Command, cs.getEnvironment()); err != nil {
 		return "", err
 	} else {
-		return parseSubjectToken(output)
+		return parseSubjectTokenFromSource(output, executableSource)
 	}
 }
