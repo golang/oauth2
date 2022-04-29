@@ -5,12 +5,12 @@
 package externalaccount
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-var serviceAccountImpersonationCompiler = regexp.MustCompile("https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/(.*@.*):generateAccessToken")
+var serviceAccountImpersonationRE = regexp.MustCompile("https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/(.*@.*):generateAccessToken")
 
 const (
 	executableSupportedMaxVersion = 1
@@ -38,7 +38,7 @@ func (nce nonCacheableError) Error() string {
 }
 
 func missingFieldError(source, field string) error {
-	return fmt.Errorf("oauth2/google: %v missing `%v` field", source, field)
+	return fmt.Errorf("oauth2/google: %v missing `%q` field", source, field)
 }
 
 func jsonParsingError(source, data string) error {
@@ -65,10 +65,6 @@ func tokenTypeError(source string) error {
 	return fmt.Errorf("oauth2/google: %v contains unsupported token type", source)
 }
 
-func timeoutError() error {
-	return errors.New("oauth2/google: executable command timed out")
-}
-
 func exitCodeError(exitCode int) error {
 	return fmt.Errorf("oauth2/google: executable command failed with exit code %v", exitCode)
 }
@@ -82,36 +78,60 @@ func executablesDisallowedError() error {
 }
 
 func timeoutRangeError() error {
-	return errors.New("oauth2/google: invalid `timeout_millis` field. Executable timeout must be between 5 and 120 seconds")
+	return errors.New("oauth2/google: invalid `timeout_millis` field — executable timeout must be between 5 and 120 seconds")
 }
 
 func commandMissingError() error {
-	return errors.New("oauth2/google: missing `command` field. Executable command must be provided")
+	return errors.New("oauth2/google: missing `command` field — executable command must be provided")
 }
 
-// baseEnv is an alias of os.Environ used for testing
-var baseEnv = os.Environ
+type environment interface {
+	existingEnv() []string
+	getenv(string) string
+	run(ctx context.Context, command string, env []string) ([]byte, error)
+	now() time.Time
+}
 
-// runCommand is basically an alias of exec.CommandContext for testing.
-var runCommand = func(ctx context.Context, command string, env []string) ([]byte, error) {
+type runtimeEnvironment struct{}
+
+func (r runtimeEnvironment) existingEnv() []string {
+	return os.Environ()
+}
+
+func (r runtimeEnvironment) getenv(key string) string {
+	return os.Getenv(key)
+}
+
+func (r runtimeEnvironment) now() time.Time {
+	return time.Now().UTC()
+}
+
+func (r runtimeEnvironment) run(ctx context.Context, command string, env []string) ([]byte, error) {
 	splitCommand := strings.Fields(command)
 	cmd := exec.CommandContext(ctx, splitCommand[0], splitCommand[1:]...)
 	cmd.Env = env
 
-	response, err := cmd.Output()
-	if err == nil {
-		return response, nil
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return nil, context.DeadlineExceeded
+		}
+
+		if exitError, ok := err.(*exec.ExitError); ok {
+			return nil, exitCodeError(exitError.ExitCode())
+		}
+
+		return nil, executableError(err)
 	}
 
-	if err == context.DeadlineExceeded {
-		return nil, timeoutError()
+	bytesStdout := bytes.TrimSpace(stdout.Bytes())
+	if len(bytesStdout) > 0 {
+		return bytesStdout, nil
 	}
-
-	if exitError, ok := err.(*exec.ExitError); ok {
-		return nil, exitCodeError(exitError.ExitCode())
-	}
-
-	return nil, executableError(err)
+	return bytes.TrimSpace(stderr.Bytes()), nil
 }
 
 type executableCredentialSource struct {
@@ -120,28 +140,31 @@ type executableCredentialSource struct {
 	OutputFile string
 	ctx        context.Context
 	config     *Config
+	env        environment
 }
 
 // CreateExecutableCredential creates an executableCredentialSource given an ExecutableConfig.
 // It also performs defaulting and type conversions.
-func CreateExecutableCredential(ctx context.Context, ec *ExecutableConfig, config *Config) (result executableCredentialSource, err error) {
+func CreateExecutableCredential(ctx context.Context, ec *ExecutableConfig, config *Config) (executableCredentialSource, error) {
 	if ec.Command == "" {
-		err = commandMissingError()
+		return executableCredentialSource{}, commandMissingError()
 	}
+
+	result := executableCredentialSource{}
 	result.Command = ec.Command
 	if ec.TimeoutMillis == nil {
 		result.Timeout = defaultTimeout
 	} else {
 		result.Timeout = time.Duration(*ec.TimeoutMillis) * time.Millisecond
 		if result.Timeout < timeoutMinimum || result.Timeout > timeoutMaximum {
-			err = timeoutRangeError()
-			return
+			return executableCredentialSource{}, timeoutRangeError()
 		}
 	}
 	result.OutputFile = ec.OutputFile
 	result.ctx = ctx
 	result.config = config
-	return
+	result.env = runtimeEnvironment{}
+	return result, nil
 }
 
 type executableResponse struct {
@@ -155,7 +178,7 @@ type executableResponse struct {
 	Message        string `json:"message,omitempty"`
 }
 
-func parseSubjectTokenFromSource(response []byte, source string) (string, error) {
+func parseSubjectTokenFromSource(response []byte, source string, now int64) (string, error) {
 	var result executableResponse
 	if err := json.Unmarshal(response, &result); err != nil {
 		return "", jsonParsingError(source, string(response))
@@ -188,7 +211,7 @@ func parseSubjectTokenFromSource(response []byte, source string) (string, error)
 		return "", missingFieldError(source, "token_type")
 	}
 
-	if result.ExpirationTime < now().Unix() {
+	if result.ExpirationTime < now {
 		return "", tokenExpiredError()
 	}
 
@@ -210,88 +233,76 @@ func parseSubjectTokenFromSource(response []byte, source string) (string, error)
 }
 
 func (cs executableCredentialSource) subjectToken() (string, error) {
-	if token, err, ok := cs.getTokenFromOutputFile(); ok {
+	if token, err := cs.getTokenFromOutputFile(); token != "" || err != nil {
 		return token, err
 	}
 
 	return cs.getTokenFromExecutableCommand()
 }
 
-func (cs executableCredentialSource) getTokenFromOutputFile() (string, error, bool) {
+func (cs executableCredentialSource) getTokenFromOutputFile() (token string, err error) {
 	if cs.OutputFile == "" {
 		// This ExecutableCredentialSource doesn't use an OutputFile.
-		return "", nil, false
+		return "", nil
 	}
 
 	file, err := os.Open(cs.OutputFile)
 	if err != nil {
 		// No OutputFile found. Hasn't been created yet, so skip it.
-		return "", nil, false
+		return "", nil
 	}
 	defer file.Close()
 
-	data, err := ioutil.ReadAll(io.LimitReader(file, 1<<20))
+	data, err := io.ReadAll(io.LimitReader(file, 1<<20))
 	if err != nil || len(data) == 0 {
 		// Cachefile exists, but no data found. Get new credential.
-		return "", nil, false
+		return "", nil
 	}
 
-	token, err := parseSubjectTokenFromSource(data, outputFileSource)
+	token, err = parseSubjectTokenFromSource(data, outputFileSource, cs.env.now().Unix())
 	if err != nil {
 		if _, ok := err.(nonCacheableError); ok {
 			// If the cached token is expired we need a new token,
 			// and if the cache contains a failure, we need to try again.
-			return "", nil, false
+			return "", nil
 		}
 
 		// There was an error in the cached token, and the developer should be aware of it.
-		return "", err, true
+		return "", err
 	}
 	// Token parsing succeeded.  Use found token.
-	return token, nil, true
+	return token, nil
 }
 
-func (cs executableCredentialSource) getEnvironment() []string {
-	result := baseEnv()
-	for k, v := range cs.getNewEnvironmentVariables() {
-		result = append(result, fmt.Sprintf("%v=%v", k, v))
-	}
-	return result
-}
-
-func (cs executableCredentialSource) getNewEnvironmentVariables() map[string]string {
-	result := map[string]string{
-		"GOOGLE_EXTERNAL_ACCOUNT_AUDIENCE":    cs.config.Audience,
-		"GOOGLE_EXTERNAL_ACCOUNT_TOKEN_TYPE":  cs.config.SubjectTokenType,
-		"GOOGLE_EXTERNAL_ACCOUNT_INTERACTIVE": "0",
-	}
-
+func (cs executableCredentialSource) executableEnvironment() []string {
+	result := cs.env.existingEnv()
+	result = append(result, fmt.Sprintf("GOOGLE_EXTERNAL_ACCOUNT_AUDIENCE=%v", cs.config.Audience))
+	result = append(result, fmt.Sprintf("GOOGLE_EXTERNAL_ACCOUNT_TOKEN_TYPE=%v", cs.config.SubjectTokenType))
+	result = append(result, "GOOGLE_EXTERNAL_ACCOUNT_INTERACTIVE=0")
 	if cs.config.ServiceAccountImpersonationURL != "" {
-		matches := serviceAccountImpersonationCompiler.FindStringSubmatch(cs.config.ServiceAccountImpersonationURL)
+		matches := serviceAccountImpersonationRE.FindStringSubmatch(cs.config.ServiceAccountImpersonationURL)
 		if matches != nil {
-			result["GOOGLE_EXTERNAL_ACCOUNT_IMPERSONATED_EMAIL"] = matches[1]
+			result = append(result, fmt.Sprintf("GOOGLE_EXTERNAL_ACCOUNT_IMPERSONATED_EMAIL=%v", matches[1]))
 		}
 	}
-
 	if cs.OutputFile != "" {
-		result["GOOGLE_EXTERNAL_ACCOUNT_OUTPUT_FILE"] = cs.OutputFile
+		result = append(result, fmt.Sprintf("GOOGLE_EXTERNAL_ACCOUNT_OUTPUT_FILE=%v", cs.OutputFile))
 	}
-
 	return result
 }
 
 func (cs executableCredentialSource) getTokenFromExecutableCommand() (string, error) {
 	// For security reasons, we need our consumers to set this environment variable to allow executables to be run.
-	if getenv("GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES") != "1" {
+	if cs.env.getenv("GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES") != "1" {
 		return "", executablesDisallowedError()
 	}
 
-	ctx, cancel := context.WithDeadline(cs.ctx, now().Add(cs.Timeout))
+	ctx, cancel := context.WithDeadline(cs.ctx, cs.env.now().Add(cs.Timeout))
 	defer cancel()
 
-	if output, err := runCommand(ctx, cs.Command, cs.getEnvironment()); err != nil {
+	output, err := cs.env.run(ctx, cs.Command, cs.executableEnvironment())
+	if err != nil {
 		return "", err
-	} else {
-		return parseSubjectTokenFromSource(output, executableSource)
 	}
+	return parseSubjectTokenFromSource(output, executableSource, cs.env.now().Unix())
 }

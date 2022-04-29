@@ -163,7 +163,7 @@ type format struct {
 }
 
 // CredentialSource stores the information necessary to retrieve the credentials for the STS exchange.
-// Either the File or the URL field should be filled, depending on the kind of credential in question.
+// One field amongst File, URL, and Executable should be filled, depending on the kind of credential in question.
 // The EnvironmentID should start with AWS if being used for an AWS credential.
 type CredentialSource struct {
 	File string `json:"file"`
