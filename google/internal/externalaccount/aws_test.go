@@ -20,6 +20,8 @@ import (
 var defaultTime = time.Date(2011, 9, 9, 23, 36, 0, 0, time.UTC)
 var secondDefaultTime = time.Date(2020, 8, 11, 6, 55, 22, 0, time.UTC)
 
+type validateHeaders func(r *http.Request)
+
 func setTime(testTime time.Time) func() time.Time {
 	return func() time.Time {
 		return testTime
@@ -28,8 +30,7 @@ func setTime(testTime time.Time) func() time.Time {
 
 func setEnvironment(env map[string]string) func(string) string {
 	return func(key string) string {
-		value, _ := env[key]
-		return value
+		return env[key]
 	}
 }
 
@@ -83,7 +84,7 @@ func testRequestSigner(t *testing.T, rs *awsRequestSigner, input, expectedOutput
 	}
 }
 
-func TestAwsV4Signature_GetRequest(t *testing.T) {
+func TestAWSv4Signature_GetRequest(t *testing.T) {
 	input, _ := http.NewRequest("GET", "https://host.foo.com", nil)
 	setDefaultTime(input)
 
@@ -101,7 +102,7 @@ func TestAwsV4Signature_GetRequest(t *testing.T) {
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
-func TestAwsV4Signature_GetRequestWithRelativePath(t *testing.T) {
+func TestAWSv4Signature_GetRequestWithRelativePath(t *testing.T) {
 	input, _ := http.NewRequest("GET", "https://host.foo.com/foo/bar/../..", nil)
 	setDefaultTime(input)
 
@@ -119,7 +120,7 @@ func TestAwsV4Signature_GetRequestWithRelativePath(t *testing.T) {
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
-func TestAwsV4Signature_GetRequestWithDotPath(t *testing.T) {
+func TestAWSv4Signature_GetRequestWithDotPath(t *testing.T) {
 	input, _ := http.NewRequest("GET", "https://host.foo.com/./", nil)
 	setDefaultTime(input)
 
@@ -137,7 +138,7 @@ func TestAwsV4Signature_GetRequestWithDotPath(t *testing.T) {
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
-func TestAwsV4Signature_GetRequestWithPointlessDotPath(t *testing.T) {
+func TestAWSv4Signature_GetRequestWithPointlessDotPath(t *testing.T) {
 	input, _ := http.NewRequest("GET", "https://host.foo.com/./foo", nil)
 	setDefaultTime(input)
 
@@ -155,7 +156,7 @@ func TestAwsV4Signature_GetRequestWithPointlessDotPath(t *testing.T) {
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
-func TestAwsV4Signature_GetRequestWithUtf8Path(t *testing.T) {
+func TestAWSv4Signature_GetRequestWithUtf8Path(t *testing.T) {
 	input, _ := http.NewRequest("GET", "https://host.foo.com/%E1%88%B4", nil)
 	setDefaultTime(input)
 
@@ -173,7 +174,7 @@ func TestAwsV4Signature_GetRequestWithUtf8Path(t *testing.T) {
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
-func TestAwsV4Signature_GetRequestWithDuplicateQuery(t *testing.T) {
+func TestAWSv4Signature_GetRequestWithDuplicateQuery(t *testing.T) {
 	input, _ := http.NewRequest("GET", "https://host.foo.com/?foo=Zoo&foo=aha", nil)
 	setDefaultTime(input)
 
@@ -191,7 +192,7 @@ func TestAwsV4Signature_GetRequestWithDuplicateQuery(t *testing.T) {
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
-func TestAwsV4Signature_GetRequestWithMisorderedQuery(t *testing.T) {
+func TestAWSv4Signature_GetRequestWithMisorderedQuery(t *testing.T) {
 	input, _ := http.NewRequest("GET", "https://host.foo.com/?foo=b&foo=a", nil)
 	setDefaultTime(input)
 
@@ -209,7 +210,7 @@ func TestAwsV4Signature_GetRequestWithMisorderedQuery(t *testing.T) {
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
-func TestAwsV4Signature_GetRequestWithUtf8Query(t *testing.T) {
+func TestAWSv4Signature_GetRequestWithUtf8Query(t *testing.T) {
 	input, _ := http.NewRequest("GET", "https://host.foo.com/?ሴ=bar", nil)
 	setDefaultTime(input)
 
@@ -227,7 +228,7 @@ func TestAwsV4Signature_GetRequestWithUtf8Query(t *testing.T) {
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
-func TestAwsV4Signature_PostRequest(t *testing.T) {
+func TestAWSv4Signature_PostRequest(t *testing.T) {
 	input, _ := http.NewRequest("POST", "https://host.foo.com/", nil)
 	setDefaultTime(input)
 	input.Header.Add("ZOO", "zoobar")
@@ -247,7 +248,7 @@ func TestAwsV4Signature_PostRequest(t *testing.T) {
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
-func TestAwsV4Signature_PostRequestWithCapitalizedHeaderValue(t *testing.T) {
+func TestAWSv4Signature_PostRequestWithCapitalizedHeaderValue(t *testing.T) {
 	input, _ := http.NewRequest("POST", "https://host.foo.com/", nil)
 	setDefaultTime(input)
 	input.Header.Add("zoo", "ZOOBAR")
@@ -267,7 +268,7 @@ func TestAwsV4Signature_PostRequestWithCapitalizedHeaderValue(t *testing.T) {
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
-func TestAwsV4Signature_PostRequestPhfft(t *testing.T) {
+func TestAWSv4Signature_PostRequestPhfft(t *testing.T) {
 	input, _ := http.NewRequest("POST", "https://host.foo.com/", nil)
 	setDefaultTime(input)
 	input.Header.Add("p", "phfft")
@@ -287,7 +288,7 @@ func TestAwsV4Signature_PostRequestPhfft(t *testing.T) {
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
-func TestAwsV4Signature_PostRequestWithBody(t *testing.T) {
+func TestAWSv4Signature_PostRequestWithBody(t *testing.T) {
 	input, _ := http.NewRequest("POST", "https://host.foo.com/", strings.NewReader("foo=bar"))
 	setDefaultTime(input)
 	input.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -307,7 +308,7 @@ func TestAwsV4Signature_PostRequestWithBody(t *testing.T) {
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
-func TestAwsV4Signature_PostRequestWithQueryString(t *testing.T) {
+func TestAWSv4Signature_PostRequestWithQueryString(t *testing.T) {
 	input, _ := http.NewRequest("POST", "https://host.foo.com/?foo=bar", nil)
 	setDefaultTime(input)
 
@@ -325,7 +326,7 @@ func TestAwsV4Signature_PostRequestWithQueryString(t *testing.T) {
 	testRequestSigner(t, defaultRequestSigner, input, output)
 }
 
-func TestAwsV4Signature_GetRequestWithSecurityToken(t *testing.T) {
+func TestAWSv4Signature_GetRequestWithSecurityToken(t *testing.T) {
 	input, _ := http.NewRequest("GET", "https://ec2.us-east-2.amazonaws.com?Action=DescribeRegions&Version=2013-10-15", nil)
 
 	output, _ := http.NewRequest("GET", "https://ec2.us-east-2.amazonaws.com?Action=DescribeRegions&Version=2013-10-15", nil)
@@ -343,7 +344,7 @@ func TestAwsV4Signature_GetRequestWithSecurityToken(t *testing.T) {
 	testRequestSigner(t, requestSignerWithToken, input, output)
 }
 
-func TestAwsV4Signature_PostRequestWithSecurityToken(t *testing.T) {
+func TestAWSv4Signature_PostRequestWithSecurityToken(t *testing.T) {
 	input, _ := http.NewRequest("POST", "https://sts.us-east-2.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15", nil)
 
 	output, _ := http.NewRequest("POST", "https://sts.us-east-2.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15", nil)
@@ -361,7 +362,7 @@ func TestAwsV4Signature_PostRequestWithSecurityToken(t *testing.T) {
 	testRequestSigner(t, requestSignerWithToken, input, output)
 }
 
-func TestAwsV4Signature_PostRequestWithSecurityTokenAndAdditionalHeaders(t *testing.T) {
+func TestAWSv4Signature_PostRequestWithSecurityTokenAndAdditionalHeaders(t *testing.T) {
 	requestParams := "{\"KeySchema\":[{\"KeyType\":\"HASH\",\"AttributeName\":\"Id\"}],\"TableName\":\"TestTable\",\"AttributeDefinitions\":[{\"AttributeName\":\"Id\",\"AttributeType\":\"S\"}],\"ProvisionedThroughput\":{\"WriteCapacityUnits\":5,\"ReadCapacityUnits\":5}}"
 	input, _ := http.NewRequest("POST", "https://dynamodb.us-east-2.amazonaws.com/", strings.NewReader(requestParams))
 	input.Header.Add("Content-Type", "application/x-amz-json-1.0")
@@ -384,7 +385,7 @@ func TestAwsV4Signature_PostRequestWithSecurityTokenAndAdditionalHeaders(t *test
 	testRequestSigner(t, requestSignerWithToken, input, output)
 }
 
-func TestAwsV4Signature_PostRequestWithAmzDateButNoSecurityToken(t *testing.T) {
+func TestAWSv4Signature_PostRequestWithAmzDateButNoSecurityToken(t *testing.T) {
 	var requestSigner = &awsRequestSigner{
 		RegionName: "us-east-2",
 		AwsSecurityCredentials: awsSecurityCredentials{
@@ -414,30 +415,40 @@ type testAwsServer struct {
 	securityCredentialURL       string
 	regionURL                   string
 	regionalCredVerificationURL string
+	imdsv2SessionTokenUrl       string
 
 	Credentials map[string]string
 
-	WriteRolename            func(http.ResponseWriter)
-	WriteSecurityCredentials func(http.ResponseWriter)
-	WriteRegion              func(http.ResponseWriter)
+	WriteRolename            func(http.ResponseWriter, *http.Request)
+	WriteSecurityCredentials func(http.ResponseWriter, *http.Request)
+	WriteRegion              func(http.ResponseWriter, *http.Request)
+	WriteIMDSv2SessionToken  func(http.ResponseWriter, *http.Request)
 }
 
-func createAwsTestServer(url, regionURL, regionalCredVerificationURL, rolename, region string, credentials map[string]string) *testAwsServer {
+func createAwsTestServer(url, regionURL, regionalCredVerificationURL, imdsv2SessionTokenUrl string, rolename, region string, credentials map[string]string, imdsv2SessionToken string, validateHeaders validateHeaders) *testAwsServer {
 	server := &testAwsServer{
 		url:                         url,
 		securityCredentialURL:       fmt.Sprintf("%s/%s", url, rolename),
 		regionURL:                   regionURL,
 		regionalCredVerificationURL: regionalCredVerificationURL,
+		imdsv2SessionTokenUrl:       imdsv2SessionTokenUrl,
 		Credentials:                 credentials,
-		WriteRolename: func(w http.ResponseWriter) {
+		WriteRolename: func(w http.ResponseWriter, r *http.Request) {
+			validateHeaders(r)
 			w.Write([]byte(rolename))
 		},
-		WriteRegion: func(w http.ResponseWriter) {
+		WriteRegion: func(w http.ResponseWriter, r *http.Request) {
+			validateHeaders(r)
 			w.Write([]byte(region))
+		},
+		WriteIMDSv2SessionToken: func(w http.ResponseWriter, r *http.Request) {
+			validateHeaders(r)
+			w.Write([]byte(imdsv2SessionToken))
 		},
 	}
 
-	server.WriteSecurityCredentials = func(w http.ResponseWriter) {
+	server.WriteSecurityCredentials = func(w http.ResponseWriter, r *http.Request) {
+		validateHeaders(r)
 		jsonCredentials, _ := json.Marshal(server.Credentials)
 		w.Write(jsonCredentials)
 	}
@@ -450,6 +461,7 @@ func createDefaultAwsTestServer() *testAwsServer {
 		"/latest/meta-data/iam/security-credentials",
 		"/latest/meta-data/placement/availability-zone",
 		"https://sts.{region}.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+		"",
 		"gcp-aws-role",
 		"us-east-2b",
 		map[string]string{
@@ -457,24 +469,30 @@ func createDefaultAwsTestServer() *testAwsServer {
 			"AccessKeyId":     accessKeyID,
 			"Token":           securityToken,
 		},
+		"",
+		noHeaderValidation,
 	)
 }
 
 func (server *testAwsServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch p := r.URL.Path; p {
 	case server.url:
-		server.WriteRolename(w)
+		server.WriteRolename(w, r)
 	case server.securityCredentialURL:
-		server.WriteSecurityCredentials(w)
+		server.WriteSecurityCredentials(w, r)
 	case server.regionURL:
-		server.WriteRegion(w)
+		server.WriteRegion(w, r)
+	case server.imdsv2SessionTokenUrl:
+		server.WriteIMDSv2SessionToken(w, r)
 	}
 }
 
-func notFound(w http.ResponseWriter) {
+func notFound(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(404)
 	w.Write([]byte("Not Found"))
 }
+
+func noHeaderValidation(r *http.Request) {}
 
 func (server *testAwsServer) getCredentialSource(url string) CredentialSource {
 	return CredentialSource{
@@ -482,6 +500,7 @@ func (server *testAwsServer) getCredentialSource(url string) CredentialSource {
 		URL:                         url + server.url,
 		RegionURL:                   url + server.regionURL,
 		RegionalCredVerificationURL: server.regionalCredVerificationURL,
+		IMDSv2SessionTokenURL:       url + server.imdsv2SessionTokenUrl,
 	}
 }
 
@@ -531,7 +550,7 @@ func getExpectedSubjectToken(url, region, accessKeyID, secretAccessKey, security
 	return neturl.QueryEscape(string(str))
 }
 
-func TestAwsCredential_BasicRequest(t *testing.T) {
+func TestAWSCredential_BasicRequest(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
 
@@ -541,6 +560,9 @@ func TestAwsCredential_BasicRequest(t *testing.T) {
 	oldGetenv := getenv
 	defer func() { getenv = oldGetenv }()
 	getenv = setEnvironment(map[string]string{})
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
 
 	base, err := tfc.parse(context.Background())
 	if err != nil {
@@ -561,11 +583,76 @@ func TestAwsCredential_BasicRequest(t *testing.T) {
 	)
 
 	if got, want := out, expected; !reflect.DeepEqual(got, want) {
-		t.Errorf("subjectToken = %q, want %q", got, want)
+		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
 	}
 }
 
-func TestAwsCredential_BasicRequestWithoutSecurityToken(t *testing.T) {
+func TestAWSCredential_IMDSv2(t *testing.T) {
+	validateSessionTokenHeaders := func(r *http.Request) {
+		if r.URL.Path == "/latest/api/token" {
+			headerValue := r.Header.Get(awsIMDSv2SessionTtlHeader)
+			if headerValue != awsIMDSv2SessionTtl {
+				t.Errorf("%q = \n%q\n want \n%q", awsIMDSv2SessionTtlHeader, headerValue, awsIMDSv2SessionTtl)
+			}
+		} else {
+			headerValue := r.Header.Get(awsIMDSv2SessionTokenHeader)
+			if headerValue != "sessiontoken" {
+				t.Errorf("%q = \n%q\n want \n%q", awsIMDSv2SessionTokenHeader, headerValue, "sessiontoken")
+			}
+		}
+	}
+
+	server := createAwsTestServer(
+		"/latest/meta-data/iam/security-credentials",
+		"/latest/meta-data/placement/availability-zone",
+		"https://sts.{region}.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+		"/latest/api/token",
+		"gcp-aws-role",
+		"us-east-2b",
+		map[string]string{
+			"SecretAccessKey": secretAccessKey,
+			"AccessKeyId":     accessKeyID,
+			"Token":           securityToken,
+		},
+		"sessiontoken",
+		validateSessionTokenHeaders,
+	)
+	ts := httptest.NewServer(server)
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{})
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+
+	expected := getExpectedSubjectToken(
+		"https://sts.us-east-2.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+		"us-east-2",
+		accessKeyID,
+		secretAccessKey,
+		securityToken,
+	)
+
+	if got, want := out, expected; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
+	}
+}
+
+func TestAWSCredential_BasicRequestWithoutSecurityToken(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
 	delete(server.Credentials, "Token")
@@ -576,6 +663,9 @@ func TestAwsCredential_BasicRequestWithoutSecurityToken(t *testing.T) {
 	oldGetenv := getenv
 	defer func() { getenv = oldGetenv }()
 	getenv = setEnvironment(map[string]string{})
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
 
 	base, err := tfc.parse(context.Background())
 	if err != nil {
@@ -596,11 +686,11 @@ func TestAwsCredential_BasicRequestWithoutSecurityToken(t *testing.T) {
 	)
 
 	if got, want := out, expected; !reflect.DeepEqual(got, want) {
-		t.Errorf("subjectToken = %q, want %q", got, want)
+		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
 	}
 }
 
-func TestAwsCredential_BasicRequestWithEnv(t *testing.T) {
+func TestAWSCredential_BasicRequestWithEnv(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
 
@@ -614,6 +704,9 @@ func TestAwsCredential_BasicRequestWithEnv(t *testing.T) {
 		"AWS_SECRET_ACCESS_KEY": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
 		"AWS_REGION":            "us-west-1",
 	})
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
 
 	base, err := tfc.parse(context.Background())
 	if err != nil {
@@ -634,11 +727,92 @@ func TestAwsCredential_BasicRequestWithEnv(t *testing.T) {
 	)
 
 	if got, want := out, expected; !reflect.DeepEqual(got, want) {
-		t.Errorf("subjectToken = %q, want %q", got, want)
+		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
 	}
 }
 
-func TestAwsCredential_RequestWithBadVersion(t *testing.T) {
+func TestAWSCredential_BasicRequestWithDefaultEnv(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{
+		"AWS_ACCESS_KEY_ID":     "AKIDEXAMPLE",
+		"AWS_SECRET_ACCESS_KEY": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+		"AWS_DEFAULT_REGION":    "us-west-1",
+	})
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+	expected := getExpectedSubjectToken(
+		"https://sts.us-west-1.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+		"us-west-1",
+		"AKIDEXAMPLE",
+		"wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+		"",
+	)
+
+	if got, want := out, expected; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
+	}
+}
+
+func TestAWSCredential_BasicRequestWithTwoRegions(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	oldGetenv := getenv
+	defer func() { getenv = oldGetenv }()
+	getenv = setEnvironment(map[string]string{
+		"AWS_ACCESS_KEY_ID":     "AKIDEXAMPLE",
+		"AWS_SECRET_ACCESS_KEY": "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+		"AWS_REGION":            "us-west-1",
+		"AWS_DEFAULT_REGION":    "us-east-1",
+	})
+	oldNow := now
+	defer func() { now = oldNow }()
+	now = setTime(defaultTime)
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+	expected := getExpectedSubjectToken(
+		"https://sts.us-west-1.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+		"us-west-1",
+		"AKIDEXAMPLE",
+		"wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+		"",
+	)
+
+	if got, want := out, expected; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
+	}
+}
+
+func TestAWSCredential_RequestWithBadVersion(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
 
@@ -659,7 +833,7 @@ func TestAwsCredential_RequestWithBadVersion(t *testing.T) {
 	}
 }
 
-func TestAwsCredential_RequestWithNoRegionURL(t *testing.T) {
+func TestAWSCredential_RequestWithNoRegionURL(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
 
@@ -686,7 +860,7 @@ func TestAwsCredential_RequestWithNoRegionURL(t *testing.T) {
 	}
 }
 
-func TestAwsCredential_RequestWithBadRegionURL(t *testing.T) {
+func TestAWSCredential_RequestWithBadRegionURL(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
 	server.WriteRegion = notFound
@@ -713,10 +887,10 @@ func TestAwsCredential_RequestWithBadRegionURL(t *testing.T) {
 	}
 }
 
-func TestAwsCredential_RequestWithMissingCredential(t *testing.T) {
+func TestAWSCredential_RequestWithMissingCredential(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	server.WriteSecurityCredentials = func(w http.ResponseWriter) {
+	server.WriteSecurityCredentials = func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("{}"))
 	}
 
@@ -742,10 +916,10 @@ func TestAwsCredential_RequestWithMissingCredential(t *testing.T) {
 	}
 }
 
-func TestAwsCredential_RequestWithIncompleteCredential(t *testing.T) {
+func TestAWSCredential_RequestWithIncompleteCredential(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	server.WriteSecurityCredentials = func(w http.ResponseWriter) {
+	server.WriteSecurityCredentials = func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"AccessKeyId":"FOOBARBAS"}`))
 	}
 
@@ -771,7 +945,7 @@ func TestAwsCredential_RequestWithIncompleteCredential(t *testing.T) {
 	}
 }
 
-func TestAwsCredential_RequestWithNoCredentialURL(t *testing.T) {
+func TestAWSCredential_RequestWithNoCredentialURL(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
 
@@ -798,7 +972,7 @@ func TestAwsCredential_RequestWithNoCredentialURL(t *testing.T) {
 	}
 }
 
-func TestAwsCredential_RequestWithBadCredentialURL(t *testing.T) {
+func TestAWSCredential_RequestWithBadCredentialURL(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
 	server.WriteRolename = notFound
@@ -825,7 +999,7 @@ func TestAwsCredential_RequestWithBadCredentialURL(t *testing.T) {
 	}
 }
 
-func TestAwsCredential_RequestWithBadFinalCredentialURL(t *testing.T) {
+func TestAWSCredential_RequestWithBadFinalCredentialURL(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
 	server.WriteSecurityCredentials = notFound
