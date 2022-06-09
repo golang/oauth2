@@ -129,9 +129,9 @@ func TestTokenExchangeWithPKCE_Success(t *testing.T) {
 		},
 	}
 	pkce := PKCEParams{
-		CodeChallenge:       "codeChallenge",
-		CodeChallengeMethod: "plain",
-		CodeVerifier:        "codeChallenge",
+		Challenge:       "codeChallenge",
+		ChallengeMethod: "plain",
+		Verifier:        "codeChallenge",
 	}
 
 	tok, err := TokenSourceWithPKCE(context.Background(), conf, "testState", authhandler, &pkce).Token()
