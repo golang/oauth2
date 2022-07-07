@@ -6,7 +6,6 @@ require (
 	cloud.google.com/go/compute v1.7.0
 	github.com/google/go-cmp v0.5.8
 	golang.org/x/net v0.0.0-20220706163947-c90051bbdb60
-	golang.org/x/oauth2 v0.0.0-20220630143837-2104d58473e0
 	google.golang.org/appengine v1.6.7
 )
 
