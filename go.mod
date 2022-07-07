@@ -1,6 +1,6 @@
 module golang.org/x/oauth2
 
-go 1.11
+go 1.17
 
 require (
 	cloud.google.com/go/compute v1.7.0
