@@ -3,7 +3,14 @@ module golang.org/x/oauth2
 go 1.11
 
 require (
-	cloud.google.com/go v0.65.0
-	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
-	google.golang.org/appengine v1.6.6
+	cloud.google.com/go/compute v1.7.0
+	github.com/google/go-cmp v0.5.8
+	golang.org/x/net v0.0.0-20220706163947-c90051bbdb60
+	golang.org/x/oauth2 v0.0.0-20220630143837-2104d58473e0
+	google.golang.org/appengine v1.6.7
+)
+
+require (
+	github.com/golang/protobuf v1.5.2 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
 )
