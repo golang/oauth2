@@ -35,6 +35,12 @@ var Cern = oauth2.Endpoint{
 	TokenURL: "https://oauth.web.cern.ch/OAuth/Token",
 }
 
+// Dropbox is the endpoint for Dropbox.
+var Dropbox = oauth2.Endpoint{
+	AuthURL:  "https://www.dropbox.com/oauth2/authorize",
+	TokenURL: "https://api.dropboxapi.com/oauth2/token",
+}
+
 // Facebook is the endpoint for Facebook.
 var Facebook = oauth2.Endpoint{
 	AuthURL:  "https://www.facebook.com/v3.2/dialog/oauth",
