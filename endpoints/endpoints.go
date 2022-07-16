@@ -155,6 +155,12 @@ var PayPalSandbox = oauth2.Endpoint{
 	TokenURL: "https://api.sandbox.paypal.com/v1/identity/openidconnect/tokenservice",
 }
 
+// Pipedrive is the endpoint for Pipedrive.
+var Pipedrive = oauth2.Endpoint{
+	AuthURL:  "https://oauth.pipedrive.com/oauth/authorize",
+	TokenURL: "https://oauth.pipedrive.com/oauth/token",
+}
+
 // Slack is the endpoint for Slack.
 var Slack = oauth2.Endpoint{
 	AuthURL:  "https://slack.com/oauth/authorize",
