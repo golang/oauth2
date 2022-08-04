@@ -57,6 +57,9 @@ type Config struct {
 
 	// Scope specifies optional requested permissions.
 	Scopes []string
+
+	// RefreshScopes specifies optional requested permissions on refresh.
+	RefreshScopes []string
 }
 
 // A TokenSource is anything that can return a token.
@@ -267,10 +270,16 @@ func (tf *tokenRefresher) Token() (*Token, error) {
 		return nil, errors.New("oauth2: token expired and refresh token is not set")
 	}
 
-	tk, err := retrieveToken(tf.ctx, tf.conf, url.Values{
+	v := url.Values{
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {tf.refreshToken},
-	})
+	}
+
+	if len(tf.conf.RefreshScopes) > 0 {
+		v.Set("scope", strings.Join(tf.conf.RefreshScopes, " "))
+	}
+
+	tk, err := retrieveToken(tf.ctx, tf.conf, v)
 
 	if err != nil {
 		return nil, err
