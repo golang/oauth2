@@ -389,19 +389,6 @@ var failureTests = []struct {
 	},
 
 	{
-		name: "Missing Expiration",
-		testEnvironment: testEnvironment{
-			envVars: executablesAllowed,
-			jsonResponse: &executableResponse{
-				Success:   Bool(true),
-				Version:   1,
-				TokenType: "urn:ietf:params:oauth:token-type:jwt",
-			},
-		},
-		expectedErr: missingFieldError(executableSource, "expiration_time"),
-	},
-
-	{
 		name: "Token Expired",
 		testEnvironment: testEnvironment{
 			envVars: executablesAllowed,
@@ -561,6 +548,19 @@ var successTests = []struct {
 				ExpirationTime: defaultTime.Unix() + 3600,
 				TokenType:      "urn:ietf:params:oauth:token-type:saml2",
 				SamlResponse:   "tokentokentoken",
+			},
+		},
+	},
+
+	{
+		name: "Missing Expiration",
+		testEnvironment: testEnvironment{
+			envVars: executablesAllowed,
+			jsonResponse: &executableResponse{
+				Success:   Bool(true),
+				Version:   1,
+				TokenType: "urn:ietf:params:oauth:token-type:jwt",
+				IdToken:   "tokentokentoken",
 			},
 		},
 	},
