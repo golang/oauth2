@@ -298,7 +298,7 @@ type reuseTokenSource struct {
 func (s *reuseTokenSource) Token() (*Token, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.t.AccessToken == "" && s.t.RefreshToken == "" {
+	if s.t != nil && s.t.AccessToken == "" && s.t.RefreshToken == "" {
 		return nil, errors.New("oauth2: Neither AccessToken (json: access_token) nor RefreshToken (json: refresh_token) is set")
 	}
 	if s.t.Valid() {
