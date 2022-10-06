@@ -231,6 +231,16 @@ func TestValidateURLTokenURL(t *testing.T) {
 		{"https://", false},
 		{"http://us-east-1.sts.googleapis.com", false},
 		{"https://us-east-1.sts.googleapis.comevil.com", false},
+		{"https://sts-xyz.p.googleapis.com", true},
+		{"https://sts.pgoogleapis.com", false},
+		{"https://p.googleapis.com", false},
+		{"https://sts.p.com", false},
+		{"http://sts.p.googleapis.com", false},
+		{"https://xyz-sts.p.googleapis.com", false},
+		{"https://sts-xyz.123.p.googleapis.com", false},
+		{"https://sts-xyz.p1.googleapis.com", false},
+		{"https://sts-xyz.p.foo.com", false},
+		{"https://sts-xyz.p.foo.googleapis.com", false},
 	}
 	ctx := context.Background()
 	for _, tt := range urlValidityTests {
@@ -287,6 +297,16 @@ func TestValidateURLImpersonateURL(t *testing.T) {
 		{"https://", false},
 		{"http://us-east-1.iamcredentials.googleapis.com", false},
 		{"https://us-east-1.iamcredentials.googleapis.comevil.com", false},
+		{"https://iamcredentials-xyz.p.googleapis.com", true},
+		{"https://iamcredentials.pgoogleapis.com", false},
+		{"https://p.googleapis.com", false},
+		{"https://iamcredentials.p.com", false},
+		{"http://iamcredentials.p.googleapis.com", false},
+		{"https://xyz-iamcredentials.p.googleapis.com", false},
+		{"https://iamcredentials-xyz.123.p.googleapis.com", false},
+		{"https://iamcredentials-xyz.p1.googleapis.com", false},
+		{"https://iamcredentials-xyz.p.foo.com", false},
+		{"https://iamcredentials-xyz.p.foo.googleapis.com", false},
 	}
 	ctx := context.Background()
 	for _, tt := range urlValidityTests {
