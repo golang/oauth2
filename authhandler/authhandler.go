@@ -10,7 +10,7 @@ import (
 	"context"
 	"errors"
 
-	"golang.org/x/oauth2"
+	"github.com/cloudentity/oauth2"
 )
 
 const (

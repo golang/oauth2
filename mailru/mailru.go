@@ -3,10 +3,10 @@
 // license that can be found in the LICENSE file.
 
 // Package mailru provides constants for using OAuth2 to access Mail.Ru.
-package mailru // import "golang.org/x/oauth2/mailru"
+package mailru // import "github.com/cloudentity/oauth2/mailru"
 
 import (
-	"golang.org/x/oauth2"
+	"github.com/cloudentity/oauth2"
 )
 
 // Endpoint is Mail.Ru's OAuth 2.0 endpoint.

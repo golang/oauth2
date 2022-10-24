@@ -3,14 +3,14 @@
 // license that can be found in the LICENSE file.
 
 // Package hipchat provides constants for using OAuth2 to access HipChat.
-package hipchat // import "golang.org/x/oauth2/hipchat"
+package hipchat // import "github.com/cloudentity/oauth2/hipchat"
 
 import (
 	"encoding/json"
 	"errors"
 
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/clientcredentials"
+	"github.com/cloudentity/oauth2"
+	"github.com/cloudentity/oauth2/clientcredentials"
 )
 
 // Endpoint is HipChat's OAuth 2.0 endpoint.

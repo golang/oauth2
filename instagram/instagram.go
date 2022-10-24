@@ -3,10 +3,10 @@
 // license that can be found in the LICENSE file.
 
 // Package instagram provides constants for using OAuth2 to access Instagram.
-package instagram // import "golang.org/x/oauth2/instagram"
+package instagram // import "github.com/cloudentity/oauth2/instagram"
 
 import (
-	"golang.org/x/oauth2"
+	"github.com/cloudentity/oauth2"
 )
 
 // Endpoint is Instagram's OAuth 2.0 endpoint.

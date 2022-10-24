@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/internal"
-	"golang.org/x/oauth2/jws"
+	"github.com/cloudentity/oauth2"
+	"github.com/cloudentity/oauth2/internal"
+	"github.com/cloudentity/oauth2/jws"
 )
 
 // JWTAccessTokenSourceFromJSON uses a Google Developers service account JSON

@@ -3,10 +3,10 @@
 // license that can be found in the LICENSE file.
 
 // Package spotify provides constants for using OAuth2 to access Spotify.
-package spotify // import "golang.org/x/oauth2/spotify"
+package spotify // import "github.com/cloudentity/oauth2/spotify"
 
 import (
-	"golang.org/x/oauth2"
+	"github.com/cloudentity/oauth2"
 )
 
 // Endpoint is Spotify's OAuth 2.0 endpoint.
