@@ -22,6 +22,7 @@ import (
 
 	"github.com/cloudentity/oauth2"
 	"github.com/cloudentity/oauth2/internal"
+	"github.com/cloudentity/oauth2/privatekeyjwt"
 )
 
 // Config describes a 2-legged OAuth2 flow, with both the
@@ -47,6 +48,10 @@ type Config struct {
 	// client ID & client secret sent. The zero value means to
 	// auto-detect.
 	AuthStyle oauth2.AuthStyle
+
+	// PrivateKey contains the contents of the application's PEM-encoded private key
+	// Used with private_key_jwt client authentication
+	PrivateKey string
 }
 
 // Token uses client credentials to retrieve a token.
@@ -93,6 +98,22 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 	}
 	if len(c.conf.Scopes) > 0 {
 		v.Set("scope", strings.Join(c.conf.Scopes, " "))
+	}
+	if c.conf.AuthStyle == oauth2.AuthStylePrivateKeyJWT {
+		var err error
+		jwtVals, err := privatekeyjwt.JWTAssertionVals(privatekeyjwt.AssertionConfig{
+			ClientID:   c.conf.ClientID,
+			PrivateKey: c.conf.PrivateKey,
+			TokenURL:   c.conf.TokenURL,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for key, vals := range jwtVals {
+			for _, val := range vals {
+				v.Set(key, val)
+			}
+		}
 	}
 	for k, p := range c.conf.EndpointParams {
 		// Allow grant_type to be overridden to allow interoperability with

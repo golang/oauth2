@@ -97,6 +97,11 @@ const (
 	// using HTTP Basic Authorization. This is an optional style
 	// described in the OAuth2 RFC 6749 section 2.3.1.
 	AuthStyleInHeader AuthStyle = 2
+
+	// AuthStylePrivateKeyJWT sends a JWT assertion
+	// signed using the private key
+	// described in OpenID Connect Core
+	AuthStylePrivateKeyJWT AuthStyle = 3
 )
 
 var (
