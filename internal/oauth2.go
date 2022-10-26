@@ -35,27 +35,3 @@ func ParseKey(key []byte) (*rsa.PrivateKey, error) {
 	}
 	return parsed, nil
 }
-
-// ParsePublicKey converts the binary contents of a public key file
-// to an *rsa.PrivateKey. It detects whether the private key is in a
-// PEM container or not. If so, it extracts the the public key
-// from PEM container before conversion. It only supports PEM
-// containers with no passphrase.
-func ParsePublicKey(key []byte) (*rsa.PublicKey, error) {
-	block, _ := pem.Decode(key)
-	if block != nil {
-		key = block.Bytes
-	}
-	parsedKey, err := x509.ParsePKIXPublicKey(key)
-	if err != nil {
-		parsedKey, err = x509.ParsePKCS1PublicKey(key)
-		if err != nil {
-			return nil, fmt.Errorf("private key should be a PEM or plain PKCS1 or PKCS8; parse error: %v", err)
-		}
-	}
-	parsed, ok := parsedKey.(*rsa.PublicKey)
-	if !ok {
-		return nil, errors.New("private key is invalid")
-	}
-	return parsed, nil
-}
