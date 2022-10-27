@@ -122,12 +122,14 @@ func FindDefaultCredentialsWithParams(ctx context.Context, params CredentialsPar
 		if err != nil {
 			return nil, fmt.Errorf("google: error getting credentials using %v environment variable: %v", envVar, err)
 		}
+		ApplyQuotaFromEnvironment(creds)
 		return creds, nil
 	}
 
 	// Second, try a well-known file.
 	filename := wellKnownFile()
 	if creds, err := readCredentialsFile(ctx, filename, params); err == nil {
+		ApplyQuotaFromEnvironment(creds)
 		return creds, nil
 	} else if !os.IsNotExist(err) {
 		return nil, fmt.Errorf("google: error getting credentials using well-known file (%v): %v", filename, err)
@@ -137,25 +139,42 @@ func FindDefaultCredentialsWithParams(ctx context.Context, params CredentialsPar
 	// use those credentials. App Engine standard second generation runtimes (>= Go 1.11)
 	// and App Engine flexible use ComputeTokenSource and the metadata server.
 	if appengineTokenFunc != nil {
-		return &DefaultCredentials{
+		creds := &DefaultCredentials{
 			ProjectID:   appengineAppIDFunc(ctx),
 			TokenSource: AppEngineTokenSource(ctx, params.Scopes...),
-		}, nil
+		}
+		ApplyQuotaFromEnvironment(creds)
+		return creds, nil
 	}
 
 	// Fourth, if we're on Google Compute Engine, an App Engine standard second generation runtime,
 	// or App Engine flexible, use the metadata server.
 	if metadata.OnGCE() {
 		id, _ := metadata.ProjectID()
-		return &DefaultCredentials{
+		creds := &DefaultCredentials{
 			ProjectID:   id,
 			TokenSource: ComputeTokenSource("", params.Scopes...),
-		}, nil
+		}
+		ApplyQuotaFromEnvironment(creds)
+		return creds, nil
 	}
 
 	// None are found; return helpful error.
 	const url = "https://developers.google.com/accounts/docs/application-default-credentials"
 	return nil, fmt.Errorf("google: could not find default credentials. See %v for more information.", url)
+}
+
+func ApplyQuotaFromEnvironment(cred *Credentials) {
+	if cred == nil {
+		return
+	}
+
+	quotaFromEnv := os.Getenv("GOOGLE_CLOUD_QUOTA_PROJECT")
+
+	if quotaFromEnv != "" {
+		// unmarshal cred.JSON and add/edit quota project to the value from env.
+		// Could potentially use solution 2 from https://stackoverflow.com/questions/31467326/golang-modify-json-without-struct for modifying the json
+	}
 }
 
 // FindDefaultCredentials invokes FindDefaultCredentialsWithParams with the specified scopes.
