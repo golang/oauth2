@@ -1,36 +1,52 @@
-# OAuth2 for Go
+# OAuth2 for Go - extended with advanced authentication
 
-[![Go Reference](https://pkg.go.dev/badge/golang.org/x/oauth2.svg)](https://pkg.go.dev/golang.org/x/oauth2)
-[![Build Status](https://travis-ci.org/golang/oauth2.svg?branch=master)](https://travis-ci.org/golang/oauth2)
+This repo is a drop-in replacement of `golang.org/x/oauth2`
 
-oauth2 package contains a client implementation for OAuth 2.0 spec.
+It extends the original library with additional authentication methods:
+
+- private_key_jwt
 
 ## Installation
 
-~~~~
-go get golang.org/x/oauth2
-~~~~
+When using go modules you can run:
 
-Or you can manually git clone the repository to
-`$(go env GOPATH)/src/golang.org/x/oauth2`.
+`go mod edit -replace golang.org/x/oauth2 github.com/cloudentity/oauth2`
 
-See pkg.go.dev for further documentation and examples.
+## Usage
 
-* [pkg.go.dev/golang.org/x/oauth2](https://pkg.go.dev/golang.org/x/oauth2)
-* [pkg.go.dev/golang.org/x/oauth2/google](https://pkg.go.dev/golang.org/x/oauth2/google)
+When using any of the originally supported authentication methods, there's no need to change anything.
+This library can be used as a drop-in replacement.
 
-## Policy for new packages
+For new authentication methods see:
 
-We no longer accept new provider-specific packages in this repo if all
-they do is add a single endpoint variable. If you just want to add a
-single endpoint, add it to the
-[pkg.go.dev/golang.org/x/oauth2/endpoints](https://pkg.go.dev/golang.org/x/oauth2/endpoints)
-package.
+### Private Key JWT
 
-## Report Issues / Send Patches
+#### Client credentials
 
-This repository uses Gerrit for code changes. To learn how to submit changes to
-this repository, see https://golang.org/doc/contribute.html.
+```go
+import (
+	"context"
+	"time"
 
-The main issue tracker for the oauth2 repository is located at
-https://github.com/golang/oauth2/issues.
+	"github.com/cloudentity/oauth2/advancedauth"
+	"github.com/cloudentity/oauth2/clientcredentials"
+)
+```
+
+```go
+    cfg := clientcredentials.Config{
+        ClientID: "your client id",
+    	PrivateKeyAuth: advancedauth.PrivateKeyAuth{
+    		Key:   "your PEM encoded private key",
+    		Alg:   advancedauth.RS256,
+    		Exp:   30 * time.Second,
+    	},
+    }
+
+    token, err := cfg.Token(context.Background())
+```
+
+## Implementation
+
+This fork tries to limit changes to the original codebase to the minimum.
+All the new major changes are implemented in the `advancedauth` package.

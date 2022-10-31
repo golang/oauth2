@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/cloudentity/oauth2"
+	"github.com/cloudentity/oauth2/advancedauth"
 	"github.com/cloudentity/oauth2/internal"
 )
 
@@ -47,6 +48,10 @@ type Config struct {
 	// client ID & client secret sent. The zero value means to
 	// auto-detect.
 	AuthStyle oauth2.AuthStyle
+
+	// PrivateKeyAuth stores configuration options for private_key_jwt
+	// client authentication method described in OpenID Connect spec.
+	PrivateKeyAuth advancedauth.PrivateKeyAuth
 }
 
 // Token uses client credentials to retrieve a token.
@@ -93,6 +98,18 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 	}
 	if len(c.conf.Scopes) > 0 {
 		v.Set("scope", strings.Join(c.conf.Scopes, " "))
+	}
+	// not client_secret nor auto_detect
+	if c.conf.AuthStyle > 2 {
+		var err error
+		if err = advancedauth.ExtendUrlValues(v, advancedauth.Config{
+			AuthStyle:      c.conf.AuthStyle,
+			ClientID:       c.conf.ClientID,
+			PrivateKeyAuth: c.conf.PrivateKeyAuth,
+			TokenURL:       c.conf.TokenURL,
+		}); err != nil {
+			return nil, err
+		}
 	}
 	for k, p := range c.conf.EndpointParams {
 		// Allow grant_type to be overridden to allow interoperability with
