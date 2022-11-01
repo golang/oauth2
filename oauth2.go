@@ -102,6 +102,9 @@ const (
 	// signed using the private key
 	// described in OpenID Connect Core
 	AuthStylePrivateKeyJWT AuthStyle = 3
+
+	// AuthStyleTLS
+	AuthStyleTLS AuthStyle = 4
 )
 
 var (

@@ -1,6 +1,7 @@
 package advancedauth
 
 import (
+	"context"
 	"net/url"
 
 	"github.com/cloudentity/oauth2"
@@ -22,6 +23,7 @@ type Config struct {
 	AuthStyle      oauth2.AuthStyle
 	ClientID       string
 	PrivateKeyAuth PrivateKeyAuth
+	TLSAuth        TLSAuth
 	TokenURL       string
 }
 
@@ -38,5 +40,15 @@ func ExtendUrlValues(v url.Values, c Config) error {
 			}
 		}
 	}
+	if c.AuthStyle == oauth2.AuthStyleTLS {
+		v.Set("client_id", c.ClientID)
+	}
 	return nil
+}
+
+func ExtendContext(ctx context.Context, c Config) (context.Context, error) {
+	if c.AuthStyle == oauth2.AuthStyleTLS {
+		return extendContextWithTLSClient(ctx, c)
+	}
+	return ctx, nil
 }

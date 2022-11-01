@@ -52,6 +52,10 @@ type Config struct {
 	// PrivateKeyAuth stores configuration options for private_key_jwt
 	// client authentication method described in OpenID Connect spec.
 	PrivateKeyAuth advancedauth.PrivateKeyAuth
+
+	// TLSAuth stores the configuration options for tls_client_auth and self_signed_tls_client_auth
+	// client authentication methods described in RFC 8705
+	TLSAuth advancedauth.TLSAuth
 }
 
 // Token uses client credentials to retrieve a token.
@@ -102,12 +106,17 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 	// not client_secret nor auto_detect
 	if c.conf.AuthStyle > 2 {
 		var err error
-		if err = advancedauth.ExtendUrlValues(v, advancedauth.Config{
+		cfg := advancedauth.Config{
 			AuthStyle:      c.conf.AuthStyle,
 			ClientID:       c.conf.ClientID,
 			PrivateKeyAuth: c.conf.PrivateKeyAuth,
+			TLSAuth:        c.conf.TLSAuth,
 			TokenURL:       c.conf.TokenURL,
-		}); err != nil {
+		}
+		if err = advancedauth.ExtendUrlValues(v, cfg); err != nil {
+			return nil, err
+		}
+		if c.ctx, err = advancedauth.ExtendContext(c.ctx, cfg); err != nil {
 			return nil, err
 		}
 	}
@@ -119,7 +128,6 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 		}
 		v[k] = p
 	}
-
 	tk, err := internal.RetrieveToken(c.ctx, c.conf.ClientID, c.conf.ClientSecret, c.conf.TokenURL, v, internal.AuthStyle(c.conf.AuthStyle))
 	if err != nil {
 		if rErr, ok := err.(*internal.RetrieveError); ok {
