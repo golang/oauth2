@@ -5,8 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"net/http"
-
-	"github.com/cloudentity/oauth2"
 )
 
 type TLSAuth struct {
@@ -16,7 +14,7 @@ type TLSAuth struct {
 	Certificate string
 }
 
-func extendContextWithTLSClient(ctx context.Context, c Config) (context.Context, error) {
+func extendContextWithTLSClient(ctx context.Context, httpClientContextKey interface{}, c Config) (context.Context, error) {
 	var (
 		hc   *http.Client
 		ok   bool
@@ -28,9 +26,9 @@ func extendContextWithTLSClient(ctx context.Context, c Config) (context.Context,
 		ctx = context.Background()
 	}
 
-	if ctx.Value(oauth2.HTTPClient) == nil {
+	if ctx.Value(httpClientContextKey) == nil {
 		hc = http.DefaultClient
-	} else if hc, ok = ctx.Value(oauth2.HTTPClient).(*http.Client); !ok {
+	} else if hc, ok = ctx.Value(httpClientContextKey).(*http.Client); !ok {
 		return nil, errors.New("client of type *http.Client required in context")
 	}
 
@@ -49,6 +47,6 @@ func extendContextWithTLSClient(ctx context.Context, c Config) (context.Context,
 	tr.TLSClientConfig.Certificates = []tls.Certificate{cert}
 	hc.Transport = tr
 
-	return context.WithValue(ctx, oauth2.HTTPClient, hc), nil
+	return context.WithValue(ctx, httpClientContextKey, hc), nil
 
 }

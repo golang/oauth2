@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 	"time"
 
@@ -78,8 +77,7 @@ func TestTLS_ClientCredentials(t *testing.T) {
 					Key:         key,
 					Certificate: cert,
 				},
-				Scopes:         []string{"scope1", "scope2"},
-				EndpointParams: url.Values{"audience": {"audience1"}},
+				Scopes: []string{"scope1", "scope2"},
 			},
 		},
 	}
@@ -95,6 +93,7 @@ func TestTLS_ClientCredentials(t *testing.T) {
 				expectHeader(tt, r, "Content-Type", "application/x-www-form-urlencoded")
 				expectFormParam(tt, r, "client_id", "CLIENT_ID")
 				expectFormParam(tt, r, "client_secret", "")
+				expectFormParam(tt, r, "scope", "scope1 scope2")
 				expectFormParam(tt, r, "grant_type", "client_credentials")
 
 				cert := r.TLS.PeerCertificates[0]
@@ -127,6 +126,86 @@ func TestTLS_ClientCredentials(t *testing.T) {
 			client := ts.Client()
 			ctx := context.WithValue(context.Background(), oauth2.HTTPClient, client)
 			tok, err := conf.Token(ctx)
+			if err != nil {
+				tt.Error(err)
+			}
+
+			expectAccessToken(tt, &oauth2.Token{
+				AccessToken:  "90d64460d14870c08c81352a05dedd3465940a7c",
+				TokenType:    "bearer",
+				RefreshToken: "",
+				Expiry:       time.Time{},
+			}, tok)
+		})
+	}
+
+}
+
+func TestTLS_Exchange(t *testing.T) {
+	tcs := []struct {
+		title  string
+		config oauth2.Config
+	}{
+		{
+			title: "TLS",
+			config: oauth2.Config{
+				ClientID: "CLIENT_ID",
+				Endpoint: oauth2.Endpoint{
+					AuthStyle: oauth2.AuthStyleTLS,
+				},
+				TLSAuth: advancedauth.TLSAuth{
+					Key:         key,
+					Certificate: cert,
+				},
+				Scopes: []string{"scope1", "scope2"},
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		tc := tc
+		t.Run(tc.title, func(tt *testing.T) {
+			var serverURL string
+
+			ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				expectURL(tt, r, "/token")
+				expectHeader(tt, r, "Authorization", "")
+				expectHeader(tt, r, "Content-Type", "application/x-www-form-urlencoded")
+				expectFormParam(tt, r, "client_id", "CLIENT_ID")
+				expectFormParam(tt, r, "client_secret", "")
+				expectFormParam(tt, r, "scope", "")
+				expectFormParam(tt, r, "grant_type", "authorization_code")
+
+				cert := r.TLS.PeerCertificates[0]
+				expectStringsEqual(tt, "Example-Root-CA", cert.Issuer.CommonName)
+
+				w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
+				_, err := w.Write([]byte("access_token=90d64460d14870c08c81352a05dedd3465940a7c&token_type=bearer"))
+				if err != nil {
+					tt.Errorf("could not write body")
+				}
+			}))
+
+			ts.TLS = &tls.Config{
+				ClientAuth: tls.RequestClientCert,
+			}
+
+			ts.StartTLS()
+			serverURL = ts.URL
+			defer ts.Close()
+			conf := tc.config
+			conf.Endpoint.TokenURL = serverURL + "/token"
+
+			_, err := conf.Exchange(context.Background(), "random")
+			// context.Background() will fail as the server cert is not trusted
+			// err == nil checks if there are no panics
+			if err == nil {
+				tt.Errorf("expected Token to fail with invalid server cert")
+			}
+
+			client := ts.Client()
+			ctx := context.WithValue(context.Background(), oauth2.HTTPClient, client)
+			tok, err := conf.Exchange(ctx, "random")
 			if err != nil {
 				tt.Error(err)
 			}
@@ -226,12 +305,12 @@ func TestExtendContext(t *testing.T) {
 		tc := tc
 		t.Run(tc.title, func(tt *testing.T) {
 			config := advancedauth.Config{
-				AuthStyle: oauth2.AuthStyleTLS,
+				AuthStyle: advancedauth.AuthStyleTLS,
 				ClientID:  "random",
 				TLSAuth:   tc.auth,
 				TokenURL:  "random",
 			}
-			ctx, err := advancedauth.ExtendContext(tc.ctx, config)
+			ctx, err := advancedauth.ExtendContext(tc.ctx, oauth2.HTTPClient, config)
 			if tc.errorExpected && err == nil {
 				tt.Errorf("expected error")
 			} else if !tc.errorExpected && err != nil {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 	"time"
 
@@ -72,8 +71,7 @@ func TestPrivateKeyJWT_ClientCredentials(t *testing.T) {
 				PrivateKeyAuth: advancedauth.PrivateKeyAuth{
 					Key: privateKey,
 				},
-				Scopes:         []string{"scope1", "scope2"},
-				EndpointParams: url.Values{"audience": {"audience1"}},
+				Scopes: []string{"scope1", "scope2"},
 			},
 			publicKey: rsaPubKey,
 		},
@@ -86,8 +84,7 @@ func TestPrivateKeyJWT_ClientCredentials(t *testing.T) {
 					Key:       privateECDSAKey,
 					Algorithm: "ES256",
 				},
-				Scopes:         []string{"scope1", "scope2"},
-				EndpointParams: url.Values{"audience": {"audience1"}},
+				Scopes: []string{"scope1", "scope2"},
 			},
 			publicKey: ecdsaPubKey,
 		},
@@ -140,6 +137,113 @@ func TestPrivateKeyJWT_ClientCredentials(t *testing.T) {
 			conf := tc.config
 			conf.TokenURL = serverURL + "/token"
 			tok, err := conf.Token(context.Background())
+			if err != nil {
+				tt.Error(err)
+			}
+			expectAccessToken(tt, &oauth2.Token{
+				AccessToken:  "90d64460d14870c08c81352a05dedd3465940a7c",
+				TokenType:    "bearer",
+				RefreshToken: "",
+				Expiry:       time.Time{},
+			}, tok)
+		})
+	}
+
+}
+
+func TestPrivateKeyJWT_Exchange(t *testing.T) {
+	rsaPubKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(publicKey))
+	if err != nil {
+		t.Error("could not parse rsa public key")
+	}
+	ecdsaPubKey, err := jwt.ParseECPublicKeyFromPEM([]byte(publicECDSAKey))
+	if err != nil {
+		t.Error("could not parse ecdsa public key")
+	}
+	tcs := []struct {
+		title     string
+		config    oauth2.Config
+		publicKey interface{}
+	}{
+		{
+			title: "RSA",
+			config: oauth2.Config{
+				ClientID: "CLIENT_ID",
+				Endpoint: oauth2.Endpoint{
+					AuthStyle: oauth2.AuthStylePrivateKeyJWT,
+				},
+				PrivateKeyAuth: advancedauth.PrivateKeyAuth{
+					Key: privateKey,
+				},
+				Scopes: []string{"scope1", "scope2"},
+			},
+			publicKey: rsaPubKey,
+		},
+		{
+			title: "ECDSA",
+			config: oauth2.Config{
+				ClientID: "CLIENT_ID",
+				Endpoint: oauth2.Endpoint{
+					AuthStyle: oauth2.AuthStylePrivateKeyJWT,
+				},
+				PrivateKeyAuth: advancedauth.PrivateKeyAuth{
+					Key:       privateECDSAKey,
+					Algorithm: "ES256",
+				},
+				Scopes: []string{"scope1", "scope2"},
+			},
+			publicKey: ecdsaPubKey,
+		},
+	}
+
+	for _, tc := range tcs {
+		tc := tc
+		t.Run(tc.title, func(tt *testing.T) {
+			var serverURL string
+
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				expectURL(tt, r, "/token")
+				expectHeader(tt, r, "Authorization", "")
+				expectHeader(tt, r, "Content-Type", "application/x-www-form-urlencoded")
+				expectFormParam(tt, r, "client_id", "")
+				expectFormParam(tt, r, "client_secret", "")
+				expectFormParam(tt, r, "code", "random")
+				expectFormParam(tt, r, "grant_type", "authorization_code")
+				expectFormParam(tt, r, "scope", "")
+				expectFormParam(tt, r, "client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
+
+				assertion := r.FormValue("client_assertion")
+				claims := jwt.RegisteredClaims{}
+				token, err := jwt.ParseWithClaims(assertion, &claims, func(token *jwt.Token) (interface{}, error) {
+					return tc.publicKey, nil
+				})
+				if err != nil {
+					tt.Errorf("could not parse assertion %+v", err)
+				}
+				if !token.Valid {
+					tt.Error("invalid assertion token")
+				}
+
+				expectStringsEqual(tt, "CLIENT_ID", claims.Issuer)
+				expectStringsEqual(tt, "CLIENT_ID", claims.Subject)
+
+				// uuid v4 like
+				expectTrue(tt, len(claims.ID) == 36)
+
+				expectTrue(tt, time.Now().Unix() < claims.ExpiresAt.Unix())
+				expectStringsEqual(tt, serverURL, claims.Audience[0])
+
+				w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
+				_, err = w.Write([]byte("access_token=90d64460d14870c08c81352a05dedd3465940a7c&token_type=bearer"))
+				if err != nil {
+					tt.Errorf("could not write body")
+				}
+			}))
+			serverURL = ts.URL
+			defer ts.Close()
+			conf := tc.config
+			conf.Endpoint.TokenURL = ts.URL + "/token"
+			tok, err := conf.Exchange(context.Background(), "random")
 			if err != nil {
 				tt.Error(err)
 			}

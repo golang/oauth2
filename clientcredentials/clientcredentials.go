@@ -107,7 +107,7 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 	if c.conf.AuthStyle > 2 {
 		var err error
 		cfg := advancedauth.Config{
-			AuthStyle:      c.conf.AuthStyle,
+			AuthStyle:      advancedauth.AuthStyle(c.conf.AuthStyle),
 			ClientID:       c.conf.ClientID,
 			PrivateKeyAuth: c.conf.PrivateKeyAuth,
 			TLSAuth:        c.conf.TLSAuth,
@@ -116,7 +116,7 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 		if err = advancedauth.ExtendUrlValues(v, cfg); err != nil {
 			return nil, err
 		}
-		if c.ctx, err = advancedauth.ExtendContext(c.ctx, cfg); err != nil {
+		if c.ctx, err = advancedauth.ExtendContext(c.ctx, oauth2.HTTPClient, cfg); err != nil {
 			return nil, err
 		}
 	}

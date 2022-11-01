@@ -3,8 +3,6 @@ package advancedauth
 import (
 	"context"
 	"net/url"
-
-	"github.com/cloudentity/oauth2"
 )
 
 type Algorithm string
@@ -19,8 +17,20 @@ const (
 	ES512 Algorithm = "ES512"
 )
 
+type AuthStyle int
+
+const (
+	// AuthStylePrivateKeyJWT sends a JWT assertion
+	// signed using the private key
+	// described in OpenID Connect Core
+	AuthStylePrivateKeyJWT AuthStyle = 3
+
+	// AuthStyleTLS
+	AuthStyleTLS AuthStyle = 4
+)
+
 type Config struct {
-	AuthStyle      oauth2.AuthStyle
+	AuthStyle      AuthStyle
 	ClientID       string
 	PrivateKeyAuth PrivateKeyAuth
 	TLSAuth        TLSAuth
@@ -28,7 +38,7 @@ type Config struct {
 }
 
 func ExtendUrlValues(v url.Values, c Config) error {
-	if c.AuthStyle == oauth2.AuthStylePrivateKeyJWT {
+	if c.AuthStyle == AuthStylePrivateKeyJWT {
 		jwtVals, err := privateKeyJWTAssertionVals(c)
 		if err != nil {
 			return err
@@ -40,15 +50,15 @@ func ExtendUrlValues(v url.Values, c Config) error {
 			}
 		}
 	}
-	if c.AuthStyle == oauth2.AuthStyleTLS {
+	if c.AuthStyle == AuthStyleTLS {
 		v.Set("client_id", c.ClientID)
 	}
 	return nil
 }
 
-func ExtendContext(ctx context.Context, c Config) (context.Context, error) {
-	if c.AuthStyle == oauth2.AuthStyleTLS {
-		return extendContextWithTLSClient(ctx, c)
+func ExtendContext(ctx context.Context, httpClientContextKey interface{}, c Config) (context.Context, error) {
+	if c.AuthStyle == AuthStyleTLS {
+		return extendContextWithTLSClient(ctx, httpClientContextKey, c)
 	}
 	return ctx, nil
 }

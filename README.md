@@ -30,6 +30,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/cloudentity/oauth2"
 	"github.com/cloudentity/oauth2/advancedauth"
 	"github.com/cloudentity/oauth2/clientcredentials"
 )
@@ -39,14 +40,44 @@ import (
     cfg := clientcredentials.Config{
         ClientID: "your client id",
         AuthStyle: oauth2.AuthStylePrivateKeyJWT,
-    	PrivateKeyAuth: advancedauth.PrivateKeyAuth{
-    		Key:   "your PEM encoded private key",
-    		Alg:   advancedauth.RS256,
-    		Exp:   30 * time.Second,
-    	},
+        PrivateKeyAuth: advancedauth.PrivateKeyAuth{
+    		Key:         "your PEM encoded private key",
+    		Algorithm:   advancedauth.RS256,
+    		Exp:         30 * time.Second,
+        },
     }
 
     token, err := cfg.Token(context.Background())
+```
+
+#### Authorization code
+
+```go
+import (
+	"context"
+	"time"
+
+	"github.com/cloudentity/oauth2"
+	"github.com/cloudentity/oauth2/advancedauth"
+)
+```
+
+```go
+
+    cfg := oauth2.Config{
+        ClientID: "your client id",
+        Endpoint: oauth2.Endpoint{
+            AuthStyle: oauth2.AuthStylePrivateKeyJWT,
+        },
+        PrivateKeyAuth: advancedauth.PrivateKeyAuth{
+    		Key:         "your PEM encoded private key",
+    		Algorithm:   advancedauth.RS256,
+    		Exp:         30 * time.Second,
+        },
+        Scopes: []string{"scope1", "scope2"},
+    },
+
+    token, err := cfg.Exchange(context.Background(), "your authorization code")
 ```
 
 ### TLS Auth
@@ -60,6 +91,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/cloudentity/oauth2"
 	"github.com/cloudentity/oauth2/advancedauth"
 	"github.com/cloudentity/oauth2/clientcredentials"
 )
@@ -76,6 +108,35 @@ import (
     }
 
     token, err := cfg.Token(context.Background())
+```
+
+#### Authorization code
+
+```go
+import (
+	"context"
+	"time"
+
+	"github.com/cloudentity/oauth2"
+	"github.com/cloudentity/oauth2/advancedauth"
+)
+```
+
+```go
+
+    cfg := oauth2.Config{
+        ClientID: "your client id",
+        Endpoint: oauth2.Endpoint{
+            AuthStyle: oauth2.AuthStyleTLS,
+        },
+    	TLSAuth: advancedauth.TLSAuth{
+    		Key:   "your certificate PEM encoded private key",
+    		Certificate:   "your PEM encoded TLS certificate",
+    	},
+        Scopes: []string{"scope1", "scope2"},
+    },
+
+    token, err := cfg.Exchange(context.Background(), "your authorization code")
 ```
 
 ## Implementation
