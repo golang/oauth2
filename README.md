@@ -8,6 +8,8 @@ It extends the original library with additional authentication methods:
 - tls_client_auth
 - self_signed_tls_client_auth
 
+Additionally, it also adds utility methods for easy use of PKCE.
+
 ## Installation
 
 When using go modules you can run:
@@ -137,6 +139,60 @@ import (
     },
 
     token, err := cfg.Exchange(context.Background(), "your authorization code")
+```
+
+### PKCE
+
+```go
+import (
+	"context"
+	"time"
+
+	"github.com/cloudentity/oauth2"
+	"github.com/cloudentity/oauth2/advancedauth/pkce"
+)
+```
+
+Create `PKCE` with
+
+```go
+    p, err := pkce.New()
+```
+
+or, if you want to specify the code challenge method and verifier length
+
+```go
+    p, err := pkce.NewWithMethodVerifierLength(pkce.512, 84)
+```
+
+#### AuthCodeURL
+
+`PKCE` exposes few utility methods to ease creating `AuthCodeURL`
+
+You can use utility methods returning needed `AuthCodeOption`'s
+
+```
+    url = conf.AuthCodeURL("state", p.AuthCodeURLOpts()...)
+```
+
+or, individual methods
+
+```
+    url := conf.AuthCodeURL("state", p.ChallengeOpt(), p.MethodOpt())
+```
+
+#### Exchange
+
+`PKCE` also exposes similar methods for `Exchange`
+
+```go
+    tok, err := conf.Exchange(context.Background(), "exchange-code", p.ExchangeOpts()...)
+```
+
+or, with individual methods
+
+```go
+    tok, err := conf.Exchange(context.Background(), "exchange-code", p.VerifierOpt(), p.MethodOpt())
 ```
 
 ## Implementation
