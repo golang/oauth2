@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 // exchangeToken performs an oauth2 token exchange with the provided endpoint.

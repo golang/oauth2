@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudentity/oauth2/internal"
+	"golang.org/x/oauth2/internal"
 )
 
 type mockTransport struct {

@@ -7,7 +7,7 @@ package endpoints
 import (
 	"testing"
 
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 func TestAWSCognitoEndpoint(t *testing.T) {

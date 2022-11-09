@@ -6,7 +6,7 @@
 package amazon
 
 import (
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 // Endpoint is Amazon's OAuth 2.0 endpoint.

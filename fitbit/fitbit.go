@@ -3,10 +3,10 @@
 // license that can be found in the LICENSE file.
 
 // Package fitbit provides constants for using OAuth2 to access the Fitbit API.
-package fitbit // import "github.com/cloudentity/oauth2/fitbit"
+package fitbit // import "golang.org/x/oauth2/fitbit"
 
 import (
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 // Endpoint is the Fitbit API's OAuth 2.0 endpoint.

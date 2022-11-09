@@ -3,10 +3,10 @@
 // license that can be found in the LICENSE file.
 
 // Package yandex provides constants for using OAuth2 to access Yandex APIs.
-package yandex // import "github.com/cloudentity/oauth2/yandex"
+package yandex // import "golang.org/x/oauth2/yandex"
 
 import (
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 // Endpoint is the Yandex OAuth 2.0 endpoint.

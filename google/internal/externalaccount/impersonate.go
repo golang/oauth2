@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 // generateAccesstokenReq is used for service account impersonation

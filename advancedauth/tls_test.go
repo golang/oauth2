@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudentity/oauth2"
-	"github.com/cloudentity/oauth2/advancedauth"
-	"github.com/cloudentity/oauth2/clientcredentials"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/advancedauth"
+	"golang.org/x/oauth2/clientcredentials"
 )
 
 const (

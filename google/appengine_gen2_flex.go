@@ -14,7 +14,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 var logOnce sync.Once // only spam about deprecation once

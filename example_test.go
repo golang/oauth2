@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 func ExampleConfig() {

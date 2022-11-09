@@ -13,7 +13,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 var auth = clientAuthentication{

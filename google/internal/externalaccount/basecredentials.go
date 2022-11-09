@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 // now aliases time.Now for testing

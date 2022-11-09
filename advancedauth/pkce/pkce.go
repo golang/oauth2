@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"hash"
 
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 type PKCE struct {

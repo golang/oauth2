@@ -17,7 +17,7 @@
 //
 // # OAuth2 Configs
 //
-// Two functions in this package return github.com/cloudentity/oauth2.Config values from Google credential
+// Two functions in this package return golang.org/x/oauth2.Config values from Google credential
 // data. Google supports two JSON formats for OAuth2 credentials: one is handled by ConfigFromJSON,
 // the other by JWTConfigFromJSON. The returned Config can be used to obtain a TokenSource or
 // create an http.Client.
@@ -81,4 +81,4 @@
 // same as the one obtained from the oauth2.Config returned from ConfigFromJSON or
 // JWTConfigFromJSON, but the Credentials may contain additional information
 // that is useful is some circumstances.
-package google // import "github.com/cloudentity/oauth2/google"
+package google // import "golang.org/x/oauth2/google"

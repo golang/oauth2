@@ -6,7 +6,7 @@
 package bitbucket
 
 import (
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 // Endpoint is Bitbucket's OAuth 2.0 endpoint.

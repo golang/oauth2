@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudentity/oauth2/internal"
+	"golang.org/x/oauth2/internal"
 )
 
 // expiryDelta determines how earlier a token should be considered

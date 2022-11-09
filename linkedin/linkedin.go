@@ -3,10 +3,10 @@
 // license that can be found in the LICENSE file.
 
 // Package linkedin provides constants for using OAuth2 to access LinkedIn.
-package linkedin // import "github.com/cloudentity/oauth2/linkedin"
+package linkedin // import "golang.org/x/oauth2/linkedin"
 
 import (
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 // Endpoint is LinkedIn's OAuth 2.0 endpoint.

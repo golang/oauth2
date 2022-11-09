@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 type awsSecurityCredentials struct {

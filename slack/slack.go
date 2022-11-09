@@ -3,10 +3,10 @@
 // license that can be found in the LICENSE file.
 
 // Package slack provides constants for using OAuth2 to access Slack.
-package slack // import "github.com/cloudentity/oauth2/slack"
+package slack // import "golang.org/x/oauth2/slack"
 
 import (
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 // Endpoint is Slack's OAuth 2.0 endpoint.

@@ -3,10 +3,10 @@
 // license that can be found in the LICENSE file.
 
 // Package github provides constants for using OAuth2 to access Github.
-package github // import "github.com/cloudentity/oauth2/github"
+package github // import "golang.org/x/oauth2/github"
 
 import (
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 // Endpoint is Github's OAuth 2.0 endpoint.

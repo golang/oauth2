@@ -7,7 +7,7 @@ package google
 import (
 	"errors"
 
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 // AuthenticationError indicates there was an error in the authentication flow.

@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 type sdkCredentials struct {

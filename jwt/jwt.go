@@ -19,9 +19,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudentity/oauth2"
-	"github.com/cloudentity/oauth2/internal"
-	"github.com/cloudentity/oauth2/jws"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/internal"
+	"golang.org/x/oauth2/jws"
 )
 
 var (

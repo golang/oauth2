@@ -13,7 +13,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/cloudentity/oauth2/internal"
+	"golang.org/x/oauth2/internal"
 )
 
 func newConf(serverURL string) *Config {

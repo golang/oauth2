@@ -3,10 +3,10 @@
 // license that can be found in the LICENSE file.
 
 // Package mediamath provides constants for using OAuth2 to access MediaMath.
-package mediamath // import "github.com/cloudentity/oauth2/mediamath"
+package mediamath // import "golang.org/x/oauth2/mediamath"
 
 import (
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 // Endpoint is MediaMath's OAuth 2.0 endpoint for production.

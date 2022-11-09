@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/cloudentity/oauth2"
+	"golang.org/x/oauth2"
 )
 
 func TestAuthenticationError_Temporary(t *testing.T) {

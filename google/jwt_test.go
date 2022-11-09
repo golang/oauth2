@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudentity/oauth2/jws"
+	"golang.org/x/oauth2/jws"
 )
 
 var (

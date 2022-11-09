@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudentity/oauth2"
-	"github.com/cloudentity/oauth2/advancedauth/pkce"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/advancedauth/pkce"
 )
 
 func TestPKCE_AuthorizationCodeFlow(t *testing.T) {
