@@ -23,6 +23,7 @@ import (
 var Endpoint = oauth2.Endpoint{
 	AuthURL:   "https://accounts.google.com/o/oauth2/auth",
 	TokenURL:  "https://oauth2.googleapis.com/token",
+	DeviceAuthURL: "https://oauth2.googleapis.com/device/code",
 	AuthStyle: oauth2.AuthStyleInParams,
 }
 
