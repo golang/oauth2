@@ -17,6 +17,12 @@ var Amazon = oauth2.Endpoint{
 	TokenURL: "https://api.amazon.com/auth/o2/token",
 }
 
+// Asana is the endpoint for Asana.
+var Asana = oauth2.Endpoint{
+	AuthURL: "https://app.asana.com/-/oauth_authorize",
+	TokenURL: "https://app.asana.com/-/oauth_token",
+}
+
 // Battlenet is the endpoint for Battlenet.
 var Battlenet = oauth2.Endpoint{
 	AuthURL:  "https://battle.net/oauth/authorize",
