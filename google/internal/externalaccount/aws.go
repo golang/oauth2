@@ -62,11 +62,13 @@ const (
 	// The AWS authorization header name for the auto-generated date.
 	awsDateHeader = "x-amz-date"
 
+	// Supported AWS configuration environment variables.
 	awsAccessKeyId     = "AWS_ACCESS_KEY_ID"
 	awsDefaultRegion   = "AWS_DEFAULT_REGION"
 	awsRegion          = "AWS_REGION"
 	awsSecretAccessKey = "AWS_SECRET_ACCESS_KEY"
 	awsSessionToken    = "AWS_SESSION_TOKEN"
+
 	awsTimeFormatLong  = "20060102T150405Z"
 	awsTimeFormatShort = "20060102"
 )
