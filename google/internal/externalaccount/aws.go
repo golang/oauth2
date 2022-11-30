@@ -62,6 +62,13 @@ const (
 	// The AWS authorization header name for the auto-generated date.
 	awsDateHeader = "x-amz-date"
 
+	// Supported AWS configuration environment variables.
+	awsAccessKeyId     = "AWS_ACCESS_KEY_ID"
+	awsDefaultRegion   = "AWS_DEFAULT_REGION"
+	awsRegion          = "AWS_REGION"
+	awsSecretAccessKey = "AWS_SECRET_ACCESS_KEY"
+	awsSessionToken    = "AWS_SESSION_TOKEN"
+
 	awsTimeFormatLong  = "20060102T150405Z"
 	awsTimeFormatShort = "20060102"
 )
@@ -317,16 +324,33 @@ func (cs awsCredentialSource) doRequest(req *http.Request) (*http.Response, erro
 	return cs.client.Do(req.WithContext(cs.ctx))
 }
 
+func canRetrieveRegionFromEnvironment() bool {
+	// The AWS region can be provided through AWS_REGION or AWS_DEFAULT_REGION. Only one is
+	// required.
+	return getenv(awsRegion) != "" || getenv(awsDefaultRegion) != ""
+}
+
+func canRetrieveSecurityCredentialFromEnvironment() bool {
+	// Check if both AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are available.
+	return getenv(awsAccessKeyId) != "" && getenv(awsSecretAccessKey) != ""
+}
+
+func shouldUseMetadataServer() bool {
+	return !canRetrieveRegionFromEnvironment() || !canRetrieveSecurityCredentialFromEnvironment()
+}
+
 func (cs awsCredentialSource) subjectToken() (string, error) {
 	if cs.requestSigner == nil {
-		awsSessionToken, err := cs.getAWSSessionToken()
-		if err != nil {
-			return "", err
-		}
-
 		headers := make(map[string]string)
-		if awsSessionToken != "" {
-			headers[awsIMDSv2SessionTokenHeader] = awsSessionToken
+		if shouldUseMetadataServer() {
+			awsSessionToken, err := cs.getAWSSessionToken()
+			if err != nil {
+				return "", err
+			}
+
+			if awsSessionToken != "" {
+				headers[awsIMDSv2SessionTokenHeader] = awsSessionToken
+			}
 		}
 
 		awsSecurityCredentials, err := cs.getSecurityCredentials(headers)
@@ -432,11 +456,11 @@ func (cs *awsCredentialSource) getAWSSessionToken() (string, error) {
 }
 
 func (cs *awsCredentialSource) getRegion(headers map[string]string) (string, error) {
-	if envAwsRegion := getenv("AWS_REGION"); envAwsRegion != "" {
-		return envAwsRegion, nil
-	}
-	if envAwsRegion := getenv("AWS_DEFAULT_REGION"); envAwsRegion != "" {
-		return envAwsRegion, nil
+	if canRetrieveRegionFromEnvironment() {
+		if envAwsRegion := getenv(awsRegion); envAwsRegion != "" {
+			return envAwsRegion, nil
+		}
+		return getenv("AWS_DEFAULT_REGION"), nil
 	}
 
 	if cs.RegionURL == "" {
@@ -477,14 +501,12 @@ func (cs *awsCredentialSource) getRegion(headers map[string]string) (string, err
 }
 
 func (cs *awsCredentialSource) getSecurityCredentials(headers map[string]string) (result awsSecurityCredentials, err error) {
-	if accessKeyID := getenv("AWS_ACCESS_KEY_ID"); accessKeyID != "" {
-		if secretAccessKey := getenv("AWS_SECRET_ACCESS_KEY"); secretAccessKey != "" {
-			return awsSecurityCredentials{
-				AccessKeyID:     accessKeyID,
-				SecretAccessKey: secretAccessKey,
-				SecurityToken:   getenv("AWS_SESSION_TOKEN"),
-			}, nil
-		}
+	if canRetrieveSecurityCredentialFromEnvironment() {
+		return awsSecurityCredentials{
+			AccessKeyID:     getenv(awsAccessKeyId),
+			SecretAccessKey: getenv(awsSecretAccessKey),
+			SecurityToken:   getenv(awsSessionToken),
+		}, nil
 	}
 
 	roleName, err := cs.getMetadataRoleName(headers)
