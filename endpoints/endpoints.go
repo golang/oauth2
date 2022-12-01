@@ -254,3 +254,19 @@ func AWSCognito(domain string) oauth2.Endpoint {
 		TokenURL: domain + "/oauth2/token",
 	}
 }
+
+// VaultVision returns a new oauth2.Endpoint for the supplied Vault Vision
+// tenant domain.
+//
+// Example domain: https://testing.vvkey.io
+// Example custom domain: https://auth.vaultvision.com
+//
+// For more information see:
+// https://docs.vaultvision.com/getting_started.html
+func VaultVision(domain string) oauth2.Endpoint {
+	domain = strings.TrimRight(domain, "/")
+	return oauth2.Endpoint{
+		AuthURL:  domain + "/authorize",
+		TokenURL: domain + "/oauth/token",
+	}
+}

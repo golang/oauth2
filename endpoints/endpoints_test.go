@@ -41,3 +41,35 @@ func TestAWSCognitoEndpoint(t *testing.T) {
 		})
 	}
 }
+
+func TestVaultVisionEndpoint(t *testing.T) {
+
+	var endpointTests = []struct {
+		in  string
+		out oauth2.Endpoint
+	}{
+		{
+			in: "https://testing.vvkey.io",
+			out: oauth2.Endpoint{
+				AuthURL:  "https://testing.vvkey.io/authorize",
+				TokenURL: "https://testing.vvkey.io/oauth/token",
+			},
+		},
+		{
+			in: "https://auth.vaultvision.com",
+			out: oauth2.Endpoint{
+				AuthURL:  "https://auth.vaultvision.com/authorize",
+				TokenURL: "https://auth.vaultvision.com/oauth/token",
+			},
+		},
+	}
+
+	for _, tt := range endpointTests {
+		t.Run(tt.in, func(t *testing.T) {
+			endpoint := VaultVision(tt.in)
+			if endpoint != tt.out {
+				t.Errorf("got %q, want %q", endpoint, tt.out)
+			}
+		})
+	}
+}
