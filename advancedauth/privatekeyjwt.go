@@ -45,7 +45,7 @@ func privateKeyJWTAssertionVals(c Config) (url.Values, error) {
 	claims := &jwt.RegisteredClaims{
 		Issuer:    c.ClientID,
 		Subject:   c.ClientID,
-		Audience:  []string{strings.TrimSuffix(c.TokenURL, "/token")},
+		Audience:  []string{c.TokenURL, strings.TrimSuffix(c.TokenURL, "/token")},
 		ID:        jti,
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(exp)),
 	}

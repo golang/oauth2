@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/advancedauth"
 	"golang.org/x/oauth2/clientcredentials"
-	"github.com/golang-jwt/jwt/v4"
 )
 
 const (
@@ -124,7 +124,8 @@ func TestPrivateKeyJWT_ClientCredentials(t *testing.T) {
 				expectTrue(tt, len(claims.ID) == 36)
 
 				expectTrue(tt, time.Now().Unix() < claims.ExpiresAt.Unix())
-				expectStringsEqual(tt, serverURL, claims.Audience[0])
+				expectStringsEqual(tt, serverURL+"/token", claims.Audience[0])
+				expectStringsEqual(tt, serverURL, claims.Audience[1])
 
 				w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
 				_, err = w.Write([]byte("access_token=90d64460d14870c08c81352a05dedd3465940a7c&token_type=bearer"))
@@ -231,7 +232,8 @@ func TestPrivateKeyJWT_Exchange(t *testing.T) {
 				expectTrue(tt, len(claims.ID) == 36)
 
 				expectTrue(tt, time.Now().Unix() < claims.ExpiresAt.Unix())
-				expectStringsEqual(tt, serverURL, claims.Audience[0])
+				expectStringsEqual(tt, serverURL+"/token", claims.Audience[0])
+				expectStringsEqual(tt, serverURL, claims.Audience[1])
 
 				w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
 				_, err = w.Write([]byte("access_token=90d64460d14870c08c81352a05dedd3465940a7c&token_type=bearer"))
