@@ -232,6 +232,56 @@ func (c *Config) Client(ctx context.Context, t *Token) *http.Client {
 	return NewClient(ctx, c.TokenSource(ctx, t))
 }
 
+// According to OAuth2 RFC 6749 section 3.3 and section 6, scope parameter is
+// optional on refresh requests and:
+//
+// > The requested scope MUST NOT include any scope not originally granted by the
+// > resource owner, and if omitted is treated as equal to the scope originally
+// > granted by the resource owner.
+//
+// See https://tools.ietf.org/html/rfc6749#section-3.3 and
+// https://tools.ietf.org/html/rfc6749#section-6 for more info.
+//
+// At the same time, RFC allows client to use this optional parameter and
+// implementation should not restrict this usage.
+//
+// In fact, without specifing scopes on refresh request, at least Microsoft
+// Advertising API resets access token scopes to (their own, not those
+// specified in Config) defaults on refresh, meaning new access token has less
+// scopes than initial.
+//
+// Though, it seems like issue is on Microsoft side, but for practical needs we
+// need some workaround. It seems that issue exists for several years and
+// highly unlikely it'll be ever fixed at Microsoft.
+//
+// From the other hand, RFC gives to client an option to provide same or fewer
+// scopes on refresh request. So, this still can be useful in some valid use
+// cases, when client want to obtain access token with fewer scopes.
+//
+// To minimise changes in the lib's interface for this rare use case and to not
+// encourage using it, we are passing additional parameter via context. This
+// parameter is a callback function, which is executed to fix scopes on refresh
+// requests.
+//
+// Use it like this:
+// ctx = context.WithValue(ctx, oauth2.ScopeFixer, oauth2.ScopeFixerExact)
+// client := config.Client(ctx, token)
+
+type scopeFixerKey struct{}
+
+// ScopeFixer is a context key to provide function to fix scope on refresh
+// request. Value should be a func([]string) []string - function, that consumes
+// Config.Scope and returns scope to send on refresh request. If value is not
+// set or returns nil or empty slice, then scope parameter will not be sent.
+// It's up to ScopeFixer to provide correct set of scopes and up to auth server
+// to check it. We're not checking if ScopeFixer returns additional scopes.
+var ScopeFixer scopeFixerKey
+
+// ScopeFixerExact returns exactly same set of scopes.
+func ScopeFixerExact(scopes []string) []string {
+	return scopes
+}
+
 // TokenSource returns a TokenSource that returns t until t expires,
 // automatically refreshing it as necessary using the provided context.
 //
@@ -267,9 +317,17 @@ func (tf *tokenRefresher) Token() (*Token, error) {
 		return nil, errors.New("oauth2: token expired and refresh token is not set")
 	}
 
+	var scope []string
+	if scopeFixer, ok := tf.ctx.Value(ScopeFixer).(func([]string) []string); ok && len(tf.conf.Scopes) > 0 {
+		if scopes := scopeFixer(tf.conf.Scopes); len(scopes) > 0 {
+			scope = []string{strings.Join(scopes, " ")}
+		}
+	}
+
 	tk, err := retrieveToken(tf.ctx, tf.conf, url.Values{
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {tf.refreshToken},
+		"scope":         scope,
 	})
 
 	if err != nil {
