@@ -62,10 +62,6 @@ type Config struct {
 	// PrivateKeyAuth stores configuration options for private_key_jwt
 	// client authentication method described in OpenID Connect spec.
 	PrivateKeyAuth advancedauth.PrivateKeyAuth
-
-	// TLSAuth stores the configuration options for tls_client_auth and self_signed_tls_client_auth
-	// client authentication methods described in RFC 8705
-	TLSAuth advancedauth.TLSAuth
 }
 
 // A TokenSource is anything that can return a token.
@@ -242,13 +238,9 @@ func (c *Config) Exchange(ctx context.Context, code string, opts ...AuthCodeOpti
 			AuthStyle:      advancedauth.AuthStyle(c.Endpoint.AuthStyle),
 			ClientID:       c.ClientID,
 			PrivateKeyAuth: c.PrivateKeyAuth,
-			TLSAuth:        c.TLSAuth,
 			TokenURL:       c.Endpoint.TokenURL,
 		}
 		if err = advancedauth.ExtendUrlValues(v, cfg); err != nil {
-			return nil, err
-		}
-		if ctx, err = advancedauth.ExtendContext(ctx, HTTPClient, cfg); err != nil {
 			return nil, err
 		}
 	}

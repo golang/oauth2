@@ -5,8 +5,6 @@ This repo is a drop-in replacement of `golang.org/x/oauth2`
 It extends the original library with additional authentication methods:
 
 - private_key_jwt
-- tls_client_auth
-- self_signed_tls_client_auth
 
 Additionally, it also adds utility methods for easy use of PKCE.
 
@@ -84,9 +82,14 @@ import (
 
 ### TLS Auth
 
-Both `tls_client_auth` and `self_signed_tls_client_auth` are handled with `TLSAuth`
+If you want to use `tls_client_auth` or `self_signed_tls_client_auth` there is no dedicated
+configuration for the client certificate and key.
 
-#### Client credentials
+You should create an appropriate `*http.Client` and pass it in the context.
+
+One thing this library does is that it adds an AuthStyle `AuthStyleTLS` which appropriately sends the `client_id` but skips the `client_secret`.
+
+Example:
 
 ```go
 import (
@@ -100,45 +103,23 @@ import (
 ```
 
 ```go
+
+    // ... generate cert
+
+    client := &http.Client{
+        Transport: &http.Transport{
+            TLSClientConfig: &tls.Config{
+                Certificates: []tls.Certificate{cert},
+            },
+        },
+    }
+
     cfg := clientcredentials.Config{
         ClientID: "your client id",
         AuthStyle: oauth2.AuthStyleTLS,
-    	TLSAuth: advancedauth.TLSAuth{
-    		Key:   "your certificate PEM encoded private key",
-    		Certificate:   "your PEM encoded TLS certificate",
-    	},
     }
 
-    token, err := cfg.Token(context.Background())
-```
-
-#### Authorization code
-
-```go
-import (
-	"context"
-	"time"
-
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/advancedauth"
-)
-```
-
-```go
-
-    cfg := oauth2.Config{
-        ClientID: "your client id",
-        Endpoint: oauth2.Endpoint{
-            AuthStyle: oauth2.AuthStyleTLS,
-        },
-    	TLSAuth: advancedauth.TLSAuth{
-    		Key:   "your certificate PEM encoded private key",
-    		Certificate:   "your PEM encoded TLS certificate",
-    	},
-        Scopes: []string{"scope1", "scope2"},
-    },
-
-    token, err := cfg.Exchange(context.Background(), "your authorization code")
+    token, err := cfg.Token(context.WithValue(context.Background(), oauth2.HTTPClient, client))
 ```
 
 ### PKCE

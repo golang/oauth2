@@ -1,7 +1,6 @@
 package advancedauth
 
 import (
-	"context"
 	"net/url"
 )
 
@@ -33,7 +32,6 @@ type Config struct {
 	AuthStyle      AuthStyle
 	ClientID       string
 	PrivateKeyAuth PrivateKeyAuth
-	TLSAuth        TLSAuth
 	TokenURL       string
 }
 
@@ -54,11 +52,4 @@ func ExtendUrlValues(v url.Values, c Config) error {
 		v.Set("client_id", c.ClientID)
 	}
 	return nil
-}
-
-func ExtendContext(ctx context.Context, httpClientContextKey interface{}, c Config) (context.Context, error) {
-	if c.AuthStyle == AuthStyleTLS {
-		return extendContextWithTLSClient(ctx, httpClientContextKey, c)
-	}
-	return ctx, nil
 }
