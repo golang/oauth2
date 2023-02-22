@@ -6,6 +6,7 @@ package google
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -62,6 +63,12 @@ type CredentialsParams struct {
 
 	// PKCE is used to support PKCE flow. Optional for 3LO flow.
 	PKCE *authhandler.PKCEParams
+
+	// The OAuth2 TokenURL to use, which depends on whether mTLS is enabled. Optional.
+	TokenURL string
+
+	// The TLSConfig used for constructing an mTLS-enabled HTTP client. Optional.
+	TLSConfig *tls.Config
 }
 
 func (params CredentialsParams) deepCopy() CredentialsParams {
