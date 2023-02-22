@@ -193,6 +193,7 @@ func CredentialsFromJSONWithParams(ctx context.Context, jsonData []byte, params 
 	if err != nil {
 		return nil, err
 	}
+	ts = newErrWrappingTokenSource(ts)
 	return &DefaultCredentials{
 		ProjectID:   f.ProjectID,
 		TokenSource: ts,
