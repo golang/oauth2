@@ -19,6 +19,8 @@ type PrivateKeyAuth struct {
 	Algorithm Algorithm
 	// Exp defines how long client_assertion is valid for - default 30 seconds
 	Exp time.Duration
+	// Audience holds the intended recipients of the client_assertion
+	Audience []string
 }
 
 func privateKeyJWTAssertionVals(c Config) (url.Values, error) {
@@ -42,10 +44,16 @@ func privateKeyJWTAssertionVals(c Config) (url.Values, error) {
 		exp = 30 * time.Second
 	}
 
+	audience := []string{c.TokenURL, strings.TrimSuffix(c.TokenURL, "/token")}
+
+	if len(c.PrivateKeyAuth.Audience) > 0 {
+		audience = c.PrivateKeyAuth.Audience
+	}
+
 	claims := &jwt.RegisteredClaims{
 		Issuer:    c.ClientID,
 		Subject:   c.ClientID,
-		Audience:  []string{c.TokenURL, strings.TrimSuffix(c.TokenURL, "/token")},
+		Audience:  audience,
 		ID:        jti,
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(exp)),
 	}

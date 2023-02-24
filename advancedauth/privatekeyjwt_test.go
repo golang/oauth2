@@ -88,6 +88,20 @@ func TestPrivateKeyJWT_ClientCredentials(t *testing.T) {
 			},
 			publicKey: ecdsaPubKey,
 		},
+		{
+			title: "ECDSA with custom audience",
+			config: clientcredentials.Config{
+				ClientID:  "CLIENT_ID",
+				AuthStyle: oauth2.AuthStylePrivateKeyJWT,
+				PrivateKeyAuth: advancedauth.PrivateKeyAuth{
+					Key:       privateECDSAKey,
+					Algorithm: "ES256",
+					Audience:  []string{"https://example.com/audience"},
+				},
+				Scopes: []string{"scope1", "scope2"},
+			},
+			publicKey: ecdsaPubKey,
+		},
 	}
 
 	for _, tc := range tcs {
@@ -124,8 +138,14 @@ func TestPrivateKeyJWT_ClientCredentials(t *testing.T) {
 				expectTrue(tt, len(claims.ID) == 36)
 
 				expectTrue(tt, time.Now().Unix() < claims.ExpiresAt.Unix())
-				expectStringsEqual(tt, serverURL+"/token", claims.Audience[0])
-				expectStringsEqual(tt, serverURL, claims.Audience[1])
+
+				if len(tc.config.PrivateKeyAuth.Audience) > 0 {
+					expectTrue(tt, len(claims.Audience) == 1)
+					expectStringsEqual(tt, tc.config.PrivateKeyAuth.Audience[0], claims.Audience[0])
+				} else {
+					expectStringsEqual(tt, serverURL+"/token", claims.Audience[0])
+					expectStringsEqual(tt, serverURL, claims.Audience[1])
+				}
 
 				w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
 				_, err = w.Write([]byte("access_token=90d64460d14870c08c81352a05dedd3465940a7c&token_type=bearer"))
