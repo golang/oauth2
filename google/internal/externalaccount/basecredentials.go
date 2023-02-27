@@ -39,6 +39,9 @@ type Config struct {
 	// ServiceAccountImpersonationURL is the URL for the service account impersonation request. This is only
 	// required for workload identity pools when APIs to be accessed have not integrated with UberMint.
 	ServiceAccountImpersonationURL string
+	// ServiceAccountImpersonationLifetimeSeconds is the number of seconds the service account impersonation
+	// token will be valid for.
+	ServiceAccountImpersonationLifetimeSeconds int
 	// ClientSecret is currently only required if token_info endpoint also
 	// needs to be called with the generated GCP access token. When provided, STS will be
 	// called with additional basic authentication using client_id as username and client_secret as password.
@@ -64,20 +67,6 @@ type Config struct {
 // that include all elements in a given list, in that order.
 
 var (
-	validTokenURLPatterns = []*regexp.Regexp{
-		// The complicated part in the middle matches any number of characters that
-		// aren't period, spaces, or slashes.
-		regexp.MustCompile(`(?i)^[^\.\s\/\\]+\.sts\.googleapis\.com$`),
-		regexp.MustCompile(`(?i)^sts\.googleapis\.com$`),
-		regexp.MustCompile(`(?i)^sts\.[^\.\s\/\\]+\.googleapis\.com$`),
-		regexp.MustCompile(`(?i)^[^\.\s\/\\]+-sts\.googleapis\.com$`),
-	}
-	validImpersonateURLPatterns = []*regexp.Regexp{
-		regexp.MustCompile(`^[^\.\s\/\\]+\.iamcredentials\.googleapis\.com$`),
-		regexp.MustCompile(`^iamcredentials\.googleapis\.com$`),
-		regexp.MustCompile(`^iamcredentials\.[^\.\s\/\\]+\.googleapis\.com$`),
-		regexp.MustCompile(`^[^\.\s\/\\]+-iamcredentials\.googleapis\.com$`),
-	}
 	validWorkforceAudiencePattern *regexp.Regexp = regexp.MustCompile(`//iam\.googleapis\.com/locations/[^/]+/workforcePools/`)
 )
 
@@ -105,25 +94,13 @@ func validateWorkforceAudience(input string) bool {
 
 // TokenSource Returns an external account TokenSource struct. This is to be called by package google to construct a google.Credentials.
 func (c *Config) TokenSource(ctx context.Context) (oauth2.TokenSource, error) {
-	return c.tokenSource(ctx, validTokenURLPatterns, validImpersonateURLPatterns, "https")
+	return c.tokenSource(ctx, "https")
 }
 
 // tokenSource is a private function that's directly called by some of the tests,
 // because the unit test URLs are mocked, and would otherwise fail the
 // validity check.
-func (c *Config) tokenSource(ctx context.Context, tokenURLValidPats []*regexp.Regexp, impersonateURLValidPats []*regexp.Regexp, scheme string) (oauth2.TokenSource, error) {
-	valid := validateURL(c.TokenURL, tokenURLValidPats, scheme)
-	if !valid {
-		return nil, fmt.Errorf("oauth2/google: invalid TokenURL provided while constructing tokenSource")
-	}
-
-	if c.ServiceAccountImpersonationURL != "" {
-		valid := validateURL(c.ServiceAccountImpersonationURL, impersonateURLValidPats, scheme)
-		if !valid {
-			return nil, fmt.Errorf("oauth2/google: invalid ServiceAccountImpersonationURL provided while constructing tokenSource")
-		}
-	}
-
+func (c *Config) tokenSource(ctx context.Context, scheme string) (oauth2.TokenSource, error) {
 	if c.WorkforcePoolUserProject != "" {
 		valid := validateWorkforceAudience(c.Audience)
 		if !valid {
@@ -141,10 +118,11 @@ func (c *Config) tokenSource(ctx context.Context, tokenURLValidPats []*regexp.Re
 	scopes := c.Scopes
 	ts.conf.Scopes = []string{"https://www.googleapis.com/auth/cloud-platform"}
 	imp := ImpersonateTokenSource{
-		Ctx:    ctx,
-		URL:    c.ServiceAccountImpersonationURL,
-		Scopes: scopes,
-		Ts:     oauth2.ReuseTokenSource(nil, ts),
+		Ctx:                  ctx,
+		URL:                  c.ServiceAccountImpersonationURL,
+		Scopes:               scopes,
+		Ts:                   oauth2.ReuseTokenSource(nil, ts),
+		TokenLifetimeSeconds: c.ServiceAccountImpersonationLifetimeSeconds,
 	}
 	return oauth2.ReuseTokenSource(nil, imp), nil
 }
@@ -205,6 +183,10 @@ func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 			}
 			if c.CredentialSource.IMDSv2SessionTokenURL != "" {
 				awsCredSource.IMDSv2SessionTokenURL = c.CredentialSource.IMDSv2SessionTokenURL
+			}
+
+			if err := awsCredSource.validateMetadataServers(); err != nil {
+				return nil, err
 			}
 
 			return awsCredSource, nil

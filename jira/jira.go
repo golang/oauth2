@@ -105,7 +105,7 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	v.Set("assertion", string(assertion))
+	v.Set("assertion", assertion)
 
 	// Fetch access token from auth server
 	hc := oauth2.NewClient(js.ctx, nil)
