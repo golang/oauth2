@@ -11,21 +11,16 @@ import (
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
+	"golang.org/x/oauth2/endpoints"
 )
 
 // Endpoint is HipChat's OAuth 2.0 endpoint.
-var Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://www.hipchat.com/users/authorize",
-	TokenURL: "https://api.hipchat.com/v2/oauth/token",
-}
+var Endpoint = endpoints.HipChat
 
 // ServerEndpoint returns a new oauth2.Endpoint for a HipChat Server instance
 // running on the given domain or host.
 func ServerEndpoint(host string) oauth2.Endpoint {
-	return oauth2.Endpoint{
-		AuthURL:  "https://" + host + "/users/authorize",
-		TokenURL: "https://" + host + "/v2/oauth/token",
-	}
+	return endpoints.HipChatServer(host)
 }
 
 // ClientCredentialsConfigFromCaps generates a Config from a HipChat API

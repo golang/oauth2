@@ -6,11 +6,8 @@
 package bitbucket
 
 import (
-	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/endpoints"
 )
 
 // Endpoint is Bitbucket's OAuth 2.0 endpoint.
-var Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://bitbucket.org/site/oauth2/authorize",
-	TokenURL: "https://bitbucket.org/site/oauth2/access_token",
-}
+var Endpoint = endpoints.Bitbucket

@@ -6,11 +6,8 @@
 package facebook // import "golang.org/x/oauth2/facebook"
 
 import (
-	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/endpoints"
 )
 
 // Endpoint is Facebook's OAuth 2.0 endpoint.
-var Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://www.facebook.com/v3.2/dialog/oauth",
-	TokenURL: "https://graph.facebook.com/v3.2/oauth/access_token",
-}
+var Endpoint = endpoints.Facebook

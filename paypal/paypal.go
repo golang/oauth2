@@ -6,17 +6,11 @@
 package paypal // import "golang.org/x/oauth2/paypal"
 
 import (
-	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/endpoints"
 )
 
 // Endpoint is PayPal's OAuth 2.0 endpoint in live (production) environment.
-var Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://www.paypal.com/webapps/auth/protocol/openidconnect/v1/authorize",
-	TokenURL: "https://api.paypal.com/v1/identity/openidconnect/tokenservice",
-}
+var Endpoint = endpoints.PayPal
 
 // SandboxEndpoint is PayPal's OAuth 2.0 endpoint in sandbox (testing) environment.
-var SandboxEndpoint = oauth2.Endpoint{
-	AuthURL:  "https://www.sandbox.paypal.com/webapps/auth/protocol/openidconnect/v1/authorize",
-	TokenURL: "https://api.sandbox.paypal.com/v1/identity/openidconnect/tokenservice",
-}
+var SandboxEndpoint = endpoints.PayPalSandbox
