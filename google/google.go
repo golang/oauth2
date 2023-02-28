@@ -6,12 +6,9 @@ package google
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
-	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -19,7 +16,6 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google/internal/externalaccount"
-	"golang.org/x/oauth2/internal"
 	"golang.org/x/oauth2/jwt"
 )
 
@@ -185,9 +181,6 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 				cfg.Endpoint.TokenURL = Endpoint.TokenURL
 			}
 		}
-		if params.TLSConfig != nil {
-			ctx = context.WithValue(ctx, internal.HTTPClient, customHTTPClient(params.TLSConfig))
-		}
 		tok := &oauth2.Token{RefreshToken: f.RefreshToken}
 		return cfg.TokenSource(ctx, tok), nil
 	case externalAccountKey:
@@ -288,27 +281,4 @@ func (cs computeSource) Token() (*oauth2.Token, error) {
 		"oauth2.google.tokenSource":    "compute-metadata",
 		"oauth2.google.serviceAccount": acct,
 	}), nil
-}
-
-// customHTTPClient constructs an HTTPClient using the provided tlsConfig, to support mTLS.
-func customHTTPClient(tlsConfig *tls.Config) *http.Client {
-	trans := baseTransport()
-	trans.TLSClientConfig = tlsConfig
-	return &http.Client{Transport: trans}
-}
-
-func baseTransport() *http.Transport {
-	return &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-			DualStack: true,
-		}).DialContext,
-		MaxIdleConns:          100,
-		MaxIdleConnsPerHost:   100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
 }

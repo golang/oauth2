@@ -6,7 +6,6 @@ package google
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -66,9 +65,6 @@ type CredentialsParams struct {
 
 	// The OAuth2 TokenURL to use, which depends on whether mTLS is enabled. Optional.
 	TokenURL string
-
-	// The TLSConfig used for constructing an mTLS-enabled HTTP client. Optional.
-	TLSConfig *tls.Config
 }
 
 func (params CredentialsParams) deepCopy() CredentialsParams {
