@@ -15,16 +15,13 @@ import (
 
 	"cloud.google.com/go/compute/metadata"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/endpoints"
 	"golang.org/x/oauth2/google/internal/externalaccount"
 	"golang.org/x/oauth2/jwt"
 )
 
 // Endpoint is Google's OAuth 2.0 default endpoint.
-var Endpoint = oauth2.Endpoint{
-	AuthURL:   "https://accounts.google.com/o/oauth2/auth",
-	TokenURL:  "https://oauth2.googleapis.com/token",
-	AuthStyle: oauth2.AuthStyleInParams,
-}
+var Endpoint = endpoints.Google
 
 // JWTTokenURL is Google's OAuth 2.0 token URL to use with the JWT flow.
 const JWTTokenURL = "https://oauth2.googleapis.com/token"
