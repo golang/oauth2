@@ -63,7 +63,8 @@ type CredentialsParams struct {
 	// PKCE is used to support PKCE flow. Optional for 3LO flow.
 	PKCE *authhandler.PKCEParams
 
-	// The OAuth2 TokenURL to use, which depends on whether mTLS is enabled. Optional.
+	// The OAuth2 TokenURL default override. This value overrides the default TokenURL,
+	// unless explicitly specified by the credentials config file. Optional.
 	TokenURL string
 }
 
