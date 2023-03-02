@@ -62,6 +62,10 @@ type CredentialsParams struct {
 
 	// PKCE is used to support PKCE flow. Optional for 3LO flow.
 	PKCE *authhandler.PKCEParams
+
+	// The OAuth2 TokenURL default override. This value overrides the default TokenURL,
+	// unless explicitly specified by the credentials config file. Optional.
+	TokenURL string
 }
 
 func (params CredentialsParams) deepCopy() CredentialsParams {
