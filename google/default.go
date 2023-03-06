@@ -19,6 +19,8 @@ import (
 	"golang.org/x/oauth2/authhandler"
 )
 
+const adcSetupURL = "https://cloud.google.com/docs/authentication/external/set-up-adc"
+
 // Credentials holds Google credentials, including "Application Default Credentials".
 // For more details, see:
 // https://developers.google.com/accounts/docs/application-default-credentials
@@ -158,8 +160,7 @@ func FindDefaultCredentialsWithParams(ctx context.Context, params CredentialsPar
 	}
 
 	// None are found; return helpful error.
-	const url = "https://developers.google.com/accounts/docs/application-default-credentials"
-	return nil, fmt.Errorf("google: could not find default credentials. See %v for more information.", url)
+	return nil, fmt.Errorf("google: could not find default credentials. See %v for more information", adcSetupURL)
 }
 
 // FindDefaultCredentials invokes FindDefaultCredentialsWithParams with the specified scopes.
