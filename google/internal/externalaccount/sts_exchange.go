@@ -36,7 +36,7 @@ func exchangeToken(ctx context.Context, endpoint string, request *stsTokenExchan
 	if options != nil {
 		opts, err := json.Marshal(options)
 		if err != nil {
-			return nil, fmt.Errorf("oauth2/google: failed to marshal additional options: %v", err)
+			return nil, fmt.Errorf("oauth2/google: failed to marshal additional options: %w", err)
 		}
 		data.Set("options", string(opts))
 	}
@@ -46,7 +46,7 @@ func exchangeToken(ctx context.Context, endpoint string, request *stsTokenExchan
 
 	req, err := http.NewRequest("POST", endpoint, strings.NewReader(encodedData))
 	if err != nil {
-		return nil, fmt.Errorf("oauth2/google: failed to properly build http request: %v", err)
+		return nil, fmt.Errorf("oauth2/google: failed to properly build http request: %w", err)
 
 	}
 	req = req.WithContext(ctx)
@@ -60,7 +60,7 @@ func exchangeToken(ctx context.Context, endpoint string, request *stsTokenExchan
 	resp, err := client.Do(req)
 
 	if err != nil {
-		return nil, fmt.Errorf("oauth2/google: invalid response from Secure Token Server: %v", err)
+		return nil, fmt.Errorf("oauth2/google: invalid response from Secure Token Server: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -74,7 +74,7 @@ func exchangeToken(ctx context.Context, endpoint string, request *stsTokenExchan
 	var stsResp stsTokenExchangeResponse
 	err = json.Unmarshal(body, &stsResp)
 	if err != nil {
-		return nil, fmt.Errorf("oauth2/google: failed to unmarshal response body from Secure Token Server: %v", err)
+		return nil, fmt.Errorf("oauth2/google: failed to unmarshal response body from Secure Token Server: %w", err)
 
 	}
 

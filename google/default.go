@@ -124,7 +124,7 @@ func FindDefaultCredentialsWithParams(ctx context.Context, params CredentialsPar
 	if filename := os.Getenv(envVar); filename != "" {
 		creds, err := readCredentialsFile(ctx, filename, params)
 		if err != nil {
-			return nil, fmt.Errorf("google: error getting credentials using %v environment variable: %v", envVar, err)
+			return nil, fmt.Errorf("google: error getting credentials using %v environment variable: %w", envVar, err)
 		}
 		return creds, nil
 	}
@@ -134,7 +134,7 @@ func FindDefaultCredentialsWithParams(ctx context.Context, params CredentialsPar
 	if creds, err := readCredentialsFile(ctx, filename, params); err == nil {
 		return creds, nil
 	} else if !os.IsNotExist(err) {
-		return nil, fmt.Errorf("google: error getting credentials using well-known file (%v): %v", filename, err)
+		return nil, fmt.Errorf("google: error getting credentials using well-known file (%v): %w", filename, err)
 	}
 
 	// Third, if we're on a Google App Engine standard first generation runtime (<= Go 1.9)

@@ -155,12 +155,12 @@ func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
 
 	tok, err := dts.config.RootSource.Token()
 	if err != nil {
-		return nil, fmt.Errorf("downscope: unable to obtain root token: %v", err)
+		return nil, fmt.Errorf("downscope: unable to obtain root token: %w", err)
 	}
 
 	b, err := json.Marshal(downscopedOptions)
 	if err != nil {
-		return nil, fmt.Errorf("downscope: unable to marshal AccessBoundary payload %v", err)
+		return nil, fmt.Errorf("downscope: unable to marshal AccessBoundary payload %w", err)
 	}
 
 	form := url.Values{}
@@ -173,12 +173,12 @@ func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
 	myClient := oauth2.NewClient(dts.ctx, nil)
 	resp, err := myClient.PostForm(identityBindingEndpoint, form)
 	if err != nil {
-		return nil, fmt.Errorf("unable to generate POST Request %v", err)
+		return nil, fmt.Errorf("unable to generate POST Request %w", err)
 	}
 	defer resp.Body.Close()
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("downscope: unable to read response body: %v", err)
+		return nil, fmt.Errorf("downscope: unable to read response body: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("downscope: unable to exchange token; %v. Server responded: %s", resp.StatusCode, respBody)
@@ -188,7 +188,7 @@ func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
 
 	err = json.Unmarshal(respBody, &tresp)
 	if err != nil {
-		return nil, fmt.Errorf("downscope: unable to unmarshal response body: %v", err)
+		return nil, fmt.Errorf("downscope: unable to unmarshal response body: %w", err)
 	}
 
 	// an exchanged token that is derived from a service account (2LO) has an expired_in value

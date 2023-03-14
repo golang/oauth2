@@ -264,7 +264,7 @@ func (cs computeSource) Token() (*oauth2.Token, error) {
 	}
 	err = json.NewDecoder(strings.NewReader(tokenJSON)).Decode(&res)
 	if err != nil {
-		return nil, fmt.Errorf("oauth2/google: invalid token JSON from metadata: %v", err)
+		return nil, fmt.Errorf("oauth2/google: invalid token JSON from metadata: %w", err)
 	}
 	if res.ExpiresInSec == 0 || res.AccessToken == "" {
 		return nil, fmt.Errorf("oauth2/google: incomplete token received from metadata")

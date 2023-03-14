@@ -27,7 +27,7 @@ func (cs urlCredentialSource) subjectToken() (string, error) {
 	client := oauth2.NewClient(cs.ctx, nil)
 	req, err := http.NewRequest("GET", cs.URL, nil)
 	if err != nil {
-		return "", fmt.Errorf("oauth2/google: HTTP request for URL-sourced credential failed: %v", err)
+		return "", fmt.Errorf("oauth2/google: HTTP request for URL-sourced credential failed: %w", err)
 	}
 	req = req.WithContext(cs.ctx)
 
@@ -36,13 +36,13 @@ func (cs urlCredentialSource) subjectToken() (string, error) {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("oauth2/google: invalid response when retrieving subject token: %v", err)
+		return "", fmt.Errorf("oauth2/google: invalid response when retrieving subject token: %w", err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		return "", fmt.Errorf("oauth2/google: invalid body in subject token URL query: %v", err)
+		return "", fmt.Errorf("oauth2/google: invalid body in subject token URL query: %w", err)
 	}
 	if c := resp.StatusCode; c < 200 || c > 299 {
 		return "", fmt.Errorf("oauth2/google: status code %d: %s", c, respBody)
@@ -53,7 +53,7 @@ func (cs urlCredentialSource) subjectToken() (string, error) {
 		jsonData := make(map[string]interface{})
 		err = json.Unmarshal(respBody, &jsonData)
 		if err != nil {
-			return "", fmt.Errorf("oauth2/google: failed to unmarshal subject token file: %v", err)
+			return "", fmt.Errorf("oauth2/google: failed to unmarshal subject token file: %w", err)
 		}
 		val, ok := jsonData[cs.Format.SubjectTokenFieldName]
 		if !ok {

@@ -66,24 +66,24 @@ func (its ImpersonateTokenSource) Token() (*oauth2.Token, error) {
 	}
 	b, err := json.Marshal(reqBody)
 	if err != nil {
-		return nil, fmt.Errorf("oauth2/google: unable to marshal request: %v", err)
+		return nil, fmt.Errorf("oauth2/google: unable to marshal request: %w", err)
 	}
 	client := oauth2.NewClient(its.Ctx, its.Ts)
 	req, err := http.NewRequest("POST", its.URL, bytes.NewReader(b))
 	if err != nil {
-		return nil, fmt.Errorf("oauth2/google: unable to create impersonation request: %v", err)
+		return nil, fmt.Errorf("oauth2/google: unable to create impersonation request: %w", err)
 	}
 	req = req.WithContext(its.Ctx)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("oauth2/google: unable to generate access token: %v", err)
+		return nil, fmt.Errorf("oauth2/google: unable to generate access token: %w", err)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		return nil, fmt.Errorf("oauth2/google: unable to read body: %v", err)
+		return nil, fmt.Errorf("oauth2/google: unable to read body: %w", err)
 	}
 	if c := resp.StatusCode; c < 200 || c > 299 {
 		return nil, fmt.Errorf("oauth2/google: status code %d: %s", c, body)
@@ -91,11 +91,11 @@ func (its ImpersonateTokenSource) Token() (*oauth2.Token, error) {
 
 	var accessTokenResp impersonateTokenResponse
 	if err := json.Unmarshal(body, &accessTokenResp); err != nil {
-		return nil, fmt.Errorf("oauth2/google: unable to parse response: %v", err)
+		return nil, fmt.Errorf("oauth2/google: unable to parse response: %w", err)
 	}
 	expiry, err := time.Parse(time.RFC3339, accessTokenResp.ExpireTime)
 	if err != nil {
-		return nil, fmt.Errorf("oauth2/google: unable to parse expiry: %v", err)
+		return nil, fmt.Errorf("oauth2/google: unable to parse expiry: %w", err)
 	}
 	return &oauth2.Token{
 		AccessToken: accessTokenResp.AccessToken,

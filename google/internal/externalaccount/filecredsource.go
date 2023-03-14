@@ -27,7 +27,7 @@ func (cs fileCredentialSource) subjectToken() (string, error) {
 	defer tokenFile.Close()
 	tokenBytes, err := ioutil.ReadAll(io.LimitReader(tokenFile, 1<<20))
 	if err != nil {
-		return "", fmt.Errorf("oauth2/google: failed to read credential file: %v", err)
+		return "", fmt.Errorf("oauth2/google: failed to read credential file: %w", err)
 	}
 	tokenBytes = bytes.TrimSpace(tokenBytes)
 	switch cs.Format.Type {
@@ -35,7 +35,7 @@ func (cs fileCredentialSource) subjectToken() (string, error) {
 		jsonData := make(map[string]interface{})
 		err = json.Unmarshal(tokenBytes, &jsonData)
 		if err != nil {
-			return "", fmt.Errorf("oauth2/google: failed to unmarshal subject token file: %v", err)
+			return "", fmt.Errorf("oauth2/google: failed to unmarshal subject token file: %w", err)
 		}
 		val, ok := jsonData[cs.Format.SubjectTokenFieldName]
 		if !ok {

@@ -49,11 +49,11 @@ func newJWTSource(jsonKey []byte, audience string, scopes []string) (oauth2.Toke
 
 	cfg, err := JWTConfigFromJSON(jsonKey)
 	if err != nil {
-		return nil, fmt.Errorf("google: could not parse JSON key: %v", err)
+		return nil, fmt.Errorf("google: could not parse JSON key: %w", err)
 	}
 	pk, err := internal.ParseKey(cfg.PrivateKey)
 	if err != nil {
-		return nil, fmt.Errorf("google: could not parse key: %v", err)
+		return nil, fmt.Errorf("google: could not parse key: %w", err)
 	}
 	ts := &jwtAccessTokenSource{
 		email:    cfg.Email,
@@ -96,7 +96,7 @@ func (ts *jwtAccessTokenSource) Token() (*oauth2.Token, error) {
 	}
 	msg, err := jws.Encode(hdr, cs, ts.pk)
 	if err != nil {
-		return nil, fmt.Errorf("google: could not encode JWT: %v", err)
+		return nil, fmt.Errorf("google: could not encode JWT: %w", err)
 	}
 	return &oauth2.Token{AccessToken: msg, TokenType: "Bearer", Expiry: exp}, nil
 }
