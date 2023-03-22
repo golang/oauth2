@@ -26,7 +26,7 @@
 //
 // Using workload identity federation, your application can access Google Cloud
 // resources from Amazon Web Services (AWS), Microsoft Azure or any identity
-// provider that supports OpenID Connect (OIDC).
+// provider that supports OpenID Connect (OIDC) or SAML 2.0.
 // Traditionally, applications running outside Google Cloud have used service
 // account keys to access Google Cloud resources. Using identity federation,
 // you can allow your workload to impersonate a service account.
@@ -36,10 +36,10 @@
 // Follow the detailed instructions on how to configure Workload Identity Federation
 // in various platforms:
 //
-//     Amazon Web Services (AWS): https://cloud.google.com/iam/docs/workload-identity-federation-with-other-clouds#aws
-//     Microsoft Azure: https://cloud.google.com/iam/docs/workload-identity-federation-with-other-clouds#azure
-//     OIDC identity provider: https://cloud.google.com/iam/docs/workload-identity-federation-with-other-providers#oidc
-//     SAML identity provider: https://cloud.google.com/iam/docs/workload-identity-federation-with-other-providers#saml
+//	Amazon Web Services (AWS): https://cloud.google.com/iam/docs/workload-identity-federation-with-other-clouds#aws
+//	Microsoft Azure: https://cloud.google.com/iam/docs/workload-identity-federation-with-other-clouds#azure
+//	OIDC identity provider: https://cloud.google.com/iam/docs/workload-identity-federation-with-other-providers#oidc
+//	SAML 2.0 identity provider: https://cloud.google.com/iam/docs/workload-identity-federation-with-other-providers#saml
 //
 // For OIDC and SAML providers, the library can retrieve tokens in three ways:
 // from a local file location (file-sourced credentials), from a server
