@@ -42,9 +42,9 @@ func TestTokenExpiry(t *testing.T) {
 		tok  *Token
 		want bool
 	}{
-		{name: "12 seconds", tok: &Token{Expiry: now.Add(12 * time.Second)}, want: false},
-		{name: "10 seconds", tok: &Token{Expiry: now.Add(expiryDelta)}, want: false},
-		{name: "10 seconds-1ns", tok: &Token{Expiry: now.Add(expiryDelta - 1*time.Nanosecond)}, want: true},
+		{name: "62 seconds", tok: &Token{Expiry: now.Add(62 * time.Second)}, want: false},
+		{name: "60 seconds", tok: &Token{Expiry: now.Add(expiryDelta)}, want: false},
+		{name: "60 seconds-1ns", tok: &Token{Expiry: now.Add(expiryDelta - 1*time.Nanosecond)}, want: true},
 		{name: "-1 hour", tok: &Token{Expiry: now.Add(-1 * time.Hour)}, want: true},
 	}
 	for _, tc := range cases {
