@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"cloud.google.com/go/compute/metadata"
 	"golang.org/x/oauth2"
@@ -68,6 +69,14 @@ type CredentialsParams struct {
 	// The OAuth2 TokenURL default override. This value overrides the default TokenURL,
 	// unless explicitly specified by the credentials config file. Optional.
 	TokenURL string
+
+	// EarlyTokenRefresh is the amount of time before a token expires that a new
+	// token will be preemptively fetched. If unset the default value is 10
+	// seconds.
+	//
+	// Note: This option is currently only respected when using credentials
+	// fetched from the GCE metadata server.
+	EarlyTokenRefresh time.Duration
 }
 
 func (params CredentialsParams) deepCopy() CredentialsParams {
@@ -155,7 +164,7 @@ func FindDefaultCredentialsWithParams(ctx context.Context, params CredentialsPar
 		id, _ := metadata.ProjectID()
 		return &Credentials{
 			ProjectID:   id,
-			TokenSource: ComputeTokenSource("", params.Scopes...),
+			TokenSource: computeTokenSource("", params.EarlyTokenRefresh, params.Scopes...),
 		}, nil
 	}
 
