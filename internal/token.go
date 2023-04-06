@@ -52,6 +52,9 @@ type Token struct {
 	// Raw optionally contains extra metadata from the server
 	// when updating a token.
 	Raw interface{}
+
+	// RawBody is the response body from the oauth2 access token request/response flow
+	RawBody []byte
 }
 
 // tokenJSON is the struct representing the HTTP response from OAuth2
@@ -276,6 +279,7 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 		}
 		json.Unmarshal(body, &token.Raw) // no error checks for optional fields
 	}
+	token.RawBody = body
 	if token.AccessToken == "" {
 		return nil, errors.New("oauth2: server response missing access_token")
 	}
