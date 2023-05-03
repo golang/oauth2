@@ -254,3 +254,16 @@ func AWSCognito(domain string) oauth2.Endpoint {
 		TokenURL: domain + "/oauth2/token",
 	}
 }
+
+// Shopify returns a new oauth2.Endpoint for the supplied shop domain name
+//
+// Example domain: my-test-shop.myshopify.com
+//
+// For more information see:
+// https://shopify.dev/docs/apps/auth/oauth
+func Shopify(domain string) oauth2.Endpoint {
+	return oauth2.Endpoint{
+		AuthURL:  "https://" + domain + "/admin/oauth/authorize",
+		TokenURL: "https://" + domain + "/admin/oauth/access_token",
+	}
+}

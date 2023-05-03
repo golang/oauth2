@@ -41,3 +41,28 @@ func TestAWSCognitoEndpoint(t *testing.T) {
 		})
 	}
 }
+
+func TestShopifyEndpoint(t *testing.T) {
+
+	var endpointTests = []struct {
+		in  string
+		out oauth2.Endpoint
+	}{
+		{
+			in: "my-test-shop.myshopify.com",
+			out: oauth2.Endpoint{
+				AuthURL:  "https://my-test-shop.myshopify.com/admin/oauth/authorize",
+				TokenURL: "https://my-test-shop.myshopify.com/admin/oauth/access_token",
+			},
+		},
+	}
+
+	for _, tt := range endpointTests {
+		t.Run(tt.in, func(t *testing.T) {
+			endpoint := Shopify(tt.in)
+			if endpoint != tt.out {
+				t.Errorf("got %q, want %q", endpoint, tt.out)
+			}
+		})
+	}
+}
