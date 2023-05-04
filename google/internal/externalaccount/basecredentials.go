@@ -39,9 +39,6 @@ type Config struct {
 	// ServiceAccountImpersonationURL is the URL for the service account impersonation request. This is only
 	// required for workload identity pools when APIs to be accessed have not integrated with UberMint.
 	ServiceAccountImpersonationURL string
-	// ServiceAccountImpersonationLifetimeSeconds is the number of seconds the service account impersonation
-	// token will be valid for.
-	ServiceAccountImpersonationLifetimeSeconds int
 	// ClientSecret is currently only required if token_info endpoint also
 	// needs to be called with the generated GCP access token. When provided, STS will be
 	// called with additional basic authentication using client_id as username and client_secret as password.
@@ -56,18 +53,26 @@ type Config struct {
 	QuotaProjectID string
 	// Scopes contains the desired scopes for the returned access token.
 	Scopes []string
-	// The optional workforce pool user project number when the credential
-	// corresponds to a workforce pool and not a workload identity pool.
-	// The underlying principal must still have serviceusage.services.use IAM
-	// permission to use the project for billing/quota.
-	WorkforcePoolUserProject string
 }
 
 // Each element consists of a list of patterns.  validateURLs checks for matches
 // that include all elements in a given list, in that order.
 
 var (
-	validWorkforceAudiencePattern *regexp.Regexp = regexp.MustCompile(`//iam\.googleapis\.com/locations/[^/]+/workforcePools/`)
+	validTokenURLPatterns = []*regexp.Regexp{
+		// The complicated part in the middle matches any number of characters that
+		// aren't period, spaces, or slashes.
+		regexp.MustCompile(`(?i)^[^\.\s\/\\]+\.sts\.googleapis\.com$`),
+		regexp.MustCompile(`(?i)^sts\.googleapis\.com$`),
+		regexp.MustCompile(`(?i)^sts\.[^\.\s\/\\]+\.googleapis\.com$`),
+		regexp.MustCompile(`(?i)^[^\.\s\/\\]+-sts\.googleapis\.com$`),
+	}
+	validImpersonateURLPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`^[^\.\s\/\\]+\.iamcredentials\.googleapis\.com$`),
+		regexp.MustCompile(`^iamcredentials\.googleapis\.com$`),
+		regexp.MustCompile(`^iamcredentials\.[^\.\s\/\\]+\.googleapis\.com$`),
+		regexp.MustCompile(`^[^\.\s\/\\]+-iamcredentials\.googleapis\.com$`),
+	}
 )
 
 func validateURL(input string, patterns []*regexp.Regexp, scheme string) bool {
@@ -81,30 +86,32 @@ func validateURL(input string, patterns []*regexp.Regexp, scheme string) bool {
 	toTest := parsed.Host
 
 	for _, pattern := range patterns {
-		if pattern.MatchString(toTest) {
+
+		if valid := pattern.MatchString(toTest); valid {
 			return true
 		}
 	}
 	return false
 }
 
-func validateWorkforceAudience(input string) bool {
-	return validWorkforceAudiencePattern.MatchString(input)
-}
-
 // TokenSource Returns an external account TokenSource struct. This is to be called by package google to construct a google.Credentials.
 func (c *Config) TokenSource(ctx context.Context) (oauth2.TokenSource, error) {
-	return c.tokenSource(ctx, "https")
+	return c.tokenSource(ctx, validTokenURLPatterns, validImpersonateURLPatterns, "https")
 }
 
 // tokenSource is a private function that's directly called by some of the tests,
 // because the unit test URLs are mocked, and would otherwise fail the
 // validity check.
-func (c *Config) tokenSource(ctx context.Context, scheme string) (oauth2.TokenSource, error) {
-	if c.WorkforcePoolUserProject != "" {
-		valid := validateWorkforceAudience(c.Audience)
+func (c *Config) tokenSource(ctx context.Context, tokenURLValidPats []*regexp.Regexp, impersonateURLValidPats []*regexp.Regexp, scheme string) (oauth2.TokenSource, error) {
+	valid := validateURL(c.TokenURL, tokenURLValidPats, scheme)
+	if !valid {
+		return nil, fmt.Errorf("oauth2/google: invalid TokenURL provided while constructing tokenSource")
+	}
+
+	if c.ServiceAccountImpersonationURL != "" {
+		valid := validateURL(c.ServiceAccountImpersonationURL, impersonateURLValidPats, scheme)
 		if !valid {
-			return nil, fmt.Errorf("oauth2/google: workforce_pool_user_project should not be set for non-workforce pool credentials")
+			return nil, fmt.Errorf("oauth2/google: invalid ServiceAccountImpersonationURL provided while constructing tokenSource")
 		}
 	}
 
@@ -117,12 +124,11 @@ func (c *Config) tokenSource(ctx context.Context, scheme string) (oauth2.TokenSo
 	}
 	scopes := c.Scopes
 	ts.conf.Scopes = []string{"https://www.googleapis.com/auth/cloud-platform"}
-	imp := ImpersonateTokenSource{
-		Ctx:                  ctx,
-		URL:                  c.ServiceAccountImpersonationURL,
-		Scopes:               scopes,
-		Ts:                   oauth2.ReuseTokenSource(nil, ts),
-		TokenLifetimeSeconds: c.ServiceAccountImpersonationLifetimeSeconds,
+	imp := impersonateTokenSource{
+		ctx:    ctx,
+		url:    c.ServiceAccountImpersonationURL,
+		scopes: scopes,
+		ts:     oauth2.ReuseTokenSource(nil, ts),
 	}
 	return oauth2.ReuseTokenSource(nil, imp), nil
 }
@@ -141,7 +147,7 @@ type format struct {
 }
 
 // CredentialSource stores the information necessary to retrieve the credentials for the STS exchange.
-// One field amongst File, URL, and Executable should be filled, depending on the kind of credential in question.
+// Either the File or the URL field should be filled, depending on the kind of credential in question.
 // The EnvironmentID should start with AWS if being used for an AWS credential.
 type CredentialSource struct {
 	File string `json:"file"`
@@ -149,54 +155,33 @@ type CredentialSource struct {
 	URL     string            `json:"url"`
 	Headers map[string]string `json:"headers"`
 
-	Executable *ExecutableConfig `json:"executable"`
-
 	EnvironmentID               string `json:"environment_id"`
 	RegionURL                   string `json:"region_url"`
 	RegionalCredVerificationURL string `json:"regional_cred_verification_url"`
 	CredVerificationURL         string `json:"cred_verification_url"`
-	IMDSv2SessionTokenURL       string `json:"imdsv2_session_token_url"`
 	Format                      format `json:"format"`
 }
 
-type ExecutableConfig struct {
-	Command       string `json:"command"`
-	TimeoutMillis *int   `json:"timeout_millis"`
-	OutputFile    string `json:"output_file"`
-}
-
-// parse determines the type of CredentialSource needed.
+// parse determines the type of CredentialSource needed
 func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 	if len(c.CredentialSource.EnvironmentID) > 3 && c.CredentialSource.EnvironmentID[:3] == "aws" {
 		if awsVersion, err := strconv.Atoi(c.CredentialSource.EnvironmentID[3:]); err == nil {
 			if awsVersion != 1 {
 				return nil, fmt.Errorf("oauth2/google: aws version '%d' is not supported in the current build", awsVersion)
 			}
-
-			awsCredSource := awsCredentialSource{
+			return awsCredentialSource{
 				EnvironmentID:               c.CredentialSource.EnvironmentID,
 				RegionURL:                   c.CredentialSource.RegionURL,
 				RegionalCredVerificationURL: c.CredentialSource.RegionalCredVerificationURL,
 				CredVerificationURL:         c.CredentialSource.URL,
 				TargetResource:              c.Audience,
 				ctx:                         ctx,
-			}
-			if c.CredentialSource.IMDSv2SessionTokenURL != "" {
-				awsCredSource.IMDSv2SessionTokenURL = c.CredentialSource.IMDSv2SessionTokenURL
-			}
-
-			if err := awsCredSource.validateMetadataServers(); err != nil {
-				return nil, err
-			}
-
-			return awsCredSource, nil
+			}, nil
 		}
 	} else if c.CredentialSource.File != "" {
 		return fileCredentialSource{File: c.CredentialSource.File, Format: c.CredentialSource.Format}, nil
 	} else if c.CredentialSource.URL != "" {
 		return urlCredentialSource{URL: c.CredentialSource.URL, Headers: c.CredentialSource.Headers, Format: c.CredentialSource.Format, ctx: ctx}, nil
-	} else if c.CredentialSource.Executable != nil {
-		return CreateExecutableCredential(ctx, c.CredentialSource.Executable, c)
 	}
 	return nil, fmt.Errorf("oauth2/google: unable to parse credential source")
 }
@@ -239,15 +224,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 		ClientID:     conf.ClientID,
 		ClientSecret: conf.ClientSecret,
 	}
-	var options map[string]interface{}
-	// Do not pass workforce_pool_user_project when client authentication is used.
-	// The client ID is sufficient for determining the user project.
-	if conf.WorkforcePoolUserProject != "" && conf.ClientID == "" {
-		options = map[string]interface{}{
-			"userProject": conf.WorkforcePoolUserProject,
-		}
-	}
-	stsResp, err := exchangeToken(ts.ctx, conf.TokenURL, &stsRequest, clientAuth, header, options)
+	stsResp, err := exchangeToken(ts.ctx, conf.TokenURL, &stsRequest, clientAuth, header, nil)
 	if err != nil {
 		return nil, err
 	}
