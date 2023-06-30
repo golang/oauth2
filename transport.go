@@ -47,6 +47,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 
+	// According to RoundTripper spec, the original request shouldn't be modify.
 	req2 := req.Clone(req.Context())
 	token.SetAuthHeader(req2)
 
