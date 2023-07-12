@@ -229,18 +229,19 @@ func (c *Config) Exchange(ctx context.Context, code string, opts ...AuthCodeOpti
 // The token will auto-refresh as necessary. The underlying
 // HTTP transport will be obtained using the provided context.
 // The returned client and its Transport should not be modified.
-func (c *Config) Client(ctx context.Context, t *Token) *http.Client {
-	return NewClient(ctx, c.TokenSource(ctx, t))
+func (c *Config) Client(ctx context.Context, t *Token, v url.Values) *http.Client {
+	return NewClient(ctx, c.TokenSource(ctx, t, v))
 }
 
 // TokenSource returns a TokenSource that returns t until t expires,
 // automatically refreshing it as necessary using the provided context.
 //
 // Most users will use Config.Client instead.
-func (c *Config) TokenSource(ctx context.Context, t *Token) TokenSource {
+func (c *Config) TokenSource(ctx context.Context, t *Token, v url.Values) TokenSource {
 	tkr := &tokenRefresher{
-		ctx:  ctx,
-		conf: c,
+		ctx:    ctx,
+		conf:   c,
+		values: v,
 	}
 	if t != nil {
 		tkr.refreshToken = t.RefreshToken
@@ -257,6 +258,7 @@ type tokenRefresher struct {
 	ctx          context.Context // used to get HTTP requests
 	conf         *Config
 	refreshToken string
+	values       url.Values
 }
 
 // WARNING: Token is not safe for concurrent access, as it
@@ -268,10 +270,15 @@ func (tf *tokenRefresher) Token() (*Token, error) {
 		return nil, errors.New("oauth2: token expired and refresh token is not set")
 	}
 
-	tk, err := retrieveToken(tf.ctx, tf.conf, url.Values{
-		"grant_type":    {"refresh_token"},
-		"refresh_token": {tf.refreshToken},
-	})
+	tf.values.Add("grant_type", "refresh_token")
+	tf.values.Add("refresh_token", tf.refreshToken)
+
+	// values := url.Values{
+	// 	"grant_type":    {"refresh_token"},
+	// 	"refresh_token": {tf.refreshToken},
+	// }
+
+	tk, err := retrieveToken(tf.ctx, tf.conf, tf.values)
 
 	if err != nil {
 		return nil, err
