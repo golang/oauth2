@@ -15,8 +15,6 @@ import (
 	"net/url"
 	"testing"
 	"time"
-
-	"golang.org/x/oauth2/internal"
 )
 
 type mockTransport struct {
@@ -355,7 +353,6 @@ func TestExchangeRequest_BadResponseType(t *testing.T) {
 }
 
 func TestExchangeRequest_NonBasicAuth(t *testing.T) {
-	internal.ResetAuthCache()
 	tr := &mockTransport{
 		rt: func(r *http.Request) (w *http.Response, err error) {
 			headerAuth := r.Header.Get("Authorization")
@@ -427,7 +424,6 @@ func TestPasswordCredentialsTokenRequest(t *testing.T) {
 }
 
 func TestTokenRefreshRequest(t *testing.T) {
-	internal.ResetAuthCache()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() == "/somethingelse" {
 			return
