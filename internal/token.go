@@ -190,7 +190,7 @@ func cloneURLValues(v url.Values) url.Values {
 }
 
 func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string, v url.Values, authStyle AuthStyle) (*Token, error) {
-	needsAuthStyleProbe := authStyle == 0
+	needsAuthStyleProbe := authStyle == AuthStyleUnknown
 	if needsAuthStyleProbe {
 		if style, ok := lookupAuthStyle(tokenURL); ok {
 			authStyle = style
