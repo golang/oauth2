@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/oauth2/advancedauth"
 	"golang.org/x/oauth2/internal"
@@ -316,6 +317,8 @@ type reuseTokenSource struct {
 
 	mu sync.Mutex // guards t
 	t  *Token
+
+	expiryDelta time.Duration
 }
 
 // Token returns the current token if it's still valid, else will
@@ -331,6 +334,7 @@ func (s *reuseTokenSource) Token() (*Token, error) {
 	if err != nil {
 		return nil, err
 	}
+	t.expiryDelta = s.expiryDelta
 	s.t = t
 	return t, nil
 }
@@ -403,5 +407,32 @@ func ReuseTokenSource(t *Token, src TokenSource) TokenSource {
 	return &reuseTokenSource{
 		t:   t,
 		new: src,
+	}
+}
+
+// ReuseTokenSource returns a TokenSource that acts in the same manner as the
+// TokenSource returned by ReuseTokenSource, except the expiry buffer is
+// configurable. The expiration time of a token is calculated as
+// t.Expiry.Add(-earlyExpiry).
+func ReuseTokenSourceWithExpiry(t *Token, src TokenSource, earlyExpiry time.Duration) TokenSource {
+	// Don't wrap a reuseTokenSource in itself. That would work,
+	// but cause an unnecessary number of mutex operations.
+	// Just build the equivalent one.
+	if rt, ok := src.(*reuseTokenSource); ok {
+		if t == nil {
+			// Just use it directly, but set the expiryDelta to earlyExpiry,
+			// so the behavior matches what the user expects.
+			rt.expiryDelta = earlyExpiry
+			return rt
+		}
+		src = rt.new
+	}
+	if t != nil {
+		t.expiryDelta = earlyExpiry
+	}
+	return &reuseTokenSource{
+		t:           t,
+		new:         src,
+		expiryDelta: earlyExpiry,
 	}
 }

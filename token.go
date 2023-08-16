@@ -21,6 +21,11 @@ import (
 // expirations due to client-server time mismatches.
 const expiryDelta = 10 * time.Second
 
+// defaultExpiryDelta determines how earlier a token should be considered
+// expired than its actual expiration time. It is used to avoid late
+// expirations due to client-server time mismatches.
+const defaultExpiryDelta = 10 * time.Second
+
 // Token represents the credentials used to authorize
 // the requests to access protected resources on the OAuth 2.0
 // provider's backend.
@@ -52,6 +57,11 @@ type Token struct {
 	// raw optionally contains extra metadata from the server
 	// when updating a token.
 	raw interface{}
+
+	// expiryDelta is used to calculate when a token is considered
+	// expired, by subtracting from Expiry. If zero, defaultExpiryDelta
+	// is used.
+	expiryDelta time.Duration
 }
 
 // Type returns t.TokenType if non-empty, else "Bearer".
