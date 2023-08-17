@@ -284,7 +284,7 @@ func (cs awsCredentialSource) validateMetadataServers() error {
 	return cs.validateMetadataServer(cs.IMDSv2SessionTokenURL, "imdsv2_session_token_url")
 }
 
-var validHostnames []string = []string{"169.254.169.254", "fd00:ec2::254"}
+var validHostnames []string = []string{"169.254.169.254", "fd00:ec2::254", "127.0.0.1"}
 
 func (cs awsCredentialSource) isValidMetadataServer(metadataUrl string) bool {
 	if metadataUrl == "" {
