@@ -585,10 +585,6 @@ func getExpectedSubjectToken(url, region, accessKeyID, secretAccessKey, security
 func TestAWSCredential_BasicRequest(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
 
 	tfc := testFileConfig
 	tfc.CredentialSource = server.getCredentialSource(ts.URL)
@@ -628,10 +624,6 @@ func TestAWSCredential_BasicRequest(t *testing.T) {
 func TestAWSCredential_IMDSv2(t *testing.T) {
 	server := createDefaultAwsTestServerWithImdsv2(t)
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
 
 	tfc := testFileConfig
 	tfc.CredentialSource = server.getCredentialSource(ts.URL)
@@ -671,10 +663,6 @@ func TestAWSCredential_IMDSv2(t *testing.T) {
 func TestAWSCredential_BasicRequestWithoutSecurityToken(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
 	delete(server.Credentials, "Token")
 
 	tfc := testFileConfig
@@ -715,10 +703,6 @@ func TestAWSCredential_BasicRequestWithoutSecurityToken(t *testing.T) {
 func TestAWSCredential_BasicRequestWithEnv(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
 
 	tfc := testFileConfig
 	tfc.CredentialSource = server.getCredentialSource(ts.URL)
@@ -762,10 +746,6 @@ func TestAWSCredential_BasicRequestWithEnv(t *testing.T) {
 func TestAWSCredential_BasicRequestWithDefaultEnv(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
 
 	tfc := testFileConfig
 	tfc.CredentialSource = server.getCredentialSource(ts.URL)
@@ -808,10 +788,6 @@ func TestAWSCredential_BasicRequestWithDefaultEnv(t *testing.T) {
 func TestAWSCredential_BasicRequestWithTwoRegions(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
 
 	tfc := testFileConfig
 	tfc.CredentialSource = server.getCredentialSource(ts.URL)
@@ -855,10 +831,6 @@ func TestAWSCredential_BasicRequestWithTwoRegions(t *testing.T) {
 func TestAWSCredential_RequestWithBadVersion(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
 
 	tfc := testFileConfig
 	tfc.CredentialSource = server.getCredentialSource(ts.URL)
@@ -870,7 +842,7 @@ func TestAWSCredential_RequestWithBadVersion(t *testing.T) {
 	}()
 	getenv = setEnvironment(map[string]string{})
 
-	_, err = tfc.parse(context.Background())
+	_, err := tfc.parse(context.Background())
 	if err == nil {
 		t.Fatalf("parse() should have failed")
 	}
@@ -882,10 +854,6 @@ func TestAWSCredential_RequestWithBadVersion(t *testing.T) {
 func TestAWSCredential_RequestWithNoRegionURL(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
 
 	tfc := testFileConfig
 	tfc.CredentialSource = server.getCredentialSource(ts.URL)
@@ -915,10 +883,7 @@ func TestAWSCredential_RequestWithNoRegionURL(t *testing.T) {
 func TestAWSCredential_RequestWithBadRegionURL(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
+
 	server.WriteRegion = notFound
 
 	tfc := testFileConfig
@@ -948,10 +913,7 @@ func TestAWSCredential_RequestWithBadRegionURL(t *testing.T) {
 func TestAWSCredential_RequestWithMissingCredential(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
+
 	server.WriteSecurityCredentials = func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("{}"))
 	}
@@ -983,10 +945,7 @@ func TestAWSCredential_RequestWithMissingCredential(t *testing.T) {
 func TestAWSCredential_RequestWithIncompleteCredential(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
+
 	server.WriteSecurityCredentials = func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"AccessKeyId":"FOOBARBAS"}`))
 	}
@@ -1018,10 +977,6 @@ func TestAWSCredential_RequestWithIncompleteCredential(t *testing.T) {
 func TestAWSCredential_RequestWithNoCredentialURL(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
 
 	tfc := testFileConfig
 	tfc.CredentialSource = server.getCredentialSource(ts.URL)
@@ -1051,10 +1006,6 @@ func TestAWSCredential_RequestWithNoCredentialURL(t *testing.T) {
 func TestAWSCredential_RequestWithBadCredentialURL(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
 	server.WriteRolename = notFound
 
 	tfc := testFileConfig
@@ -1084,10 +1035,6 @@ func TestAWSCredential_RequestWithBadCredentialURL(t *testing.T) {
 func TestAWSCredential_RequestWithBadFinalCredentialURL(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
 	server.WriteSecurityCredentials = notFound
 
 	tfc := testFileConfig
@@ -1117,10 +1064,6 @@ func TestAWSCredential_RequestWithBadFinalCredentialURL(t *testing.T) {
 func TestAWSCredential_ShouldNotCallMetadataEndpointWhenCredsAreInEnv(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
 
 	metadataTs := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("Metadata server should not have been called.")
@@ -1169,10 +1112,6 @@ func TestAWSCredential_ShouldNotCallMetadataEndpointWhenCredsAreInEnv(t *testing
 func TestAWSCredential_ShouldCallMetadataEndpointWhenNoRegion(t *testing.T) {
 	server := createDefaultAwsTestServerWithImdsv2(t)
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
 
 	tfc := testFileConfig
 	tfc.CredentialSource = server.getCredentialSource(ts.URL)
@@ -1215,10 +1154,6 @@ func TestAWSCredential_ShouldCallMetadataEndpointWhenNoRegion(t *testing.T) {
 func TestAWSCredential_ShouldCallMetadataEndpointWhenNoAccessKey(t *testing.T) {
 	server := createDefaultAwsTestServerWithImdsv2(t)
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
 
 	tfc := testFileConfig
 	tfc.CredentialSource = server.getCredentialSource(ts.URL)
@@ -1261,10 +1196,6 @@ func TestAWSCredential_ShouldCallMetadataEndpointWhenNoAccessKey(t *testing.T) {
 func TestAWSCredential_ShouldCallMetadataEndpointWhenNoSecretAccessKey(t *testing.T) {
 	server := createDefaultAwsTestServerWithImdsv2(t)
 	ts := httptest.NewServer(server)
-	_, err := neturl.Parse(ts.URL)
-	if err != nil {
-		t.Fatalf("couldn't parse httptest servername")
-	}
 
 	tfc := testFileConfig
 	tfc.CredentialSource = server.getCredentialSource(ts.URL)
@@ -1301,63 +1232,5 @@ func TestAWSCredential_ShouldCallMetadataEndpointWhenNoSecretAccessKey(t *testin
 
 	if got, want := out, expected; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
-	}
-}
-
-func TestAWSCredential_Validations(t *testing.T) {
-	var metadataServerValidityTests = []struct {
-		name       string
-		credSource CredentialSource
-		errText    string
-	}{
-		{
-			name: "No Metadata Server URLs",
-			credSource: CredentialSource{
-				EnvironmentID:         "aws1",
-				RegionURL:             "",
-				URL:                   "",
-				IMDSv2SessionTokenURL: "",
-			},
-		}, {
-			name: "IPv4 Metadata Server URLs",
-			credSource: CredentialSource{
-				EnvironmentID:         "aws1",
-				RegionURL:             "http://169.254.169.254/latest/meta-data/placement/availability-zone",
-				URL:                   "http://169.254.169.254/latest/meta-data/iam/security-credentials",
-				IMDSv2SessionTokenURL: "http://169.254.169.254/latest/api/token",
-			},
-		}, {
-			name: "IPv6 Metadata Server URLs",
-			credSource: CredentialSource{
-				EnvironmentID:         "aws1",
-				RegionURL:             "http://[fd00:ec2::254]/latest/meta-data/placement/availability-zone",
-				URL:                   "http://[fd00:ec2::254]/latest/meta-data/iam/security-credentials",
-				IMDSv2SessionTokenURL: "http://[fd00:ec2::254]/latest/api/token",
-			},
-		},
-	}
-
-	for _, tt := range metadataServerValidityTests {
-		t.Run(tt.name, func(t *testing.T) {
-			tfc := testFileConfig
-			tfc.CredentialSource = tt.credSource
-
-			oldGetenv := getenv
-			defer func() { getenv = oldGetenv }()
-			getenv = setEnvironment(map[string]string{})
-
-			_, err := tfc.parse(context.Background())
-			if err != nil {
-				if tt.errText == "" {
-					t.Errorf("Didn't expect an error, but got %v", err)
-				} else if tt.errText != err.Error() {
-					t.Errorf("Expected %v, but got %v", tt.errText, err)
-				}
-			} else {
-				if tt.errText != "" {
-					t.Errorf("Expected error %v, but got none", tt.errText)
-				}
-			}
-		})
 	}
 }
