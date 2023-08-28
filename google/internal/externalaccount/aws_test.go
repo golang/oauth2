@@ -1442,3 +1442,30 @@ func TestAWSCredential_Validations(t *testing.T) {
 		})
 	}
 }
+
+func TestAwsCredential_CredentialSourceType(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+	tsURL, err := neturl.Parse(ts.URL)
+	if err != nil {
+		t.Fatalf("couldn't parse httptest servername")
+	}
+
+	oldValidHostnames := validHostnames
+	defer func() {
+		validHostnames = oldValidHostnames
+	}()
+	validHostnames = []string{tsURL.Hostname()}
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	if got, want := base.credentialSourceType(), "aws"; got != want {
+		t.Errorf("got %v but want %v", got, want)
+	}
+}

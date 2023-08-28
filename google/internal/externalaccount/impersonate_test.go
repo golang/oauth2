@@ -42,7 +42,7 @@ func createImpersonationServer(urlWanted, authWanted, bodyWanted, response strin
 	}))
 }
 
-func createTargetServer(t *testing.T) *httptest.Server {
+func createTargetServer(metricsHeaderWanted string, t *testing.T) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got, want := r.URL.String(), "/"; got != want {
 			t.Errorf("URL.String(): got %v but want %v", got, want)
@@ -53,6 +53,10 @@ func createTargetServer(t *testing.T) *httptest.Server {
 		}
 		headerContentType := r.Header.Get("Content-Type")
 		if got, want := headerContentType, "application/x-www-form-urlencoded"; got != want {
+			t.Errorf("got %v but want %v", got, want)
+		}
+		headerMetrics := r.Header.Get("x-goog-api-client")
+		if got, want := headerMetrics, metricsHeaderWanted; got != want {
 			t.Errorf("got %v but want %v", got, want)
 		}
 		body, err := ioutil.ReadAll(r.Body)
@@ -71,6 +75,7 @@ var impersonationTests = []struct {
 	name                      string
 	config                    Config
 	expectedImpersonationBody string
+	expectedMetricsHeader     string
 }{
 	{
 		name: "Base Impersonation",
@@ -84,6 +89,7 @@ var impersonationTests = []struct {
 			Scopes:           []string{"https://www.googleapis.com/auth/devstorage.full_control"},
 		},
 		expectedImpersonationBody: "{\"lifetime\":\"3600s\",\"scope\":[\"https://www.googleapis.com/auth/devstorage.full_control\"]}",
+		expectedMetricsHeader:     getExpectedMetricsHeader("file", true, false),
 	},
 	{
 		name: "With TokenLifetime Set",
@@ -98,6 +104,7 @@ var impersonationTests = []struct {
 			ServiceAccountImpersonationLifetimeSeconds: 10000,
 		},
 		expectedImpersonationBody: "{\"lifetime\":\"10000s\",\"scope\":[\"https://www.googleapis.com/auth/devstorage.full_control\"]}",
+		expectedMetricsHeader:     getExpectedMetricsHeader("file", true, true),
 	},
 }
 
@@ -109,7 +116,7 @@ func TestImpersonation(t *testing.T) {
 			defer impersonateServer.Close()
 			testImpersonateConfig.ServiceAccountImpersonationURL = impersonateServer.URL
 
-			targetServer := createTargetServer(t)
+			targetServer := createTargetServer(tt.expectedMetricsHeader, t)
 			defer targetServer.Close()
 			testImpersonateConfig.TokenURL = targetServer.URL
 

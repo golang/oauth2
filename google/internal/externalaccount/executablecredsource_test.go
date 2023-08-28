@@ -150,6 +150,9 @@ func TestCreateExecutableCredential(t *testing.T) {
 				if ecs.Timeout != tt.expectedTimeout {
 					t.Errorf("ecs.Timeout got %v but want %v", ecs.Timeout, tt.expectedTimeout)
 				}
+				if ecs.credentialSourceType() != "executable" {
+					t.Errorf("ecs.CredentialSourceType() got %s but want executable", ecs.credentialSourceType())
+				}
 			}
 		})
 	}
