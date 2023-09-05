@@ -7,13 +7,11 @@ package microsoft // import "golang.org/x/oauth2/microsoft"
 
 import (
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/endpoints"
 )
 
 // LiveConnectEndpoint is Windows's Live ID OAuth 2.0 endpoint.
-var LiveConnectEndpoint = oauth2.Endpoint{
-	AuthURL:  "https://login.live.com/oauth20_authorize.srf",
-	TokenURL: "https://login.live.com/oauth20_token.srf",
-}
+var LiveConnectEndpoint = endpoints.Microsoft
 
 // AzureADEndpoint returns a new oauth2.Endpoint for the given tenant at Azure Active Directory.
 // If tenant is empty, it uses the tenant called `common`.
@@ -21,11 +19,5 @@ var LiveConnectEndpoint = oauth2.Endpoint{
 // For more information see:
 // https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-protocols#endpoints
 func AzureADEndpoint(tenant string) oauth2.Endpoint {
-	if tenant == "" {
-		tenant = "common"
-	}
-	return oauth2.Endpoint{
-		AuthURL:  "https://login.microsoftonline.com/" + tenant + "/oauth2/v2.0/authorize",
-		TokenURL: "https://login.microsoftonline.com/" + tenant + "/oauth2/v2.0/token",
-	}
+	return endpoints.AzureAD(tenant)
 }

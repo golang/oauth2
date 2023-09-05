@@ -6,11 +6,8 @@
 package uber // import "golang.org/x/oauth2/uber"
 
 import (
-	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/endpoints"
 )
 
 // Endpoint is Uber's OAuth 2.0 endpoint.
-var Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://login.uber.com/oauth/v2/authorize",
-	TokenURL: "https://login.uber.com/oauth/v2/token",
-}
+var Endpoint = endpoints.Uber

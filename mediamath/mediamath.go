@@ -6,17 +6,11 @@
 package mediamath // import "golang.org/x/oauth2/mediamath"
 
 import (
-	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/endpoints"
 )
 
 // Endpoint is MediaMath's OAuth 2.0 endpoint for production.
-var Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://api.mediamath.com/oauth2/v1.0/authorize",
-	TokenURL: "https://api.mediamath.com/oauth2/v1.0/token",
-}
+var Endpoint = endpoints.MediaMath
 
 // SandboxEndpoint is MediaMath's OAuth 2.0 endpoint for sandbox.
-var SandboxEndpoint = oauth2.Endpoint{
-	AuthURL:  "https://t1sandbox.mediamath.com/oauth2/v1.0/authorize",
-	TokenURL: "https://t1sandbox.mediamath.com/oauth2/v1.0/token",
-}
+var SandboxEndpoint = endpoints.MediaMathSandbox

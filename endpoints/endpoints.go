@@ -67,8 +67,9 @@ var GitLab = oauth2.Endpoint{
 
 // Google is the endpoint for Google.
 var Google = oauth2.Endpoint{
-	AuthURL:  "https://accounts.google.com/o/oauth2/auth",
-	TokenURL: "https://oauth2.googleapis.com/token",
+	AuthURL:   "https://accounts.google.com/o/oauth2/auth",
+	TokenURL:  "https://oauth2.googleapis.com/token",
+	AuthStyle: oauth2.AuthStyleInParams,
 }
 
 // Heroku is the endpoint for Heroku.
@@ -97,8 +98,9 @@ var KaKao = oauth2.Endpoint{
 
 // LinkedIn is the endpoint for LinkedIn.
 var LinkedIn = oauth2.Endpoint{
-	AuthURL:  "https://www.linkedin.com/oauth/v2/authorization",
-	TokenURL: "https://www.linkedin.com/oauth/v2/accessToken",
+	AuthURL:   "https://www.linkedin.com/oauth/v2/authorization",
+	TokenURL:  "https://www.linkedin.com/oauth/v2/accessToken",
+	AuthStyle: oauth2.AuthStyleInParams,
 }
 
 // Mailchimp is the endpoint for Mailchimp.

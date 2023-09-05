@@ -6,11 +6,8 @@
 package spotify // import "golang.org/x/oauth2/spotify"
 
 import (
-	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/endpoints"
 )
 
 // Endpoint is Spotify's OAuth 2.0 endpoint.
-var Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://accounts.spotify.com/authorize",
-	TokenURL: "https://accounts.spotify.com/api/token",
-}
+var Endpoint = endpoints.Spotify

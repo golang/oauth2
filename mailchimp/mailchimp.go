@@ -6,12 +6,9 @@
 package mailchimp // import "golang.org/x/oauth2/mailchimp"
 
 import (
-	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/endpoints"
 )
 
 // Endpoint is MailChimp's OAuth 2.0 endpoint.
 // See http://developer.mailchimp.com/documentation/mailchimp/guides/how-to-use-oauth2/
-var Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://login.mailchimp.com/oauth2/authorize",
-	TokenURL: "https://login.mailchimp.com/oauth2/token",
-}
+var Endpoint = endpoints.Mailchimp

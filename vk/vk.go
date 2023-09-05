@@ -6,11 +6,8 @@
 package vk // import "golang.org/x/oauth2/vk"
 
 import (
-	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/endpoints"
 )
 
 // Endpoint is VK's OAuth 2.0 endpoint.
-var Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://oauth.vk.com/authorize",
-	TokenURL: "https://oauth.vk.com/access_token",
-}
+var Endpoint = endpoints.Vk

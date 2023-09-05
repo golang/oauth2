@@ -6,11 +6,8 @@
 package stackoverflow // import "golang.org/x/oauth2/stackoverflow"
 
 import (
-	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/endpoints"
 )
 
 // Endpoint is Stack Overflow's OAuth 2.0 endpoint.
-var Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://stackoverflow.com/oauth",
-	TokenURL: "https://stackoverflow.com/oauth/access_token",
-}
+var Endpoint = endpoints.StackOverflow

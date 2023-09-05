@@ -6,11 +6,8 @@
 package instagram // import "golang.org/x/oauth2/instagram"
 
 import (
-	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/endpoints"
 )
 
 // Endpoint is Instagram's OAuth 2.0 endpoint.
-var Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://api.instagram.com/oauth/authorize",
-	TokenURL: "https://api.instagram.com/oauth/access_token",
-}
+var Endpoint = endpoints.Instagram
