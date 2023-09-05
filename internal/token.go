@@ -195,17 +195,17 @@ func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string,
 	// the same credentials and params
 	var (
 		hashStr = struct {
-			clientID     string
-			clientSecret string
-			tokenURL     string
-			v            url.Values
-			authStyle    AuthStyle
+			ClientID     string
+			ClientSecret string
+			TokenURL     string
+			V            url.Values
+			AuthStyle    AuthStyle
 		}{
-			clientID:     clientID,
-			clientSecret: clientSecret,
-			tokenURL:     tokenURL,
-			v:            v,
-			authStyle:    authStyle,
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			TokenURL:     tokenURL,
+			V:            v,
+			AuthStyle:    authStyle,
 		}
 		hash  uint64
 		token interface{}
