@@ -20,7 +20,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mitchellh/hashstructure/v2"
 	"golang.org/x/net/context/ctxhttp"
+	"golang.org/x/sync/singleflight"
 )
 
 // Token represents the credentials used to authorize
@@ -185,7 +187,44 @@ func cloneURLValues(v url.Values) url.Values {
 	return v2
 }
 
+var tokenFetchGroup singleflight.Group
+
 func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string, v url.Values, authStyle AuthStyle) (*Token, error) {
+	// singleflight wrapper over the actual implementation `doRetrieveToken`
+	// this function makes sure that token endpoint is called only once at the same time with
+	// the same credentials and params
+	var (
+		hashStr = struct {
+			clientID     string
+			clientSecret string
+			tokenURL     string
+			v            url.Values
+			authStyle    AuthStyle
+		}{
+			clientID:     clientID,
+			clientSecret: clientSecret,
+			tokenURL:     tokenURL,
+			v:            v,
+			authStyle:    authStyle,
+		}
+		hash  uint64
+		token interface{}
+		err   error
+	)
+
+	if hash, err = hashstructure.Hash(hashStr, hashstructure.FormatV2, nil); err != nil {
+		return nil, err
+	}
+
+	if token, err, _ = tokenFetchGroup.Do(strconv.FormatUint(hash, 10), func() (interface{}, error) {
+		return doRetrieveToken(ctx, clientID, clientSecret, tokenURL, v, authStyle)
+	}); err != nil {
+		return nil, err
+	}
+	return token.(*Token), nil
+}
+
+func doRetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string, v url.Values, authStyle AuthStyle) (*Token, error) {
 	needsAuthStyleProbe := authStyle == 0
 	if needsAuthStyleProbe {
 		if style, ok := lookupAuthStyle(tokenURL); ok {

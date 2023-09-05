@@ -13,5 +13,7 @@ require (
 
 require (
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
+	golang.org/x/sync v0.3.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 )
