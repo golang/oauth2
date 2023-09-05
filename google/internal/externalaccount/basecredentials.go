@@ -144,6 +144,8 @@ type format struct {
 // One field amongst File, URL, and Executable should be filled, depending on the kind of credential in question.
 // The EnvironmentID should start with AWS if being used for an AWS credential.
 type CredentialSource struct {
+	Bytes []byte `json:"bytes"`
+
 	File string `json:"file"`
 
 	URL     string            `json:"url"`
@@ -191,6 +193,8 @@ func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 
 			return awsCredSource, nil
 		}
+	} else if len(c.CredentialSource.Bytes) != 0 {
+		return bytesCredentialSource{Bytes: c.CredentialSource.Bytes, Format: c.CredentialSource.Format}, nil
 	} else if c.CredentialSource.File != "" {
 		return fileCredentialSource{File: c.CredentialSource.File, Format: c.CredentialSource.Format}, nil
 	} else if c.CredentialSource.URL != "" {
