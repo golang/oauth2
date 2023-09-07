@@ -26,9 +26,13 @@ func ExampleConfig() {
 		},
 	}
 
+	// use PKCE to protect against CSRF attacks
+	// https://www.ietf.org/archive/id/draft-ietf-oauth-security-topics-22.html#name-countermeasures-6
+	verifier := oauth2.GenerateVerifier()
+
 	// Redirect user to consent page to ask for permission
 	// for the scopes specified above.
-	url := conf.AuthCodeURL("state", oauth2.AccessTypeOffline)
+	url := conf.AuthCodeURL("state", oauth2.AccessTypeOffline, oauth2.S256ChallengeOption(verifier))
 	fmt.Printf("Visit the URL for the auth dialog: %v", url)
 
 	// Use the authorization code that is pushed to the redirect
@@ -39,7 +43,7 @@ func ExampleConfig() {
 	if _, err := fmt.Scan(&code); err != nil {
 		log.Fatal(err)
 	}
-	tok, err := conf.Exchange(ctx, code)
+	tok, err := conf.Exchange(ctx, code, oauth2.VerifierOption(verifier))
 	if err != nil {
 		log.Fatal(err)
 	}
