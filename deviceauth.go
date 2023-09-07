@@ -3,6 +3,7 @@ package oauth2
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -88,6 +89,10 @@ func (c *Config) DeviceAuth(ctx context.Context, opts ...AuthCodeOption) (*Devic
 }
 
 func retrieveDeviceAuth(ctx context.Context, c *Config, v url.Values) (*DeviceAuthResponse, error) {
+	if c.Endpoint.DeviceAuthURL == "" {
+		return nil, errors.New("endpoint missing DeviceAuthURL")
+	}
+
 	req, err := http.NewRequest("POST", c.Endpoint.DeviceAuthURL, strings.NewReader(v.Encode()))
 	if err != nil {
 		return nil, err
