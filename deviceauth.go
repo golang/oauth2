@@ -59,6 +59,8 @@ func (c *DeviceAuthResponse) UnmarshalJSON(data []byte) error {
 	type Alias DeviceAuthResponse
 	aux := &struct {
 		ExpiresIn int64 `json:"expires_in"`
+		// workaround misspelling of verification_uri
+		VerificationURL string `json:"verification_url"`
 		*Alias
 	}{
 		Alias: (*Alias)(c),
@@ -68,6 +70,9 @@ func (c *DeviceAuthResponse) UnmarshalJSON(data []byte) error {
 	}
 	if aux.ExpiresIn != 0 {
 		c.Expiry = time.Now().UTC().Add(time.Second * time.Duration(aux.ExpiresIn))
+	}
+	if c.VerificationURI == "" {
+		c.VerificationURI = aux.VerificationURL
 	}
 	return nil
 }
