@@ -296,6 +296,10 @@ func shouldUseMetadataServer() bool {
 	return !canRetrieveRegionFromEnvironment() || !canRetrieveSecurityCredentialFromEnvironment()
 }
 
+func (cs awsCredentialSource) credentialSourceType() string {
+	return "aws"
+}
+
 func (cs awsCredentialSource) subjectToken() (string, error) {
 	if cs.requestSigner == nil {
 		headers := make(map[string]string)

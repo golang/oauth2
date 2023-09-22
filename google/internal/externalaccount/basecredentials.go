@@ -198,6 +198,7 @@ func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 }
 
 type baseCredentialSource interface {
+	credentialSourceType() string
 	subjectToken() (string, error)
 }
 
@@ -205,6 +206,15 @@ type baseCredentialSource interface {
 type tokenSource struct {
 	ctx  context.Context
 	conf *Config
+}
+
+func getMetricsHeaderValue(conf *Config, credSource baseCredentialSource) string {
+	return fmt.Sprintf("gl-go/%s auth/%s google-byoid-sdk source/%s sa-impersonation/%t config-lifetime/%t",
+		goVersion(),
+		"unknown",
+		credSource.credentialSourceType(),
+		conf.ServiceAccountImpersonationURL != "",
+		conf.ServiceAccountImpersonationLifetimeSeconds != 0)
 }
 
 // Token allows tokenSource to conform to the oauth2.TokenSource interface.
@@ -230,6 +240,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 	}
 	header := make(http.Header)
 	header.Add("Content-Type", "application/x-www-form-urlencoded")
+	header.Add("x-goog-api-client", getMetricsHeaderValue(conf, credSource))
 	clientAuth := clientAuthentication{
 		AuthStyle:    oauth2.AuthStyleInHeader,
 		ClientID:     conf.ClientID,

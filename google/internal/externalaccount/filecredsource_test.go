@@ -68,6 +68,9 @@ func TestRetrieveFileSubjectToken(t *testing.T) {
 				t.Errorf("got %v but want %v", out, test.want)
 			}
 
+			if got, want := base.credentialSourceType(), "file"; got != want {
+				t.Errorf("got %v but want %v", got, want)
+			}
 		})
 	}
 }

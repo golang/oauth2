@@ -1234,3 +1234,20 @@ func TestAWSCredential_ShouldCallMetadataEndpointWhenNoSecretAccessKey(t *testin
 		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
 	}
 }
+
+func TestAwsCredential_CredentialSourceType(t *testing.T) {
+	server := createDefaultAwsTestServer()
+	ts := httptest.NewServer(server)
+
+	tfc := testFileConfig
+	tfc.CredentialSource = server.getCredentialSource(ts.URL)
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	if got, want := base.credentialSourceType(), "aws"; got != want {
+		t.Errorf("got %v but want %v", got, want)
+	}
+}
