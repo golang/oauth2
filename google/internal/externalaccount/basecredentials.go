@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google/internal/sts_exchange"
 )
 
 // now aliases time.Now for testing
@@ -230,7 +231,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	stsRequest := stsTokenExchangeRequest{
+	stsRequest := sts_exchange.StsTokenExchangeRequest{
 		GrantType:          "urn:ietf:params:oauth:grant-type:token-exchange",
 		Audience:           conf.Audience,
 		Scope:              conf.Scopes,
@@ -241,7 +242,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 	header := make(http.Header)
 	header.Add("Content-Type", "application/x-www-form-urlencoded")
 	header.Add("x-goog-api-client", getMetricsHeaderValue(conf, credSource))
-	clientAuth := clientAuthentication{
+	clientAuth := sts_exchange.ClientAuthentication{
 		AuthStyle:    oauth2.AuthStyleInHeader,
 		ClientID:     conf.ClientID,
 		ClientSecret: conf.ClientSecret,
@@ -254,7 +255,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 			"userProject": conf.WorkforcePoolUserProject,
 		}
 	}
-	stsResp, err := exchangeToken(ts.ctx, conf.TokenURL, &stsRequest, clientAuth, header, options)
+	stsResp, err := sts_exchange.ExchangeToken(ts.ctx, conf.TokenURL, &stsRequest, clientAuth, nil, options)
 	if err != nil {
 		return nil, err
 	}
