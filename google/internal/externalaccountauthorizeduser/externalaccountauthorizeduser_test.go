@@ -105,7 +105,7 @@ func TestExernalAccountAuthorizedUser_JustToken(t *testing.T) {
 	}
 }
 
-func TestExernalAccountAuthorizedUser_TokenRefreshWithRefreshTokenInResponds(t *testing.T) {
+func TestExernalAccountAuthorizedUser_TokenRefreshWithRefreshTokenInRespondse(t *testing.T) {
 	server := &testRefreshTokenServer{
 		URL:           "/",
 		Authorization: "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=",
@@ -147,7 +147,7 @@ func TestExernalAccountAuthorizedUser_TokenRefreshWithRefreshTokenInResponds(t *
 	}
 }
 
-func TestExernalAccountAuthorizedUser_minimumFieldsRequiredForRefresh(t *testing.T) {
+func TestExernalAccountAuthorizedUser_MinimumFieldsRequiredForRefresh(t *testing.T) {
 	server := &testRefreshTokenServer{
 		URL:           "/",
 		Authorization: "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=",

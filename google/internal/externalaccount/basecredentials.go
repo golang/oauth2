@@ -255,7 +255,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 			"userProject": conf.WorkforcePoolUserProject,
 		}
 	}
-	stsResp, err := sts_exchange.ExchangeToken(ts.ctx, conf.TokenURL, &stsRequest, clientAuth, nil, options)
+	stsResp, err := sts_exchange.ExchangeToken(ts.ctx, conf.TokenURL, &stsRequest, clientAuth, header, options)
 	if err != nil {
 		return nil, err
 	}
