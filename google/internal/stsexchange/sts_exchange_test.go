@@ -22,7 +22,7 @@ var auth = ClientAuthentication{
 	ClientSecret: clientSecret,
 }
 
-var exchangeTokenRequest = StsTokenExchangeRequest{
+var exchangeTokenRequest = TokenExchangeRequest{
 	ActingParty: struct {
 		ActorToken     string
 		ActorTokenType string

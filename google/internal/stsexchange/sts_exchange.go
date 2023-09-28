@@ -28,7 +28,7 @@ func defaultHeader() http.Header {
 // The first 4 fields are all mandatory.  headers can be used to pass additional
 // headers beyond the bare minimum required by the token exchange.  options can
 // be used to pass additional JSON-structured options to the remote server.
-func ExchangeToken(ctx context.Context, endpoint string, request *StsTokenExchangeRequest, authentication ClientAuthentication, headers http.Header, options map[string]interface{}) (*Response, error) {
+func ExchangeToken(ctx context.Context, endpoint string, request *TokenExchangeRequest, authentication ClientAuthentication, headers http.Header, options map[string]interface{}) (*Response, error) {
 	data := url.Values{}
 	data.Set("audience", request.Audience)
 	data.Set("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange")
@@ -99,8 +99,8 @@ func makeRequest(ctx context.Context, endpoint string, data url.Values, authenti
 	return &stsResp, nil
 }
 
-// StsTokenExchangeRequest contains fields necessary to make an oauth2 token exchange.
-type StsTokenExchangeRequest struct {
+// TokenExchangeRequest contains fields necessary to make an oauth2 token exchange.
+type TokenExchangeRequest struct {
 	ActingParty struct {
 		ActorToken     string
 		ActorTokenType string
