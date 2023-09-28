@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google/internal/sts_exchange"
+	"golang.org/x/oauth2/google/internal/stsexchange"
 )
 
 // now aliases time.Now for testing.
@@ -87,13 +87,13 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 		return nil, errors.New("oauth2/google: The credentials do not contain the necessary fields need to refresh the access token. You must specify refresh_token, token_url, client_id, and client_secret.")
 	}
 
-	clientAuth := sts_exchange.ClientAuthentication{
+	clientAuth := stsexchange.ClientAuthentication{
 		AuthStyle:    oauth2.AuthStyleInHeader,
 		ClientID:     conf.ClientID,
 		ClientSecret: conf.ClientSecret,
 	}
 
-	stsResponse, err := sts_exchange.RefreshAccessToken(ts.ctx, conf.TokenURL, conf.RefreshToken, clientAuth, nil)
+	stsResponse, err := stsexchange.RefreshAccessToken(ts.ctx, conf.TokenURL, conf.RefreshToken, clientAuth, nil)
 	if err != nil {
 		return nil, err
 	}

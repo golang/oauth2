@@ -8,14 +8,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google/internal/sts_exchange"
+	"golang.org/x/oauth2/google/internal/stsexchange"
 )
 
 // now aliases time.Now for testing
@@ -64,30 +62,9 @@ type Config struct {
 	WorkforcePoolUserProject string
 }
 
-// Each element consists of a list of patterns.  validateURLs checks for matches
-// that include all elements in a given list, in that order.
-
 var (
 	validWorkforceAudiencePattern *regexp.Regexp = regexp.MustCompile(`//iam\.googleapis\.com/locations/[^/]+/workforcePools/`)
 )
-
-func validateURL(input string, patterns []*regexp.Regexp, scheme string) bool {
-	parsed, err := url.Parse(input)
-	if err != nil {
-		return false
-	}
-	if !strings.EqualFold(parsed.Scheme, scheme) {
-		return false
-	}
-	toTest := parsed.Host
-
-	for _, pattern := range patterns {
-		if pattern.MatchString(toTest) {
-			return true
-		}
-	}
-	return false
-}
 
 func validateWorkforceAudience(input string) bool {
 	return validWorkforceAudiencePattern.MatchString(input)
@@ -231,7 +208,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	stsRequest := sts_exchange.StsTokenExchangeRequest{
+	stsRequest := stsexchange.StsTokenExchangeRequest{
 		GrantType:          "urn:ietf:params:oauth:grant-type:token-exchange",
 		Audience:           conf.Audience,
 		Scope:              conf.Scopes,
@@ -242,7 +219,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 	header := make(http.Header)
 	header.Add("Content-Type", "application/x-www-form-urlencoded")
 	header.Add("x-goog-api-client", getMetricsHeaderValue(conf, credSource))
-	clientAuth := sts_exchange.ClientAuthentication{
+	clientAuth := stsexchange.ClientAuthentication{
 		AuthStyle:    oauth2.AuthStyleInHeader,
 		ClientID:     conf.ClientID,
 		ClientSecret: conf.ClientSecret,
@@ -255,7 +232,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 			"userProject": conf.WorkforcePoolUserProject,
 		}
 	}
-	stsResp, err := sts_exchange.ExchangeToken(ts.ctx, conf.TokenURL, &stsRequest, clientAuth, header, options)
+	stsResp, err := stsexchange.ExchangeToken(ts.ctx, conf.TokenURL, &stsRequest, clientAuth, header, options)
 	if err != nil {
 		return nil, err
 	}
