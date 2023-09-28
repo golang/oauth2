@@ -235,7 +235,8 @@ func (c *Config) Exchange(ctx context.Context, code string, opts ...AuthCodeOpti
 }
 
 // Client returns an HTTP client using the provided token.
-// The token will auto-refresh as necessary. The underlying
+// The token will auto-refresh as necessary using a ReuseTokenSource, and
+// therefore should not be used directly after this call. The underlying
 // HTTP transport will be obtained using the provided context.
 // The returned client and its Transport should not be modified.
 func (c *Config) Client(ctx context.Context, t *Token) *http.Client {
@@ -367,6 +368,11 @@ func NewClient(ctx context.Context, src TokenSource) *http.Client {
 // ReuseTokenSource returns a TokenSource which repeatedly returns the
 // same token as long as it's valid, starting with t.
 // When its cached token is invalid, a new token is obtained from src.
+//
+// When used with tokens issued by a server implementing refresh token
+// rotation the initial token t must be treated as owned by the returned
+// TokenSource and not directly used further to avoid race conditions
+// associated with refresh token invalidation.
 //
 // ReuseTokenSource is typically used to reuse tokens from a cache
 // (such as a file on disk) between runs of a program, rather than
