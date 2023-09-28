@@ -22,10 +22,10 @@ import (
 
 // Endpoint is Google's OAuth 2.0 default endpoint.
 var Endpoint = oauth2.Endpoint{
-	AuthURL:   "https://accounts.google.com/o/oauth2/auth",
-	TokenURL:  "https://oauth2.googleapis.com/token",
+	AuthURL:       "https://accounts.google.com/o/oauth2/auth",
+	TokenURL:      "https://oauth2.googleapis.com/token",
 	DeviceAuthURL: "https://oauth2.googleapis.com/device/code",
-	AuthStyle: oauth2.AuthStyleInParams,
+	AuthStyle:     oauth2.AuthStyleInParams,
 }
 
 // MTLSTokenURL is Google's OAuth 2.0 default mTLS endpoint.
@@ -109,12 +109,13 @@ type credentialsFile struct {
 	Type string `json:"type"`
 
 	// Service Account fields
-	ClientEmail  string `json:"client_email"`
-	PrivateKeyID string `json:"private_key_id"`
-	PrivateKey   string `json:"private_key"`
-	AuthURL      string `json:"auth_uri"`
-	TokenURL     string `json:"token_uri"`
-	ProjectID    string `json:"project_id"`
+	ClientEmail    string `json:"client_email"`
+	PrivateKeyID   string `json:"private_key_id"`
+	PrivateKey     string `json:"private_key"`
+	AuthURL        string `json:"auth_uri"`
+	TokenURL       string `json:"token_uri"`
+	ProjectID      string `json:"project_id"`
+	UniverseDomain string `json:"universe_domain"`
 
 	// User Credential fields
 	// (These typically come from gcloud auth.)
