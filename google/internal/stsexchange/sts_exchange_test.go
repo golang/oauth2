@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package externalaccount
+package stsexchange
 
 import (
 	"context"
@@ -16,13 +16,13 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var auth = clientAuthentication{
+var auth = ClientAuthentication{
 	AuthStyle:    oauth2.AuthStyleInHeader,
 	ClientID:     clientID,
 	ClientSecret: clientSecret,
 }
 
-var tokenRequest = stsTokenExchangeRequest{
+var exchangeTokenRequest = TokenExchangeRequest{
 	ActingParty: struct {
 		ActorToken     string
 		ActorTokenType string
@@ -36,15 +36,27 @@ var tokenRequest = stsTokenExchangeRequest{
 	SubjectTokenType:   "urn:ietf:params:oauth:token-type:jwt",
 }
 
-var requestbody = "audience=32555940559.apps.googleusercontent.com&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&requested_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdevstorage.full_control&subject_token=Sample.Subject.Token&subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Ajwt"
-var responseBody = `{"access_token":"Sample.Access.Token","issued_token_type":"urn:ietf:params:oauth:token-type:access_token","token_type":"Bearer","expires_in":3600,"scope":"https://www.googleapis.com/auth/cloud-platform"}`
-var expectedToken = stsTokenExchangeResponse{
+var exchangeRequestBody = "audience=32555940559.apps.googleusercontent.com&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange&requested_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdevstorage.full_control&subject_token=Sample.Subject.Token&subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Ajwt"
+var exchangeResponseBody = `{"access_token":"Sample.Access.Token","issued_token_type":"urn:ietf:params:oauth:token-type:access_token","token_type":"Bearer","expires_in":3600,"scope":"https://www.googleapis.com/auth/cloud-platform"}`
+var expectedExchangeToken = Response{
 	AccessToken:     "Sample.Access.Token",
 	IssuedTokenType: "urn:ietf:params:oauth:token-type:access_token",
 	TokenType:       "Bearer",
 	ExpiresIn:       3600,
 	Scope:           "https://www.googleapis.com/auth/cloud-platform",
 	RefreshToken:    "",
+}
+
+var refreshToken = "ReFrEsHtOkEn"
+var refreshRequestBody = "grant_type=refresh_token&refresh_token=" + refreshToken
+var refreshResponseBody = `{"access_token":"Sample.Access.Token","issued_token_type":"urn:ietf:params:oauth:token-type:access_token","token_type":"Bearer","expires_in":3600,"scope":"https://www.googleapis.com/auth/cloud-platform","refresh_token":"REFRESHED_REFRESH"}`
+var expectedRefreshResponse = Response{
+	AccessToken:     "Sample.Access.Token",
+	IssuedTokenType: "urn:ietf:params:oauth:token-type:access_token",
+	TokenType:       "Bearer",
+	ExpiresIn:       3600,
+	Scope:           "https://www.googleapis.com/auth/cloud-platform",
+	RefreshToken:    "REFRESHED_REFRESH",
 }
 
 func TestExchangeToken(t *testing.T) {
@@ -65,26 +77,34 @@ func TestExchangeToken(t *testing.T) {
 		if err != nil {
 			t.Errorf("Failed reading request body: %v.", err)
 		}
-		if got, want := string(body), requestbody; got != want {
+		if got, want := string(body), exchangeRequestBody; got != want {
 			t.Errorf("Unexpected exchange payload, got %v but want %v", got, want)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(responseBody))
+		w.Write([]byte(exchangeResponseBody))
 	}))
 	defer ts.Close()
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := exchangeToken(context.Background(), ts.URL, &tokenRequest, auth, headers, nil)
+	resp, err := ExchangeToken(context.Background(), ts.URL, &exchangeTokenRequest, auth, headers, nil)
 	if err != nil {
 		t.Fatalf("exchangeToken failed with error: %v", err)
 	}
 
-	if expectedToken != *resp {
-		t.Errorf("mismatched messages received by mock server.  \nWant: \n%v\n\nGot:\n%v", expectedToken, *resp)
+	if expectedExchangeToken != *resp {
+		t.Errorf("mismatched messages received by mock server.  \nWant: \n%v\n\nGot:\n%v", expectedExchangeToken, *resp)
 	}
 
+	resp, err = ExchangeToken(context.Background(), ts.URL, &exchangeTokenRequest, auth, nil, nil)
+	if err != nil {
+		t.Fatalf("exchangeToken failed with error: %v", err)
+	}
+
+	if expectedExchangeToken != *resp {
+		t.Errorf("mismatched messages received by mock server.  \nWant: \n%v\n\nGot:\n%v", expectedExchangeToken, *resp)
+	}
 }
 
 func TestExchangeToken_Err(t *testing.T) {
@@ -96,7 +116,7 @@ func TestExchangeToken_Err(t *testing.T) {
 
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/x-www-form-urlencoded")
-	_, err := exchangeToken(context.Background(), ts.URL, &tokenRequest, auth, headers, nil)
+	_, err := ExchangeToken(context.Background(), ts.URL, &exchangeTokenRequest, auth, headers, nil)
 	if err == nil {
 		t.Errorf("Expected handled error; instead got nil.")
 	}
@@ -171,7 +191,7 @@ func TestExchangeToken_Opts(t *testing.T) {
 
 		// Send a proper reply so that no other errors crop up.
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(responseBody))
+		w.Write([]byte(exchangeResponseBody))
 
 	}))
 	defer ts.Close()
@@ -183,5 +203,69 @@ func TestExchangeToken_Opts(t *testing.T) {
 	inputOpts := make(map[string]interface{})
 	inputOpts["one"] = firstOption
 	inputOpts["two"] = secondOption
-	exchangeToken(context.Background(), ts.URL, &tokenRequest, auth, headers, inputOpts)
+	ExchangeToken(context.Background(), ts.URL, &exchangeTokenRequest, auth, headers, inputOpts)
+}
+
+func TestRefreshToken(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Errorf("Unexpected request method, %v is found", r.Method)
+		}
+		if r.URL.String() != "/" {
+			t.Errorf("Unexpected request URL, %v is found", r.URL)
+		}
+		if got, want := r.Header.Get("Authorization"), "Basic cmJyZ25vZ25yaG9uZ28zYmk0Z2I5Z2hnOWc6bm90c29zZWNyZXQ="; got != want {
+			t.Errorf("Unexpected authorization header, got %v, want %v", got, want)
+		}
+		if got, want := r.Header.Get("Content-Type"), "application/x-www-form-urlencoded"; got != want {
+			t.Errorf("Unexpected Content-Type header, got %v, want %v", got, want)
+		}
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("Failed reading request body: %v.", err)
+		}
+		if got, want := string(body), refreshRequestBody; got != want {
+			t.Errorf("Unexpected exchange payload, got %v but want %v", got, want)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(refreshResponseBody))
+	}))
+	defer ts.Close()
+
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := RefreshAccessToken(context.Background(), ts.URL, refreshToken, auth, headers)
+	if err != nil {
+		t.Fatalf("exchangeToken failed with error: %v", err)
+	}
+
+	if expectedRefreshResponse != *resp {
+		t.Errorf("mismatched messages received by mock server.  \nWant: \n%v\n\nGot:\n%v", expectedRefreshResponse, *resp)
+	}
+
+	resp, err = RefreshAccessToken(context.Background(), ts.URL, refreshToken, auth, nil)
+	if err != nil {
+		t.Fatalf("exchangeToken failed with error: %v", err)
+	}
+
+	if expectedRefreshResponse != *resp {
+		t.Errorf("mismatched messages received by mock server.  \nWant: \n%v\n\nGot:\n%v", expectedRefreshResponse, *resp)
+	}
+}
+
+func TestRefreshToken_Err(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("what's wrong with this response?"))
+	}))
+	defer ts.Close()
+
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	_, err := RefreshAccessToken(context.Background(), ts.URL, refreshToken, auth, headers)
+	if err == nil {
+		t.Errorf("Expected handled error; instead got nil.")
+	}
 }
