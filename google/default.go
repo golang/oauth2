@@ -216,6 +216,12 @@ func CredentialsFromJSONWithParams(ctx context.Context, jsonData []byte, params 
 		return nil, err
 	}
 
+	universeDomain := f.UniverseDomain
+	// Authorized user credentials are only supported in the googleapis.com universe.
+	if f.Type == userCredentialsKey {
+		universeDomain = universeDomainDefault
+	}
+
 	ts, err := f.tokenSource(ctx, params)
 	if err != nil {
 		return nil, err
@@ -225,7 +231,7 @@ func CredentialsFromJSONWithParams(ctx context.Context, jsonData []byte, params 
 		ProjectID:      f.ProjectID,
 		TokenSource:    ts,
 		JSON:           jsonData,
-		universeDomain: f.UniverseDomain,
+		universeDomain: universeDomain,
 	}, nil
 }
 
