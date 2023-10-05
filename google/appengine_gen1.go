@@ -15,7 +15,7 @@ import (
 	"sync"
 
 	"golang.org/x/oauth2"
-	"google.golang.org/appengine"
+	"google.golang.org/appengine/v2"
 )
 
 func init() {
