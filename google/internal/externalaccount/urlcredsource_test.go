@@ -111,3 +111,21 @@ func TestRetrieveURLSubjectToken_JSON(t *testing.T) {
 		t.Errorf("got %v but want %v", out, myURLToken)
 	}
 }
+
+func TestURLCredential_CredentialSourceType(t *testing.T) {
+	cs := CredentialSource{
+		URL:    "http://example.com",
+		Format: format{Type: fileTypeText},
+	}
+	tfc := testFileConfig
+	tfc.CredentialSource = cs
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	if got, want := base.credentialSourceType(), "url"; got != want {
+		t.Errorf("got %v but want %v", got, want)
+	}
+}

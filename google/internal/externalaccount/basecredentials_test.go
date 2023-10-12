@@ -6,6 +6,7 @@ package externalaccount
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -51,6 +52,7 @@ type testExchangeTokenServer struct {
 	url           string
 	authorization string
 	contentType   string
+	metricsHeader string
 	body          string
 	response      string
 }
@@ -66,6 +68,10 @@ func run(t *testing.T, config *Config, tets *testExchangeTokenServer) (*oauth2.T
 		}
 		headerContentType := r.Header.Get("Content-Type")
 		if got, want := headerContentType, tets.contentType; got != want {
+			t.Errorf("got %v but want %v", got, want)
+		}
+		headerMetrics := r.Header.Get("x-goog-api-client")
+		if got, want := headerMetrics, tets.metricsHeader; got != want {
 			t.Errorf("got %v but want %v", got, want)
 		}
 		body, err := ioutil.ReadAll(r.Body)
@@ -106,6 +112,10 @@ func validateToken(t *testing.T, tok *oauth2.Token) {
 	}
 }
 
+func getExpectedMetricsHeader(source string, saImpersonation bool, configLifetime bool) string {
+	return fmt.Sprintf("gl-go/%s auth/unknown google-byoid-sdk source/%s sa-impersonation/%t config-lifetime/%t", goVersion(), source, saImpersonation, configLifetime)
+}
+
 func TestToken(t *testing.T) {
 	config := Config{
 		Audience:         "32555940559.apps.googleusercontent.com",
@@ -120,6 +130,7 @@ func TestToken(t *testing.T) {
 		url:           "/",
 		authorization: "Basic cmJyZ25vZ25yaG9uZ28zYmk0Z2I5Z2hnOWc6bm90c29zZWNyZXQ=",
 		contentType:   "application/x-www-form-urlencoded",
+		metricsHeader: getExpectedMetricsHeader("file", false, false),
 		body:          baseCredsRequestBody,
 		response:      baseCredsResponseBody,
 	}
@@ -147,6 +158,7 @@ func TestWorkforcePoolTokenWithClientID(t *testing.T) {
 		url:           "/",
 		authorization: "Basic cmJyZ25vZ25yaG9uZ28zYmk0Z2I5Z2hnOWc6bm90c29zZWNyZXQ=",
 		contentType:   "application/x-www-form-urlencoded",
+		metricsHeader: getExpectedMetricsHeader("file", false, false),
 		body:          workforcePoolRequestBodyWithClientId,
 		response:      baseCredsResponseBody,
 	}
@@ -173,6 +185,7 @@ func TestWorkforcePoolTokenWithoutClientID(t *testing.T) {
 		url:           "/",
 		authorization: "",
 		contentType:   "application/x-www-form-urlencoded",
+		metricsHeader: getExpectedMetricsHeader("file", false, false),
 		body:          workforcePoolRequestBodyWithoutClientId,
 		response:      baseCredsResponseBody,
 	}

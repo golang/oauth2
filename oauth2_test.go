@@ -15,8 +15,6 @@ import (
 	"net/url"
 	"testing"
 	"time"
-
-	"golang.org/x/oauth2/internal"
 )
 
 type mockTransport struct {
@@ -355,7 +353,6 @@ func TestExchangeRequest_BadResponseType(t *testing.T) {
 }
 
 func TestExchangeRequest_NonBasicAuth(t *testing.T) {
-	internal.ResetAuthCache()
 	tr := &mockTransport{
 		rt: func(r *http.Request) (w *http.Response, err error) {
 			headerAuth := r.Header.Get("Authorization")
@@ -427,7 +424,6 @@ func TestPasswordCredentialsTokenRequest(t *testing.T) {
 }
 
 func TestTokenRefreshRequest(t *testing.T) {
-	internal.ResetAuthCache()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() == "/somethingelse" {
 			return
@@ -484,6 +480,7 @@ func TestTokenRetrieveError(t *testing.T) {
 			t.Errorf("Unexpected token refresh request URL, %v is found.", r.URL)
 		}
 		w.Header().Set("Content-type", "application/json")
+		// "The authorization server responds with an HTTP 400 (Bad Request)" https://www.rfc-editor.org/rfc/rfc6749#section-5.2
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{"error": "invalid_grant"}`))
 	}))
@@ -493,14 +490,46 @@ func TestTokenRetrieveError(t *testing.T) {
 	if err == nil {
 		t.Fatalf("got no error, expected one")
 	}
-	_, ok := err.(*RetrieveError)
+	re, ok := err.(*RetrieveError)
 	if !ok {
 		t.Fatalf("got %T error, expected *RetrieveError; error was: %v", err, err)
 	}
-	// Test error string for backwards compatibility
-	expected := fmt.Sprintf("oauth2: cannot fetch token: %v\nResponse: %s", "400 Bad Request", `{"error": "invalid_grant"}`)
+	expected := `oauth2: "invalid_grant"`
 	if errStr := err.Error(); errStr != expected {
 		t.Fatalf("got %#v, expected %#v", errStr, expected)
+	}
+	expected = "invalid_grant"
+	if re.ErrorCode != expected {
+		t.Fatalf("got %#v, expected %#v", re.ErrorCode, expected)
+	}
+}
+
+// TestTokenRetrieveError200 tests handling of unorthodox server that returns 200 in error case
+func TestTokenRetrieveError200(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.String() != "/token" {
+			t.Errorf("Unexpected token refresh request URL, %v is found.", r.URL)
+		}
+		w.Header().Set("Content-type", "application/json")
+		w.Write([]byte(`{"error": "invalid_grant"}`))
+	}))
+	defer ts.Close()
+	conf := newConf(ts.URL)
+	_, err := conf.Exchange(context.Background(), "exchange-code")
+	if err == nil {
+		t.Fatalf("got no error, expected one")
+	}
+	re, ok := err.(*RetrieveError)
+	if !ok {
+		t.Fatalf("got %T error, expected *RetrieveError; error was: %v", err, err)
+	}
+	expected := `oauth2: "invalid_grant"`
+	if errStr := err.Error(); errStr != expected {
+		t.Fatalf("got %#v, expected %#v", errStr, expected)
+	}
+	expected = "invalid_grant"
+	if re.ErrorCode != expected {
+		t.Fatalf("got %#v, expected %#v", re.ErrorCode, expected)
 	}
 }
 
