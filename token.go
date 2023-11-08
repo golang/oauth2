@@ -49,6 +49,10 @@ type Token struct {
 	// mechanisms for that TokenSource will not be used.
 	Expiry time.Time `json:"expiry,omitempty"`
 
+	// OnTokenRefresh is a function that's getting called whenever
+	// the TokenSource refreshed the Token.
+	OnTokenRefresh func(t Token)
+
 	// raw optionally contains extra metadata from the server
 	// when updating a token.
 	raw interface{}
