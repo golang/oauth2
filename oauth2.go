@@ -318,11 +318,11 @@ func (s *reuseTokenSource) Token() (*Token, error) {
 		return nil, err
 	}
 	t.expiryDelta = s.expiryDelta
-	t.OnTokenRefresh = s.t.OnTokenRefresh
-	s.t = t
-	if t.OnTokenRefresh != nil {
+	if s.t.OnTokenRefresh != nil {
+		t.OnTokenRefresh = s.t.OnTokenRefresh
 		t.OnTokenRefresh(*t)
 	}
+	s.t = t
 	return t, nil
 }
 
