@@ -41,23 +41,23 @@ func RegisterBrokenAuthHeaderProvider(tokenURL string) {}
 // package (https://golang.org/x/oauth2/clientcredentials).
 type Config struct {
 	// ClientID is the application's ID.
-	ClientID string
+	ClientID string `json:"client_id"`
 
 	// ClientSecret is the application's secret.
-	ClientSecret string
+	ClientSecret string `json:"client_secret"`
 
 	// Endpoint contains the resource server's token endpoint
 	// URLs. These are constants specific to each server and are
 	// often available via site-specific packages, such as
 	// google.Endpoint or github.Endpoint.
-	Endpoint Endpoint
+	Endpoint Endpoint `json:"endpoint"`
 
 	// RedirectURL is the URL to redirect users going through
 	// the OAuth flow, after the resource owner's URLs.
-	RedirectURL string
+	RedirectURL string `json:"redirect_url,omitempty"`
 
 	// Scope specifies optional requested permissions.
-	Scopes []string
+	Scopes []string `json:"scopes,omitempty"`
 
 	// authStyleCache caches which auth style to use when Endpoint.AuthStyle is
 	// the zero value (AuthStyleAutoDetect).
@@ -75,14 +75,14 @@ type TokenSource interface {
 // Endpoint represents an OAuth 2.0 provider's authorization and token
 // endpoint URLs.
 type Endpoint struct {
-	AuthURL       string
-	DeviceAuthURL string
-	TokenURL      string
+	AuthURL       string `json:"auth_url,omitempty"`
+	DeviceAuthURL string `json:"device_auth_url,omitempty"`
+	TokenURL      string `json:"token_url,omitempty"`
 
 	// AuthStyle optionally specifies how the endpoint wants the
 	// client ID & client secret sent. The zero value means to
 	// auto-detect.
-	AuthStyle AuthStyle
+	AuthStyle AuthStyle `json:"auth_style,omitempty"`
 }
 
 // AuthStyle represents how requests for tokens are authenticated
