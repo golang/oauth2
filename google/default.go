@@ -91,6 +91,12 @@ type CredentialsParams struct {
 	// Note: This option is currently only respected when using credentials
 	// fetched from the GCE metadata server.
 	EarlyTokenRefresh time.Duration
+
+	// UniverseDomain is the default service domain for a given Cloud universe.
+	// Only supported in authentication flows that support universe domains.
+	// This value takes precedence over a universe domain explicitly specified
+	// in a credentials config file or by the GCE metadata server. Optional.
+	UniverseDomain string
 }
 
 func (params CredentialsParams) deepCopy() CredentialsParams {
@@ -175,8 +181,9 @@ func FindDefaultCredentialsWithParams(ctx context.Context, params CredentialsPar
 	if metadata.OnGCE() {
 		id, _ := metadata.ProjectID()
 		return &Credentials{
-			ProjectID:   id,
-			TokenSource: computeTokenSource("", params.EarlyTokenRefresh, params.Scopes...),
+			ProjectID:      id,
+			TokenSource:    computeTokenSource("", params.EarlyTokenRefresh, params.Scopes...),
+			universeDomain: params.UniverseDomain,
 		}, nil
 	}
 
@@ -217,6 +224,9 @@ func CredentialsFromJSONWithParams(ctx context.Context, jsonData []byte, params 
 	}
 
 	universeDomain := f.UniverseDomain
+	if params.UniverseDomain != "" {
+		universeDomain = params.UniverseDomain
+	}
 	// Authorized user credentials are only supported in the googleapis.com universe.
 	if f.Type == userCredentialsKey {
 		universeDomain = universeDomainDefault
