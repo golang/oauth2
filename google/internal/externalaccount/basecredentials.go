@@ -123,37 +123,39 @@ type format struct {
 // One field amongst File, URL, Executable, SubjectTokenSupplier, or AwsSecurityCredentialSupplier
 // should be filled, depending on the kind of credential in question.
 // The EnvironmentID should start with AWS if being used for an AWS credential.
+// AwsRegion is required when AwsSecurityCredentialsSupplier is used.
 type CredentialSource struct {
-	// File location for file sourced credentials.
+	// File is the location for file sourced credentials.
 	File string `json:"file"`
 
-	// Url to call for URL sourced credentials.
+	// Url is the URL to call for URL sourced credentials.
 	URL string `json:"url"`
-	// Headers to attach to the request for URL sourced credentials.
+	// Headers are the Headers to attach to the request for URL sourced credentials.
 	Headers map[string]string `json:"headers"`
 
-	// Configuration object for executable sourced credentials.
+	// Executable is the configuration object for executable sourced credentials.
 	Executable *ExecutableConfig `json:"executable"`
 
-	// Environment ID used for AWS sourced credentials.
+	// EnvironmentID is the EnvironmentID used for AWS sourced credentials.
 	EnvironmentID string `json:"environment_id"`
-	// Metadata URL to retrieve the region from for EC2 AWS credentials.
+	// RegionURL is the metadata URL to retrieve the region from for EC2 AWS credentials.
 	RegionURL string `json:"region_url"`
-	// AWS regional credential verification URL, will default to "https://sts.{region}.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15" if not provided."
+	// RegionalCredVerificationURL is the AWS regional credential verification URL, will default to
+	//  "https://sts.{region}.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15" if not provided."
 	RegionalCredVerificationURL string `json:"regional_cred_verification_url"`
-	// DEPRECATED
+	// CredVerificationURL is deprecated and not used. Use RegionalCredVerificationURL instead.
 	CredVerificationURL string `json:"cred_verification_url"`
-	// URL to retrieve the session token when using IMDSv2 in AWS.
+	// IMDSv2SessionTokenURL is the URL to retrieve the session token when using IMDSv2 in AWS.
 	IMDSv2SessionTokenURL string `json:"imdsv2_session_token_url"`
-	// Format type for the subject token. Used for File and URL sourced credentials. Expected values are "text" or "json".
+	// Format is the format type for the subject token. Used for File and URL sourced credentials. Expected values are "text" or "json".
 	Format format `json:"format"`
-	// AWS region, required when an AwsSecurityCredentials Supplier is provided.
+	// AwsRegion is the AWS region, required when an AwsSecurityCredentialsSupplier is provided.
 	AwsRegion string `json:"-"` // Ignore for json.
 
-	// Token supplier for OIDC/SAML credentials. This should be a function that returns
+	// SubjectTokenSupplier is an optional token supplier for OIDC/SAML credentials. This should be a function that returns
 	// a valid subject token as a string.
 	SubjectTokenSupplier func() (string, error) `json:"-"` // Ignore for json.
-	// AWS Security Credential supplier for AWS credentials. This should be a function
+	// AwsSecurityCredentialsSupplier is an optional AWS Security Credential supplier for AWS credentials. This should be a function
 	// that returns a valid AwsSecurityCredentials object.
 	AwsSecurityCredentialsSupplier func() (AwsSecurityCredentials, error) `json:"-"` // Ignore for json.
 }
@@ -171,7 +173,17 @@ func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 		c.TokenURL = defaultTokenUrl
 	}
 
-	if len(c.CredentialSource.EnvironmentID) > 3 && c.CredentialSource.EnvironmentID[:3] == "aws" {
+	if c.CredentialSource.AwsSecurityCredentialsSupplier != nil {
+		awsCredSource := awsCredentialSource{
+			Region:                         c.CredentialSource.AwsRegion,
+			RegionalCredVerificationURL:    c.CredentialSource.RegionalCredVerificationURL,
+			AwsSecurityCredentialsSupplier: c.CredentialSource.AwsSecurityCredentialsSupplier,
+			TargetResource:                 c.Audience,
+		}
+		return awsCredSource, nil
+	} else if c.CredentialSource.SubjectTokenSupplier != nil {
+		return programmaticRefreshCredentialSource{SubjectTokenSupplier: c.CredentialSource.SubjectTokenSupplier}, nil
+	} else if len(c.CredentialSource.EnvironmentID) > 3 && c.CredentialSource.EnvironmentID[:3] == "aws" {
 		if awsVersion, err := strconv.Atoi(c.CredentialSource.EnvironmentID[3:]); err == nil {
 			if awsVersion != 1 {
 				return nil, fmt.Errorf("oauth2/google: aws version '%d' is not supported in the current build", awsVersion)
@@ -192,22 +204,12 @@ func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 
 			return awsCredSource, nil
 		}
-	} else if c.CredentialSource.AwsSecurityCredentialsSupplier != nil {
-		awsCredSource := awsCredentialSource{
-			Region:                         c.CredentialSource.AwsRegion,
-			RegionalCredVerificationURL:    c.CredentialSource.RegionalCredVerificationURL,
-			AwsSecurityCredentialsSupplier: c.CredentialSource.AwsSecurityCredentialsSupplier,
-			TargetResource:                 c.Audience,
-		}
-		return awsCredSource, nil
 	} else if c.CredentialSource.File != "" {
 		return fileCredentialSource{File: c.CredentialSource.File, Format: c.CredentialSource.Format}, nil
 	} else if c.CredentialSource.URL != "" {
 		return urlCredentialSource{URL: c.CredentialSource.URL, Headers: c.CredentialSource.Headers, Format: c.CredentialSource.Format, ctx: ctx}, nil
 	} else if c.CredentialSource.Executable != nil {
 		return CreateExecutableCredential(ctx, c.CredentialSource.Executable, c)
-	} else if c.CredentialSource.SubjectTokenSupplier != nil {
-		return programmaticRefreshCredentialSource{SubjectTokenSupplier: c.CredentialSource.SubjectTokenSupplier}, nil
 	}
 	return nil, fmt.Errorf("oauth2/google: unable to parse credential source")
 }

@@ -26,13 +26,13 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// Models AWS security credentials.
+// AwsSecurityCredentials models AWS security credentials.
 type AwsSecurityCredentials struct {
-	// AWS Access Key ID - Required.
+	// AccessKeyId is the AWS Access Key ID - Required.
 	AccessKeyID string `json:"AccessKeyID"`
-	// AWS Secret Access Key - Required.
+	// SecretAccessKey is the AWS Secret Access Key - Required.
 	SecretAccessKey string `json:"SecretAccessKey"`
-	// AWS Session token - Optional.
+	// SessionToken is the AWS Session token - Optional.
 	SessionToken string `json:"Token"`
 }
 
@@ -332,9 +332,11 @@ func (cs awsCredentialSource) subjectToken() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		cs.Region, err = cs.getRegion(headers)
-		if err != nil {
-			return "", err
+		if cs.Region == "" {
+			cs.Region, err = cs.getRegion(headers)
+			if err != nil {
+				return "", err
+			}
 		}
 
 		cs.requestSigner = &awsRequestSigner{
@@ -431,12 +433,6 @@ func (cs *awsCredentialSource) getAWSSessionToken() (string, error) {
 }
 
 func (cs *awsCredentialSource) getRegion(headers map[string]string) (string, error) {
-	if cs.Region != "" {
-		return cs.Region, nil
-	}
-	if cs.AwsSecurityCredentialsSupplier != nil {
-		return "", errors.New("oauth2/google: AwsRegion must be provided when using an AwsSecurityCredentialsSupplier")
-	}
 	if canRetrieveRegionFromEnvironment() {
 		if envAwsRegion := getenv(awsRegion); envAwsRegion != "" {
 			return envAwsRegion, nil
@@ -483,6 +479,9 @@ func (cs *awsCredentialSource) getRegion(headers map[string]string) (string, err
 
 func (cs *awsCredentialSource) getSecurityCredentials(headers map[string]string) (result AwsSecurityCredentials, err error) {
 	if cs.AwsSecurityCredentialsSupplier != nil {
+		if cs.Region == "" {
+			return result, errors.New("oauth2/google: AwsRegion must be provided when using an AwsSecurityCredentialsSupplier")
+		}
 		return cs.AwsSecurityCredentialsSupplier()
 	}
 	if canRetrieveSecurityCredentialFromEnvironment() {
