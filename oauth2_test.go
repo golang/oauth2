@@ -447,7 +447,7 @@ func TestPasswordCredentialsTokenRequest_AuthCodeOption(t *testing.T) {
 			wantAccessToken:       "90d64460d14870c08c81352a05dedd3465940a7c",
 			wantTokenType:         "bearer",
 		},
-		"foo:bar": {
+		"foo=bar": {
 			username:              "user1",
 			password:              "password1",
 			authCodeOptions:       []AuthCodeOption{SetAuthURLParam("foo", "bar")},
@@ -458,7 +458,7 @@ func TestPasswordCredentialsTokenRequest_AuthCodeOption(t *testing.T) {
 			wantAccessToken:       "90d64460d14870c08c81352a05dedd3465940a7c",
 			wantTokenType:         "bearer",
 		},
-		"zoo:baz": {
+		"zoo=baz": {
 			username:              "user1",
 			password:              "password1",
 			authCodeOptions:       []AuthCodeOption{SetAuthURLParam("zoo", "baz")},
@@ -469,7 +469,7 @@ func TestPasswordCredentialsTokenRequest_AuthCodeOption(t *testing.T) {
 			wantAccessToken:       "90d64460d14870c08c81352a05dedd3465940a7c",
 			wantTokenType:         "bearer",
 		},
-		"foo:bar,zoo:baz": {
+		"foo=bar&zoo=baz": {
 			username:              "user1",
 			password:              "password1",
 			authCodeOptions:       []AuthCodeOption{SetAuthURLParam("foo", "bar"), SetAuthURLParam("zoo", "baz")},
