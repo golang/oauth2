@@ -393,7 +393,7 @@ func TestPasswordCredentialsTokenRequest(t *testing.T) {
 		if headerContentType != expected {
 			t.Errorf("Content-Type header = %q; want %q", headerContentType, expected)
 		}
-		body, err := io.ReadAll(r.Body)
+		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			t.Errorf("Failed reading request body: %s.", err)
 		}
@@ -424,46 +424,65 @@ func TestPasswordCredentialsTokenRequest(t *testing.T) {
 }
 
 func TestPasswordCredentialsTokenRequest_AuthCodeOption(t *testing.T) {
-	testCases := []struct {
+	testCases := map[string]struct {
 		ctx                   context.Context
 		username              string
 		password              string
-		authCodeOption        AuthCodeOption
+		authCodeOptions       []AuthCodeOption
 		wantURLString         string
 		wantHeaderAuth        string
 		wantHeaderContentType string
 		wantBody              string
+		wantAccessToken       string
+		wantTokenType         string
 	}{
-		{
+		"empty": {
 			username:              "user1",
 			password:              "password1",
-			authCodeOption:        nil,
+			authCodeOptions:       []AuthCodeOption{},
 			wantURLString:         "/token",
 			wantHeaderAuth:        "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=",
 			wantHeaderContentType: "application/x-www-form-urlencoded",
 			wantBody:              "grant_type=password&password=password1&scope=scope1+scope2&username=user1",
+			wantAccessToken:       "90d64460d14870c08c81352a05dedd3465940a7c",
+			wantTokenType:         "bearer",
 		},
-		{
+		"foo:bar": {
 			username:              "user1",
 			password:              "password1",
-			authCodeOption:        SetAuthURLParam("foo", "bar"),
+			authCodeOptions:       []AuthCodeOption{SetAuthURLParam("foo", "bar")},
 			wantURLString:         "/token",
 			wantHeaderAuth:        "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=",
 			wantHeaderContentType: "application/x-www-form-urlencoded",
 			wantBody:              "foo=bar&grant_type=password&password=password1&scope=scope1+scope2&username=user1",
+			wantAccessToken:       "90d64460d14870c08c81352a05dedd3465940a7c",
+			wantTokenType:         "bearer",
 		},
-		{
+		"zoo:baz": {
 			username:              "user1",
 			password:              "password1",
-			authCodeOption:        SetAuthURLParam("zoo", "world"),
+			authCodeOptions:       []AuthCodeOption{SetAuthURLParam("zoo", "baz")},
 			wantURLString:         "/token",
 			wantHeaderAuth:        "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=",
 			wantHeaderContentType: "application/x-www-form-urlencoded",
-			wantBody:              "grant_type=password&password=password1&scope=scope1+scope2&username=user1&zoo=world",
+			wantBody:              "grant_type=password&password=password1&scope=scope1+scope2&username=user1&zoo=baz",
+			wantAccessToken:       "90d64460d14870c08c81352a05dedd3465940a7c",
+			wantTokenType:         "bearer",
+		},
+		"foo:bar,zoo:baz": {
+			username:              "user1",
+			password:              "password1",
+			authCodeOptions:       []AuthCodeOption{SetAuthURLParam("foo", "bar"), SetAuthURLParam("zoo", "baz")},
+			wantURLString:         "/token",
+			wantHeaderAuth:        "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=",
+			wantHeaderContentType: "application/x-www-form-urlencoded",
+			wantBody:              "foo=bar&grant_type=password&password=password1&scope=scope1+scope2&username=user1&zoo=baz",
+			wantAccessToken:       "90d64460d14870c08c81352a05dedd3465940a7c",
+			wantTokenType:         "bearer",
 		},
 	}
-	for _, tc := range testCases {
-		t.Run("", func(t *testing.T) {
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				defer r.Body.Close()
 				if r.URL.String() != tc.wantURLString {
@@ -475,7 +494,7 @@ func TestPasswordCredentialsTokenRequest_AuthCodeOption(t *testing.T) {
 				if r.Header.Get("Content-Type") != tc.wantHeaderContentType {
 					t.Errorf("Content-Type header = %q; want %q", r.Header.Get("Content-Type"), tc.wantHeaderContentType)
 				}
-				body, err := io.ReadAll(r.Body)
+				body, err := ioutil.ReadAll(r.Body)
 				if err != nil {
 					t.Errorf("Failed reading request body: %s.", err)
 				}
@@ -487,26 +506,18 @@ func TestPasswordCredentialsTokenRequest_AuthCodeOption(t *testing.T) {
 			}))
 			defer ts.Close()
 			conf := newConf(ts.URL)
-			var tok *Token
-			var err error
-			if tc.authCodeOption == nil {
-				tok, err = conf.PasswordCredentialsToken(context.Background(), "user1", "password1")
-			} else {
-				tok, err = conf.PasswordCredentialsToken(context.Background(), "user1", "password1", tc.authCodeOption)
-			}
+			tok, err := conf.PasswordCredentialsToken(context.Background(), "user1", "password1", tc.authCodeOptions...)
 			if err != nil {
 				t.Error(err)
 			}
 			if !tok.Valid() {
 				t.Fatalf("Token invalid. Got: %#v", tok)
 			}
-			expected := "90d64460d14870c08c81352a05dedd3465940a7c"
-			if tok.AccessToken != expected {
-				t.Errorf("AccessToken = %q; want %q", tok.AccessToken, expected)
+			if tok.AccessToken != tc.wantAccessToken {
+				t.Errorf("AccessToken = %q; want %q", tok.AccessToken, tc.wantAccessToken)
 			}
-			expected = "bearer"
-			if tok.TokenType != expected {
-				t.Errorf("TokenType = %q; want %q", tok.TokenType, expected)
+			if tok.TokenType != tc.wantTokenType {
+				t.Errorf("TokenType = %q; want %q", tok.TokenType, tc.wantTokenType)
 			}
 		})
 	}
