@@ -393,7 +393,7 @@ func TestPasswordCredentialsTokenRequest(t *testing.T) {
 		if headerContentType != expected {
 			t.Errorf("Content-Type header = %q; want %q", headerContentType, expected)
 		}
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Errorf("Failed reading request body: %s.", err)
 		}
@@ -420,6 +420,95 @@ func TestPasswordCredentialsTokenRequest(t *testing.T) {
 	expected = "bearer"
 	if tok.TokenType != expected {
 		t.Errorf("TokenType = %q; want %q", tok.TokenType, expected)
+	}
+}
+
+func TestPasswordCredentialsTokenRequest_AuthCodeOption(t *testing.T) {
+	testCases := []struct {
+		ctx                   context.Context
+		username              string
+		password              string
+		authCodeOption        AuthCodeOption
+		wantURLString         string
+		wantHeaderAuth        string
+		wantHeaderContentType string
+		wantBody              string
+	}{
+		{
+			username:              "user1",
+			password:              "password1",
+			authCodeOption:        nil,
+			wantURLString:         "/token",
+			wantHeaderAuth:        "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=",
+			wantHeaderContentType: "application/x-www-form-urlencoded",
+			wantBody:              "grant_type=password&password=password1&scope=scope1+scope2&username=user1",
+		},
+		{
+			username:              "user1",
+			password:              "password1",
+			authCodeOption:        SetAuthURLParam("foo", "bar"),
+			wantURLString:         "/token",
+			wantHeaderAuth:        "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=",
+			wantHeaderContentType: "application/x-www-form-urlencoded",
+			wantBody:              "foo=bar&grant_type=password&password=password1&scope=scope1+scope2&username=user1",
+		},
+		{
+			username:              "user1",
+			password:              "password1",
+			authCodeOption:        SetAuthURLParam("zoo", "world"),
+			wantURLString:         "/token",
+			wantHeaderAuth:        "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=",
+			wantHeaderContentType: "application/x-www-form-urlencoded",
+			wantBody:              "grant_type=password&password=password1&scope=scope1+scope2&username=user1&zoo=world",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run("", func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				defer r.Body.Close()
+				if r.URL.String() != tc.wantURLString {
+					t.Errorf("URL = %q; want %q", r.URL, tc.wantURLString)
+				}
+				if r.Header.Get("Authorization") != tc.wantHeaderAuth {
+					t.Errorf("Authorization header = %q; want %q", r.Header.Get("Authorization"), tc.wantHeaderAuth)
+				}
+				if r.Header.Get("Content-Type") != tc.wantHeaderContentType {
+					t.Errorf("Content-Type header = %q; want %q", r.Header.Get("Content-Type"), tc.wantHeaderContentType)
+				}
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Errorf("Failed reading request body: %s.", err)
+				}
+				if string(body) != tc.wantBody {
+					t.Errorf("res.Body = %q; want %q", string(body), tc.wantBody)
+				}
+				w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
+				w.Write([]byte("access_token=90d64460d14870c08c81352a05dedd3465940a7c&scope=user&token_type=bearer"))
+			}))
+			defer ts.Close()
+			conf := newConf(ts.URL)
+			var tok *Token
+			var err error
+			if tc.authCodeOption == nil {
+				tok, err = conf.PasswordCredentialsToken(context.Background(), "user1", "password1")
+			} else {
+				tok, err = conf.PasswordCredentialsToken(context.Background(), "user1", "password1", tc.authCodeOption)
+			}
+			if err != nil {
+				t.Error(err)
+			}
+			if !tok.Valid() {
+				t.Fatalf("Token invalid. Got: %#v", tok)
+			}
+			expected := "90d64460d14870c08c81352a05dedd3465940a7c"
+			if tok.AccessToken != expected {
+				t.Errorf("AccessToken = %q; want %q", tok.AccessToken, expected)
+			}
+			expected = "bearer"
+			if tok.TokenType != expected {
+				t.Errorf("TokenType = %q; want %q", tok.TokenType, expected)
+			}
+		})
 	}
 }
 
