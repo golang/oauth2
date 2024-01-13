@@ -17,6 +17,12 @@ var Amazon = oauth2.Endpoint{
 	TokenURL: "https://api.amazon.com/auth/o2/token",
 }
 
+// Apple is the endpoint for Apple.
+var Apple = oauth2.Endpoint{
+	AuthURL:  "https://appleid.apple.com/auth/oauth2/v2/authorize",
+	TokenURL: "https://appleid.apple.com/auth/oauth2/v2/token",
+}
+
 // Battlenet is the endpoint for Battlenet.
 var Battlenet = oauth2.Endpoint{
 	AuthURL:  "https://battle.net/oauth/authorize",
@@ -68,8 +74,8 @@ var GitLab = oauth2.Endpoint{
 
 // Google is the endpoint for Google.
 var Google = oauth2.Endpoint{
-	AuthURL:  "https://accounts.google.com/o/oauth2/auth",
-	TokenURL: "https://oauth2.googleapis.com/token",
+	AuthURL:       "https://accounts.google.com/o/oauth2/auth",
+	TokenURL:      "https://oauth2.googleapis.com/token",
 	DeviceAuthURL: "https://oauth2.googleapis.com/device/code",
 }
 
