@@ -264,10 +264,10 @@ type awsCredentialSource struct {
 	IMDSv2SessionTokenURL          string
 	TargetResource                 string
 	requestSigner                  *awsRequestSigner
-	Region                         string
+	region                         string
 	ctx                            context.Context
 	client                         *http.Client
-	AwsSecurityCredentialsSupplier func() (AwsSecurityCredentials, error)
+	awsSecurityCredentialsSupplier *AwsSecurityCredentialsSupplier
 }
 
 type awsRequestHeader struct {
@@ -300,11 +300,11 @@ func canRetrieveSecurityCredentialFromEnvironment() bool {
 }
 
 func (cs awsCredentialSource) shouldUseMetadataServer() bool {
-	return cs.AwsSecurityCredentialsSupplier == nil && (!canRetrieveRegionFromEnvironment() || !canRetrieveSecurityCredentialFromEnvironment())
+	return cs.awsSecurityCredentialsSupplier == nil && (!canRetrieveRegionFromEnvironment() || !canRetrieveSecurityCredentialFromEnvironment())
 }
 
 func (cs awsCredentialSource) credentialSourceType() string {
-	if cs.AwsSecurityCredentialsSupplier != nil {
+	if cs.awsSecurityCredentialsSupplier != nil {
 		return "programmatic"
 	}
 	return "aws"
@@ -332,22 +332,20 @@ func (cs awsCredentialSource) subjectToken() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if cs.Region == "" {
-			cs.Region, err = cs.getRegion(headers)
-			if err != nil {
-				return "", err
-			}
+		cs.region, err = cs.getRegion(headers)
+		if err != nil {
+			return "", err
 		}
 
 		cs.requestSigner = &awsRequestSigner{
-			RegionName:             cs.Region,
+			RegionName:             cs.region,
 			AwsSecurityCredentials: awsSecurityCredentials,
 		}
 	}
 
 	// Generate the signed request to AWS STS GetCallerIdentity API.
 	// Use the required regional endpoint. Otherwise, the request will fail.
-	req, err := http.NewRequest("POST", strings.Replace(cs.RegionalCredVerificationURL, "{region}", cs.Region, 1), nil)
+	req, err := http.NewRequest("POST", strings.Replace(cs.RegionalCredVerificationURL, "{region}", cs.region, 1), nil)
 	if err != nil {
 		return "", err
 	}
@@ -433,8 +431,12 @@ func (cs *awsCredentialSource) getAWSSessionToken() (string, error) {
 }
 
 func (cs *awsCredentialSource) getRegion(headers map[string]string) (string, error) {
+	if cs.awsSecurityCredentialsSupplier != nil {
+		return cs.awsSecurityCredentialsSupplier.AwsRegion, nil
+	}
 	if canRetrieveRegionFromEnvironment() {
 		if envAwsRegion := getenv(awsRegion); envAwsRegion != "" {
+			cs.region = envAwsRegion
 			return envAwsRegion, nil
 		}
 		return getenv("AWS_DEFAULT_REGION"), nil
@@ -478,11 +480,11 @@ func (cs *awsCredentialSource) getRegion(headers map[string]string) (string, err
 }
 
 func (cs *awsCredentialSource) getSecurityCredentials(headers map[string]string) (result AwsSecurityCredentials, err error) {
-	if cs.AwsSecurityCredentialsSupplier != nil {
-		if cs.Region == "" {
+	if cs.awsSecurityCredentialsSupplier != nil {
+		if cs.awsSecurityCredentialsSupplier.AwsRegion == "" {
 			return result, errors.New("oauth2/google: AwsRegion must be provided when using an AwsSecurityCredentialsSupplier")
 		}
-		return cs.AwsSecurityCredentialsSupplier()
+		return cs.awsSecurityCredentialsSupplier.GetAwsSecurityCredentials()
 	}
 	if canRetrieveSecurityCredentialFromEnvironment() {
 		return AwsSecurityCredentials{

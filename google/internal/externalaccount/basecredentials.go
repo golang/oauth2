@@ -120,10 +120,9 @@ type format struct {
 }
 
 // CredentialSource stores the information necessary to retrieve the credentials for the STS exchange.
-// One field amongst File, URL, Executable, SubjectTokenSupplier, or AwsSecurityCredentialSupplier
+// One field amongst File, URL, Executable, SubjectTokenSupplier, or AwsSecurityCredentialSupplierConfig.
 // should be filled, depending on the kind of credential in question.
 // The EnvironmentID should start with AWS if being used for an AWS credential.
-// AwsRegion is required when AwsSecurityCredentialsSupplier is used.
 type CredentialSource struct {
 	// File is the location for file sourced credentials.
 	File string `json:"file"`
@@ -149,21 +148,26 @@ type CredentialSource struct {
 	IMDSv2SessionTokenURL string `json:"imdsv2_session_token_url"`
 	// Format is the format type for the subject token. Used for File and URL sourced credentials. Expected values are "text" or "json".
 	Format format `json:"format"`
-	// AwsRegion is the AWS region, required when an AwsSecurityCredentialsSupplier is provided.
-	AwsRegion string `json:"-"` // Ignore for json.
 
 	// SubjectTokenSupplier is an optional token supplier for OIDC/SAML credentials. This should be a function that returns
 	// a valid subject token as a string.
 	SubjectTokenSupplier func() (string, error) `json:"-"` // Ignore for json.
-	// AwsSecurityCredentialsSupplier is an optional AWS Security Credential supplier for AWS credentials. This should be a function
-	// that returns a valid AwsSecurityCredentials object.
-	AwsSecurityCredentialsSupplier func() (AwsSecurityCredentials, error) `json:"-"` // Ignore for json.
+	// AwsSecurityCredentialsSupplier is an optional AWS Security Credential supplier. This should contain a
+	// function that returns valid AwsSecurityCredentials and a valid AwsRegion.
+	AwsSecurityCredentialsSupplier *AwsSecurityCredentialsSupplier `json:"-"` // Ignore for json.
 }
 
 type ExecutableConfig struct {
 	Command       string `json:"command"`
 	TimeoutMillis *int   `json:"timeout_millis"`
 	OutputFile    string `json:"output_file"`
+}
+
+type AwsSecurityCredentialsSupplier struct {
+	// AwsRegion is the AWS region.
+	AwsRegion string
+	// GetAwsSecurityCredentials is a function that should return valid AwsSecurityCredentials.
+	GetAwsSecurityCredentials func() (AwsSecurityCredentials, error)
 }
 
 // parse determines the type of CredentialSource needed.
@@ -175,9 +179,8 @@ func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 
 	if c.CredentialSource.AwsSecurityCredentialsSupplier != nil {
 		awsCredSource := awsCredentialSource{
-			Region:                         c.CredentialSource.AwsRegion,
 			RegionalCredVerificationURL:    c.CredentialSource.RegionalCredVerificationURL,
-			AwsSecurityCredentialsSupplier: c.CredentialSource.AwsSecurityCredentialsSupplier,
+			awsSecurityCredentialsSupplier: c.CredentialSource.AwsSecurityCredentialsSupplier,
 			TargetResource:                 c.Audience,
 		}
 		return awsCredSource, nil
@@ -195,7 +198,6 @@ func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 				RegionalCredVerificationURL: c.CredentialSource.RegionalCredVerificationURL,
 				CredVerificationURL:         c.CredentialSource.URL,
 				TargetResource:              c.Audience,
-				Region:                      c.CredentialSource.AwsRegion,
 				ctx:                         ctx,
 			}
 			if c.CredentialSource.IMDSv2SessionTokenURL != "" {

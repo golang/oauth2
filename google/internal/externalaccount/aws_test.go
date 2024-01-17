@@ -1245,10 +1245,12 @@ func TestAWSCredential_ProgrammaticAuth(t *testing.T) {
 	}
 
 	tfc.CredentialSource = CredentialSource{
-		AwsSecurityCredentialsSupplier: func() (AwsSecurityCredentials, error) {
-			return securityCredentials, nil
+		AwsSecurityCredentialsSupplier: &AwsSecurityCredentialsSupplier{
+			GetAwsSecurityCredentials: func() (AwsSecurityCredentials, error) {
+				return securityCredentials, nil
+			},
+			AwsRegion: "us-east-2",
 		},
-		AwsRegion: "us-east-2",
 	}
 
 	oldNow := now
@@ -1288,10 +1290,12 @@ func TestAWSCredential_ProgrammaticAuthNoSessionToken(t *testing.T) {
 	}
 
 	tfc.CredentialSource = CredentialSource{
-		AwsSecurityCredentialsSupplier: func() (AwsSecurityCredentials, error) {
-			return securityCredentials, nil
+		AwsSecurityCredentialsSupplier: &AwsSecurityCredentialsSupplier{
+			GetAwsSecurityCredentials: func() (AwsSecurityCredentials, error) {
+				return securityCredentials, nil
+			},
+			AwsRegion: "us-east-2",
 		},
-		AwsRegion: "us-east-2",
 	}
 
 	oldNow := now
@@ -1327,10 +1331,12 @@ func TestAWSCredential_ProgrammaticAuthError(t *testing.T) {
 	tfc := testFileConfig
 
 	tfc.CredentialSource = CredentialSource{
-		AwsSecurityCredentialsSupplier: func() (AwsSecurityCredentials, error) {
-			return AwsSecurityCredentials{}, errors.New("test error")
+		AwsSecurityCredentialsSupplier: &AwsSecurityCredentialsSupplier{
+			GetAwsSecurityCredentials: func() (AwsSecurityCredentials, error) {
+				return AwsSecurityCredentials{}, errors.New("test error")
+			},
+			AwsRegion: "us-east-2",
 		},
-		AwsRegion: "us-east-2",
 	}
 
 	base, err := tfc.parse(context.Background())
