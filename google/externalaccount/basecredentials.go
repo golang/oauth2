@@ -21,8 +21,8 @@ var now = func() time.Time {
 	return time.Now().UTC()
 }
 
-// Config stores the configuration for fetching tokens with external credentials.
-type Config struct {
+// ExternalAccountConfig is a config that stores the configuration for fetching tokens with external credentials.
+type ExternalAccountConfig struct {
 	// Audience is the Secure Token Service (STS) audience which contains the resource name for the workload
 	// identity pool or the workforce pool and the provider identifier in that pool.
 	Audience string
@@ -71,14 +71,14 @@ func validateWorkforceAudience(input string) bool {
 }
 
 // TokenSource Returns an external account TokenSource struct. This is to be called by package google to construct a google.Credentials.
-func (c *Config) TokenSource(ctx context.Context) (oauth2.TokenSource, error) {
+func (c *ExternalAccountConfig) TokenSource(ctx context.Context) (oauth2.TokenSource, error) {
 	return c.tokenSource(ctx, "https")
 }
 
 // tokenSource is a private function that's directly called by some of the tests,
 // because the unit test URLs are mocked, and would otherwise fail the
 // validity check.
-func (c *Config) tokenSource(ctx context.Context, scheme string) (oauth2.TokenSource, error) {
+func (c *ExternalAccountConfig) tokenSource(ctx context.Context, scheme string) (oauth2.TokenSource, error) {
 	if c.WorkforcePoolUserProject != "" {
 		valid := validateWorkforceAudience(c.Audience)
 		if !valid {
@@ -142,8 +142,6 @@ type CredentialSource struct {
 	// RegionalCredVerificationURL is the AWS regional credential verification URL, will default to
 	//  "https://sts.{region}.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15" if not provided."
 	RegionalCredVerificationURL string `json:"regional_cred_verification_url"`
-	// CredVerificationURL is deprecated and not used. Use RegionalCredVerificationURL instead.
-	CredVerificationURL string `json:"cred_verification_url"`
 	// IMDSv2SessionTokenURL is the URL to retrieve the session token when using IMDSv2 in AWS.
 	IMDSv2SessionTokenURL string `json:"imdsv2_session_token_url"`
 	// Format is the format type for the subject token. Used for File and URL sourced credentials. Expected values are "text" or "json".
@@ -171,7 +169,7 @@ type AwsSecurityCredentialsSupplier struct {
 }
 
 // parse determines the type of CredentialSource needed.
-func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
+func (c *ExternalAccountConfig) parse(ctx context.Context) (baseCredentialSource, error) {
 	//set Defaults
 	if c.TokenURL == "" {
 		c.TokenURL = defaultTokenUrl
@@ -211,7 +209,7 @@ func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 	} else if c.CredentialSource.URL != "" {
 		return urlCredentialSource{URL: c.CredentialSource.URL, Headers: c.CredentialSource.Headers, Format: c.CredentialSource.Format, ctx: ctx}, nil
 	} else if c.CredentialSource.Executable != nil {
-		return CreateExecutableCredential(ctx, c.CredentialSource.Executable, c)
+		return createExecutableCredential(ctx, c.CredentialSource.Executable, c)
 	}
 	return nil, fmt.Errorf("oauth2/google: unable to parse credential source")
 }
@@ -224,10 +222,10 @@ type baseCredentialSource interface {
 // tokenSource is the source that handles external credentials. It is used to retrieve Tokens.
 type tokenSource struct {
 	ctx  context.Context
-	conf *Config
+	conf *ExternalAccountConfig
 }
 
-func getMetricsHeaderValue(conf *Config, credSource baseCredentialSource) string {
+func getMetricsHeaderValue(conf *ExternalAccountConfig, credSource baseCredentialSource) string {
 	return fmt.Sprintf("gl-go/%s auth/%s google-byoid-sdk source/%s sa-impersonation/%t config-lifetime/%t",
 		goVersion(),
 		"unknown",

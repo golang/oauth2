@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-var testFileConfig = Config{
+var testFileConfig = ExternalAccountConfig{
 	Audience:                       "32555940559.apps.googleusercontent.com",
 	SubjectTokenType:               "urn:ietf:params:oauth:token-type:jwt",
 	TokenURL:                       "http://localhost:8080/v1/token",

@@ -73,13 +73,13 @@ func createTargetServer(metricsHeaderWanted string, t *testing.T) *httptest.Serv
 
 var impersonationTests = []struct {
 	name                      string
-	config                    Config
+	config                    ExternalAccountConfig
 	expectedImpersonationBody string
 	expectedMetricsHeader     string
 }{
 	{
 		name: "Base Impersonation",
-		config: Config{
+		config: ExternalAccountConfig{
 			Audience:         "32555940559.apps.googleusercontent.com",
 			SubjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
 			TokenInfoURL:     "http://localhost:8080/v1/tokeninfo",
@@ -93,7 +93,7 @@ var impersonationTests = []struct {
 	},
 	{
 		name: "With TokenLifetime Set",
-		config: Config{
+		config: ExternalAccountConfig{
 			Audience:         "32555940559.apps.googleusercontent.com",
 			SubjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
 			TokenInfoURL:     "http://localhost:8080/v1/tokeninfo",

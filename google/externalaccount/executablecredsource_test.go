@@ -128,7 +128,7 @@ var creationTests = []struct {
 func TestCreateExecutableCredential(t *testing.T) {
 	for _, tt := range creationTests {
 		t.Run(tt.name, func(t *testing.T) {
-			ecs, err := CreateExecutableCredential(context.Background(), &tt.executableConfig, nil)
+			ecs, err := createExecutableCredential(context.Background(), &tt.executableConfig, nil)
 			if tt.expectedErr != nil {
 				if err == nil {
 					t.Fatalf("Expected error but found none")
@@ -160,13 +160,13 @@ func TestCreateExecutableCredential(t *testing.T) {
 
 var getEnvironmentTests = []struct {
 	name                string
-	config              Config
+	config              ExternalAccountConfig
 	environment         testEnvironment
 	expectedEnvironment []string
 }{
 	{
 		name: "Minimal Executable Config",
-		config: Config{
+		config: ExternalAccountConfig{
 			Audience:         "//iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/pool/providers/oidc",
 			SubjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
 			CredentialSource: CredentialSource{
@@ -189,7 +189,7 @@ var getEnvironmentTests = []struct {
 	},
 	{
 		name: "Full Impersonation URL",
-		config: Config{
+		config: ExternalAccountConfig{
 			Audience:                       "//iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/pool/providers/oidc",
 			ServiceAccountImpersonationURL: "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/test@project.iam.gserviceaccount.com:generateAccessToken",
 			SubjectTokenType:               "urn:ietf:params:oauth:token-type:jwt",
@@ -216,7 +216,7 @@ var getEnvironmentTests = []struct {
 	},
 	{
 		name: "Impersonation Email",
-		config: Config{
+		config: ExternalAccountConfig{
 			Audience:                       "//iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/pool/providers/oidc",
 			ServiceAccountImpersonationURL: "test@project.iam.gserviceaccount.com",
 			SubjectTokenType:               "urn:ietf:params:oauth:token-type:jwt",
@@ -247,7 +247,7 @@ func TestExecutableCredentialGetEnvironment(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config := tt.config
 
-			ecs, err := CreateExecutableCredential(context.Background(), config.CredentialSource.Executable, &config)
+			ecs, err := createExecutableCredential(context.Background(), config.CredentialSource.Executable, &config)
 			if err != nil {
 				t.Fatalf("creation failed %v", err)
 			}

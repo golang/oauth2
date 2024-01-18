@@ -26,7 +26,7 @@ var testBaseCredSource = CredentialSource{
 	Format: format{Type: fileTypeText},
 }
 
-var testConfig = Config{
+var testConfig = ExternalAccountConfig{
 	Audience:         "32555940559.apps.googleusercontent.com",
 	SubjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
 	TokenInfoURL:     "http://localhost:8080/v1/tokeninfo",
@@ -57,7 +57,7 @@ type testExchangeTokenServer struct {
 	response      string
 }
 
-func run(t *testing.T, config *Config, tets *testExchangeTokenServer) (*oauth2.Token, error) {
+func run(t *testing.T, config *ExternalAccountConfig, tets *testExchangeTokenServer) (*oauth2.Token, error) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got, want := r.URL.String(), tets.url; got != want {
 			t.Errorf("URL.String(): got %v but want %v", got, want)
@@ -117,7 +117,7 @@ func getExpectedMetricsHeader(source string, saImpersonation bool, configLifetim
 }
 
 func TestToken(t *testing.T) {
-	config := Config{
+	config := ExternalAccountConfig{
 		Audience:         "32555940559.apps.googleusercontent.com",
 		SubjectTokenType: "urn:ietf:params:oauth:token-type:id_token",
 		ClientSecret:     "notsosecret",
@@ -144,7 +144,7 @@ func TestToken(t *testing.T) {
 }
 
 func TestWorkforcePoolTokenWithClientID(t *testing.T) {
-	config := Config{
+	config := ExternalAccountConfig{
 		Audience:                 "//iam.googleapis.com/locations/eu/workforcePools/pool-id/providers/provider-id",
 		SubjectTokenType:         "urn:ietf:params:oauth:token-type:id_token",
 		ClientSecret:             "notsosecret",
@@ -172,7 +172,7 @@ func TestWorkforcePoolTokenWithClientID(t *testing.T) {
 }
 
 func TestWorkforcePoolTokenWithoutClientID(t *testing.T) {
-	config := Config{
+	config := ExternalAccountConfig{
 		Audience:                 "//iam.googleapis.com/locations/eu/workforcePools/pool-id/providers/provider-id",
 		SubjectTokenType:         "urn:ietf:params:oauth:token-type:id_token",
 		ClientSecret:             "notsosecret",
@@ -199,7 +199,7 @@ func TestWorkforcePoolTokenWithoutClientID(t *testing.T) {
 }
 
 func TestNonworkforceWithWorkforcePoolUserProject(t *testing.T) {
-	config := Config{
+	config := ExternalAccountConfig{
 		Audience:                 "32555940559.apps.googleusercontent.com",
 		SubjectTokenType:         "urn:ietf:params:oauth:token-type:id_token",
 		TokenURL:                 "https://sts.googleapis.com",

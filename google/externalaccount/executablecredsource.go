@@ -140,13 +140,13 @@ type executableCredentialSource struct {
 	Timeout    time.Duration
 	OutputFile string
 	ctx        context.Context
-	config     *Config
+	config     *ExternalAccountConfig
 	env        environment
 }
 
 // CreateExecutableCredential creates an executableCredentialSource given an ExecutableConfig.
 // It also performs defaulting and type conversions.
-func CreateExecutableCredential(ctx context.Context, ec *ExecutableConfig, config *Config) (executableCredentialSource, error) {
+func createExecutableCredential(ctx context.Context, ec *ExecutableConfig, config *ExternalAccountConfig) (executableCredentialSource, error) {
 	if ec.Command == "" {
 		return executableCredentialSource{}, commandMissingError()
 	}

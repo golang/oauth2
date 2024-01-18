@@ -15,7 +15,7 @@ import (
 
 	"cloud.google.com/go/compute/metadata"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google/internal/externalaccount"
+	"golang.org/x/oauth2/google/externalaccount"
 	"golang.org/x/oauth2/google/internal/externalaccountauthorizeduser"
 	"golang.org/x/oauth2/jwt"
 )
@@ -191,7 +191,7 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 		tok := &oauth2.Token{RefreshToken: f.RefreshToken}
 		return cfg.TokenSource(ctx, tok), nil
 	case externalAccountKey:
-		cfg := &externalaccount.Config{
+		cfg := &externalaccount.ExternalAccountConfig{
 			Audience:                       f.Audience,
 			SubjectTokenType:               f.SubjectTokenType,
 			TokenURL:                       f.TokenURLExternal,
