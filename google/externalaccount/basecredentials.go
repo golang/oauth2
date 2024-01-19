@@ -24,12 +24,13 @@ var now = func() time.Time {
 // ExternalAccountConfig is a config that stores the configuration for fetching tokens with external credentials.
 type ExternalAccountConfig struct {
 	// Audience is the Secure Token Service (STS) audience which contains the resource name for the workload
-	// identity pool or the workforce pool and the provider identifier in that pool.
+	// identity pool or the workforce pool and the provider identifier in that pool. Required.
 	Audience string
 	// SubjectTokenType is the STS token type based on the Oauth2.0 token exchange spec
-	// e.g. `urn:ietf:params:oauth:token-type:jwt`.
+	// e.g. `urn:ietf:params:oauth:token-type:jwt`. Required.
 	SubjectTokenType string
-	// TokenURL is the STS token exchange endpoint.
+	// TokenURL is the STS token exchange endpoint. Optional, if not provided, will default to
+	// https://sts.googleapis.com/v1/token
 	TokenURL string
 	// TokenInfoURL is the token_info endpoint used to retrieve the account related information (
 	// user attributes like account identifier, eg. email, username, uid, etc). This is
@@ -39,7 +40,7 @@ type ExternalAccountConfig struct {
 	// required for workload identity pools when APIs to be accessed have not integrated with UberMint.
 	ServiceAccountImpersonationURL string
 	// ServiceAccountImpersonationLifetimeSeconds is the number of seconds the service account impersonation
-	// token will be valid for.
+	// token will be valid for. Optional, if not provided will default to 3600.
 	ServiceAccountImpersonationLifetimeSeconds int
 	// ClientSecret is currently only required if token_info endpoint also
 	// needs to be called with the generated GCP access token. When provided, STS will be
@@ -55,11 +56,17 @@ type ExternalAccountConfig struct {
 	QuotaProjectID string
 	// Scopes contains the desired scopes for the returned access token.
 	Scopes []string
-	// The optional workforce pool user project number when the credential
+	// WorkforcePoolUserProject is the optional workforce pool user project number when the credential
 	// corresponds to a workforce pool and not a workload identity pool.
 	// The underlying principal must still have serviceusage.services.use IAM
 	// permission to use the project for billing/quota.
 	WorkforcePoolUserProject string
+	// SubjectTokenSupplier is an optional token supplier for OIDC/SAML credentials. This should be a function that returns
+	// a valid subject token as a string.
+	SubjectTokenSupplier func() (string, error) `json:"-"` // Ignore for json.
+	// AwsSecurityCredentialsSupplier is an optional AWS Security Credential supplier. This should contain a
+	// function that returns valid AwsSecurityCredentials and a valid AwsRegion.
+	AwsSecurityCredentialsSupplier *AwsSecurityCredentialsSupplier `json:"-"` // Ignore for json.
 }
 
 var (
@@ -120,8 +127,7 @@ type format struct {
 }
 
 // CredentialSource stores the information necessary to retrieve the credentials for the STS exchange.
-// One field amongst File, URL, Executable, SubjectTokenSupplier, or AwsSecurityCredentialSupplierConfig.
-// should be filled, depending on the kind of credential in question.
+// One field amongst File, URL, Executable should be filled, depending on the kind of credential in question.
 // The EnvironmentID should start with AWS if being used for an AWS credential.
 type CredentialSource struct {
 	// File is the location for file sourced credentials.
@@ -146,13 +152,6 @@ type CredentialSource struct {
 	IMDSv2SessionTokenURL string `json:"imdsv2_session_token_url"`
 	// Format is the format type for the subject token. Used for File and URL sourced credentials. Expected values are "text" or "json".
 	Format format `json:"format"`
-
-	// SubjectTokenSupplier is an optional token supplier for OIDC/SAML credentials. This should be a function that returns
-	// a valid subject token as a string.
-	SubjectTokenSupplier func() (string, error) `json:"-"` // Ignore for json.
-	// AwsSecurityCredentialsSupplier is an optional AWS Security Credential supplier. This should contain a
-	// function that returns valid AwsSecurityCredentials and a valid AwsRegion.
-	AwsSecurityCredentialsSupplier *AwsSecurityCredentialsSupplier `json:"-"` // Ignore for json.
 }
 
 type ExecutableConfig struct {
@@ -175,15 +174,15 @@ func (c *ExternalAccountConfig) parse(ctx context.Context) (baseCredentialSource
 		c.TokenURL = defaultTokenUrl
 	}
 
-	if c.CredentialSource.AwsSecurityCredentialsSupplier != nil {
+	if c.AwsSecurityCredentialsSupplier != nil {
 		awsCredSource := awsCredentialSource{
 			RegionalCredVerificationURL:    c.CredentialSource.RegionalCredVerificationURL,
-			awsSecurityCredentialsSupplier: c.CredentialSource.AwsSecurityCredentialsSupplier,
+			awsSecurityCredentialsSupplier: c.AwsSecurityCredentialsSupplier,
 			TargetResource:                 c.Audience,
 		}
 		return awsCredSource, nil
-	} else if c.CredentialSource.SubjectTokenSupplier != nil {
-		return programmaticRefreshCredentialSource{SubjectTokenSupplier: c.CredentialSource.SubjectTokenSupplier}, nil
+	} else if c.SubjectTokenSupplier != nil {
+		return programmaticRefreshCredentialSource{SubjectTokenSupplier: c.SubjectTokenSupplier}, nil
 	} else if len(c.CredentialSource.EnvironmentID) > 3 && c.CredentialSource.EnvironmentID[:3] == "aws" {
 		if awsVersion, err := strconv.Atoi(c.CredentialSource.EnvironmentID[3:]); err == nil {
 			if awsVersion != 1 {

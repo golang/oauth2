@@ -14,10 +14,8 @@ import (
 func TestRetrieveSubjectToken_ProgrammaticAuth(t *testing.T) {
 	tfc := testConfig
 
-	tfc.CredentialSource = CredentialSource{
-		SubjectTokenSupplier: func() (string, error) {
-			return "subjectToken", nil
-		},
+	tfc.SubjectTokenSupplier = func() (string, error) {
+		return "subjectToken", nil
 	}
 
 	oldNow := now
@@ -44,10 +42,8 @@ func TestRetrieveSubjectToken_ProgrammaticAuth(t *testing.T) {
 func TestRetrieveSubjectToken_ProgrammaticAuthFails(t *testing.T) {
 	tfc := testConfig
 
-	tfc.CredentialSource = CredentialSource{
-		SubjectTokenSupplier: func() (string, error) {
-			return "", errors.New("test error")
-		},
+	tfc.SubjectTokenSupplier = func() (string, error) {
+		return "", errors.New("test error")
 	}
 
 	oldNow := now
