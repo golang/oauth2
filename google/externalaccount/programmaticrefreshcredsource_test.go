@@ -1,4 +1,4 @@
-// Copyright 2020 The Go Authors. All rights reserved.
+// Copyright 2024 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -17,12 +17,6 @@ func TestRetrieveSubjectToken_ProgrammaticAuth(t *testing.T) {
 	tfc.SubjectTokenSupplier = func() (string, error) {
 		return "subjectToken", nil
 	}
-
-	oldNow := now
-	defer func() {
-		now = oldNow
-	}()
-	now = setTime(defaultTime)
 
 	base, err := tfc.parse(context.Background())
 	if err != nil {

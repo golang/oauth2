@@ -176,9 +176,9 @@ func (c *ExternalAccountConfig) parse(ctx context.Context) (baseCredentialSource
 
 	if c.AwsSecurityCredentialsSupplier != nil {
 		awsCredSource := awsCredentialSource{
-			RegionalCredVerificationURL:    c.CredentialSource.RegionalCredVerificationURL,
+			regionalCredVerificationURL:    c.CredentialSource.RegionalCredVerificationURL,
 			awsSecurityCredentialsSupplier: c.AwsSecurityCredentialsSupplier,
-			TargetResource:                 c.Audience,
+			targetResource:                 c.Audience,
 		}
 		return awsCredSource, nil
 	} else if c.SubjectTokenSupplier != nil {
@@ -190,15 +190,15 @@ func (c *ExternalAccountConfig) parse(ctx context.Context) (baseCredentialSource
 			}
 
 			awsCredSource := awsCredentialSource{
-				EnvironmentID:               c.CredentialSource.EnvironmentID,
-				RegionURL:                   c.CredentialSource.RegionURL,
-				RegionalCredVerificationURL: c.CredentialSource.RegionalCredVerificationURL,
-				CredVerificationURL:         c.CredentialSource.URL,
-				TargetResource:              c.Audience,
+				environmentID:               c.CredentialSource.EnvironmentID,
+				regionURL:                   c.CredentialSource.RegionURL,
+				regionalCredVerificationURL: c.CredentialSource.RegionalCredVerificationURL,
+				credVerificationURL:         c.CredentialSource.URL,
+				targetResource:              c.Audience,
 				ctx:                         ctx,
 			}
 			if c.CredentialSource.IMDSv2SessionTokenURL != "" {
-				awsCredSource.IMDSv2SessionTokenURL = c.CredentialSource.IMDSv2SessionTokenURL
+				awsCredSource.imdsv2SessionTokenURL = c.CredentialSource.IMDSv2SessionTokenURL
 			}
 
 			return awsCredSource, nil

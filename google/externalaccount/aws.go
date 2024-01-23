@@ -257,12 +257,12 @@ func (rs *awsRequestSigner) generateAuthentication(req *http.Request, timestamp 
 }
 
 type awsCredentialSource struct {
-	EnvironmentID                  string
-	RegionURL                      string
-	RegionalCredVerificationURL    string
-	CredVerificationURL            string
-	IMDSv2SessionTokenURL          string
-	TargetResource                 string
+	environmentID                  string
+	regionURL                      string
+	regionalCredVerificationURL    string
+	credVerificationURL            string
+	imdsv2SessionTokenURL          string
+	targetResource                 string
 	requestSigner                  *awsRequestSigner
 	region                         string
 	ctx                            context.Context
@@ -312,8 +312,8 @@ func (cs awsCredentialSource) credentialSourceType() string {
 
 func (cs awsCredentialSource) subjectToken() (string, error) {
 	// Set Defaults
-	if cs.RegionalCredVerificationURL == "" {
-		cs.RegionalCredVerificationURL = defaultRegionalCredentialVerificationUrl
+	if cs.regionalCredVerificationURL == "" {
+		cs.regionalCredVerificationURL = defaultRegionalCredentialVerificationUrl
 	}
 	if cs.requestSigner == nil {
 		headers := make(map[string]string)
@@ -345,7 +345,7 @@ func (cs awsCredentialSource) subjectToken() (string, error) {
 
 	// Generate the signed request to AWS STS GetCallerIdentity API.
 	// Use the required regional endpoint. Otherwise, the request will fail.
-	req, err := http.NewRequest("POST", strings.Replace(cs.RegionalCredVerificationURL, "{region}", cs.region, 1), nil)
+	req, err := http.NewRequest("POST", strings.Replace(cs.regionalCredVerificationURL, "{region}", cs.region, 1), nil)
 	if err != nil {
 		return "", err
 	}
@@ -353,8 +353,8 @@ func (cs awsCredentialSource) subjectToken() (string, error) {
 	// provider, with or without the HTTPS prefix.
 	// Including this header as part of the signature is recommended to
 	// ensure data integrity.
-	if cs.TargetResource != "" {
-		req.Header.Add("x-goog-cloud-target-resource", cs.TargetResource)
+	if cs.targetResource != "" {
+		req.Header.Add("x-goog-cloud-target-resource", cs.targetResource)
 	}
 	cs.requestSigner.SignRequest(req)
 
@@ -401,11 +401,11 @@ func (cs awsCredentialSource) subjectToken() (string, error) {
 }
 
 func (cs *awsCredentialSource) getAWSSessionToken() (string, error) {
-	if cs.IMDSv2SessionTokenURL == "" {
+	if cs.imdsv2SessionTokenURL == "" {
 		return "", nil
 	}
 
-	req, err := http.NewRequest("PUT", cs.IMDSv2SessionTokenURL, nil)
+	req, err := http.NewRequest("PUT", cs.imdsv2SessionTokenURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -442,11 +442,11 @@ func (cs *awsCredentialSource) getRegion(headers map[string]string) (string, err
 		return getenv("AWS_DEFAULT_REGION"), nil
 	}
 
-	if cs.RegionURL == "" {
+	if cs.regionURL == "" {
 		return "", errors.New("oauth2/google: unable to determine AWS region")
 	}
 
-	req, err := http.NewRequest("GET", cs.RegionURL, nil)
+	req, err := http.NewRequest("GET", cs.regionURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -518,7 +518,7 @@ func (cs *awsCredentialSource) getSecurityCredentials(headers map[string]string)
 func (cs *awsCredentialSource) getMetadataSecurityCredentials(roleName string, headers map[string]string) (AwsSecurityCredentials, error) {
 	var result AwsSecurityCredentials
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", cs.CredVerificationURL, roleName), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", cs.credVerificationURL, roleName), nil)
 	if err != nil {
 		return result, err
 	}
@@ -548,11 +548,11 @@ func (cs *awsCredentialSource) getMetadataSecurityCredentials(roleName string, h
 }
 
 func (cs *awsCredentialSource) getMetadataRoleName(headers map[string]string) (string, error) {
-	if cs.CredVerificationURL == "" {
+	if cs.credVerificationURL == "" {
 		return "", errors.New("oauth2/google: unable to determine the AWS metadata server security credentials endpoint")
 	}
 
-	req, err := http.NewRequest("GET", cs.CredVerificationURL, nil)
+	req, err := http.NewRequest("GET", cs.credVerificationURL, nil)
 	if err != nil {
 		return "", err
 	}
