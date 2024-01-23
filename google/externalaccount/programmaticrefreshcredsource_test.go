@@ -40,12 +40,6 @@ func TestRetrieveSubjectToken_ProgrammaticAuthFails(t *testing.T) {
 		return "", errors.New("test error")
 	}
 
-	oldNow := now
-	defer func() {
-		now = oldNow
-	}()
-	now = setTime(defaultTime)
-
 	base, err := tfc.parse(context.Background())
 	if err != nil {
 		t.Fatalf("parse() failed %v", err)
