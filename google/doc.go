@@ -41,10 +41,10 @@
 //	OIDC identity provider: https://cloud.google.com/iam/docs/workload-identity-federation-with-other-providers#oidc
 //	SAML 2.0 identity provider: https://cloud.google.com/iam/docs/workload-identity-federation-with-other-providers#saml
 //
-// For OIDC and SAML providers, the library can retrieve tokens in three ways:
+// For OIDC and SAML providers, the library can retrieve tokens in fours ways:
 // from a local file location (file-sourced credentials), from a server
-// (URL-sourced credentials), or from a local executable (executable-sourced
-// credentials).
+// (URL-sourced credentials), from a local executable (executable-sourced
+// credentials), or from a user defined function that returns an OIDC or SAML token.
 // For file-sourced credentials, a background process needs to be continuously
 // refreshing the file location with a new OIDC/SAML token prior to expiration.
 // For tokens with one hour lifetimes, the token needs to be updated in the file
@@ -57,6 +57,7 @@
 // For more information on how these work (and how to implement
 // executable-sourced credentials), please check out:
 // https://cloud.google.com/iam/docs/workload-identity-federation-with-other-providers#create_a_credential_configuration
+// For using a user definied function to supply the token, see the [golang.org/x/oauth2/google/externalaccount] package.
 //
 // Note that this library does not perform any validation on the token_url, token_info_url,
 // or service_account_impersonation_url fields of the credential configuration.
@@ -84,10 +85,10 @@
 //	OIDC identity provider: https://cloud.google.com/iam/docs/configuring-workforce-identity-federation#oidc
 //	SAML 2.0 identity provider: https://cloud.google.com/iam/docs/configuring-workforce-identity-federation#saml
 //
-// For workforce identity federation, the library can retrieve tokens in three ways:
+// For workforce identity federation, the library can retrieve tokens in four ways:
 // from a local file location (file-sourced credentials), from a server
-// (URL-sourced credentials), or from a local executable (executable-sourced
-// credentials).
+// (URL-sourced credentials), from a local executable (executable-sourced
+// credentials), or from a user supplied function that returns an OIDC or SAML token.
 // For file-sourced credentials, a background process needs to be continuously
 // refreshing the file location with a new OIDC/SAML token prior to expiration.
 // For tokens with one hour lifetimes, the token needs to be updated in the file
@@ -100,6 +101,7 @@
 // For more information on how these work (and how to implement
 // executable-sourced credentials), please check out:
 // https://cloud.google.com/iam/docs/workforce-obtaining-short-lived-credentials#generate_a_configuration_file_for_non-interactive_sign-in
+// For using a user definied function to supply the token, see the [golang.org/x/oauth2/google/externalaccount] package.
 //
 // # Security considerations
 //
