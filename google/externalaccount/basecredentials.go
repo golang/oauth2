@@ -44,7 +44,7 @@ executable-sourced credentials), please check out:
 https://cloud.google.com/iam/docs/workload-identity-federation-with-other-providers#create_a_credential_configuration
 
 For using a user defined function to supply the token, define a function that can return
-either a token string (for OIDC/SAML providers), or one that returns an [AwsSecurityCredential]
+either a token string (for OIDC/SAML providers), or one that returns an [AwsSecurityCredentials]
 (for AWS providers). This function can then be used when building an [ExternalAccountConfig].
 The [golang.org/x/oauth2.TokenSource] created from the config can then be used access Google
 Cloud resources. For instance, you can create a NewClient from thes
@@ -94,7 +94,7 @@ executable-sourced credentials), please check out:
 https://cloud.google.com/iam/docs/workforce-obtaining-short-lived-credentials#generate_a_configuration_file_for_non-interactive_sign-in
 
 For using a user definied function to supply the token, define a function that can return
-either a token string (for OIDC/SAML providers), or one that returns an [AwsSecurityCredential]
+either a token string (for OIDC/SAML providers), or one that returns an [AwsSecurityCredentials]
 for AWS providers. This function can then be used when building an [ExternalAccountConfig].
 The [golang.org/x/oauth2.TokenSource] created from the config can then be used access Google
 Cloud resources. For instance, you can create a NewClient from thes
@@ -264,10 +264,12 @@ type ExecutableConfig struct {
 	OutputFile    string `json:"output_file"`
 }
 
+// AWSSecurityCredentialsSupplier is a struct that can be used to supply AwsSecurityCredentials to
+// exchange for a GCP access token.
 type AwsSecurityCredentialsSupplier struct {
 	// AwsRegion is the AWS region.
 	AwsRegion string
-	// GetAwsSecurityCredentials is a function that should return valid AwsSecurityCredentials.
+	// GetAwsSecurityCredentials is a function that should return a valid set of AwsSecurityCredentials.
 	GetAwsSecurityCredentials func() (AwsSecurityCredentials, error)
 }
 
