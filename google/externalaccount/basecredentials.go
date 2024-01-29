@@ -43,7 +43,7 @@ For more information on how these work (and how to implement
 executable-sourced credentials), please check out:
 https://cloud.google.com/iam/docs/workload-identity-federation-with-other-providers#create_a_credential_configuration
 
-For using a user defined function to supply the token, define a function that can return
+For using a custom function to supply the token, define a function that can return
 either a token string (for OIDC/SAML providers), or one that returns an [AwsSecurityCredentials]
 (for AWS providers). This function can then be used when building an [ExternalAccountConfig].
 The [golang.org/x/oauth2.TokenSource] created from the config can then be used access Google
@@ -97,10 +97,11 @@ For using a user definied function to supply the token, define a function that c
 either a token string (for OIDC/SAML providers), or one that returns an [AwsSecurityCredentials]
 for AWS providers. This function can then be used when building an [ExternalAccountConfig].
 The [golang.org/x/oauth2.TokenSource] created from the config can then be used access Google
-Cloud resources. For instance, you can create a NewClient from thes
+Cloud resources. For instance, you can create a NewClient from the
 [cloud.google.com/go/storage] package and pass in option.WithTokenSource(yourTokenSource))
 
 # Security considerations
+
 Note that this library does not perform any validation on the token_url, token_info_url,
 or service_account_impersonation_url fields of the credential configuration.
 It is not recommended to use a credential configuration that you did not generate with
