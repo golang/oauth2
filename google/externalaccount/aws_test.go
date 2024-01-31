@@ -1322,9 +1322,10 @@ func TestAWSCredential_ProgrammaticAuthNoSessionToken(t *testing.T) {
 
 func TestAWSCredential_ProgrammaticAuthError(t *testing.T) {
 	tfc := testFileConfig
+	testErr := errors.New("test error")
 	tfc.AwsSecurityCredentialsSupplier = testAwsSupplier{
 		awsRegion:   "us-east-2",
-		err:         errors.New("test error"),
+		err:         testErr,
 		credentials: nil,
 	}
 
@@ -1337,8 +1338,36 @@ func TestAWSCredential_ProgrammaticAuthError(t *testing.T) {
 	if err == nil {
 		t.Fatalf("subjectToken() should have failed")
 	}
-	if got, want := err.Error(), "test error"; !reflect.DeepEqual(got, want) {
-		t.Errorf("subjectToken = %q, want %q", got, want)
+	if err != testErr {
+		t.Errorf("error = %e, want %e", err, testErr)
+	}
+}
+
+func TestAWSCredential_ProgrammaticAuthRegionError(t *testing.T) {
+	tfc := testFileConfig
+	securityCredentials := AwsSecurityCredentials{
+		AccessKeyID:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+	}
+
+	testErr := errors.New("test")
+	tfc.AwsSecurityCredentialsSupplier = testAwsSupplier{
+		awsRegion:   "",
+		regionErr:   testErr,
+		credentials: &securityCredentials,
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("subjectToken() should have failed")
+	}
+	if err != testErr {
+		t.Errorf("error = %e, want %e", err, testErr)
 	}
 }
 
@@ -1361,13 +1390,14 @@ func TestAwsCredential_CredentialSourceType(t *testing.T) {
 
 type testAwsSupplier struct {
 	err         error
+	regionErr   error
 	awsRegion   string
 	credentials *AwsSecurityCredentials
 }
 
 func (supp testAwsSupplier) AwsRegion() (string, error) {
-	if supp.err != nil {
-		return "", supp.err
+	if supp.regionErr != nil {
+		return "", supp.regionErr
 	}
 	return supp.awsRegion, nil
 }

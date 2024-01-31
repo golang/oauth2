@@ -208,10 +208,10 @@ func NewTokenSource(ctx context.Context, conf Config) (oauth2.TokenSource, error
 		count++
 	}
 	if count == 0 {
-		return nil, fmt.Errorf("oauth2/google: One of CredentialSource, SubjectTokenSUpplier, or AwsSecurityCredentialsSupplier must be set")
+		return nil, fmt.Errorf("oauth2/google: One of CredentialSource, SubjectTokenSupplier, or AwsSecurityCredentialsSupplier must be set")
 	}
 	if count > 1 {
-		return nil, fmt.Errorf("oauth2/google: Only one of CredentialSource, SubjectTokenSUpplier, or AwsSecurityCredentialsSupplier must be set")
+		return nil, fmt.Errorf("oauth2/google: Only one of CredentialSource, SubjectTokenSupplier, or AwsSecurityCredentialsSupplier must be set")
 	}
 	return conf.tokenSource(ctx, "https")
 }
