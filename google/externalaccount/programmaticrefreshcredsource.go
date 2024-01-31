@@ -5,7 +5,8 @@
 package externalaccount
 
 type programmaticRefreshCredentialSource struct {
-	SubjectTokenSupplier func() (string, error)
+	supplierContext      SupplierContext
+	subjectTokenSupplier SubjectTokenSupplier
 }
 
 func (cs programmaticRefreshCredentialSource) credentialSourceType() string {
@@ -13,5 +14,5 @@ func (cs programmaticRefreshCredentialSource) credentialSourceType() string {
 }
 
 func (cs programmaticRefreshCredentialSource) subjectToken() (string, error) {
-	return cs.SubjectTokenSupplier()
+	return cs.subjectTokenSupplier.SubjectToken(cs.supplierContext)
 }

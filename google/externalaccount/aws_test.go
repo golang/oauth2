@@ -1371,6 +1371,31 @@ func TestAWSCredential_ProgrammaticAuthRegionError(t *testing.T) {
 	}
 }
 
+func TestAWSCredential_ProgrammaticAuthContext(t *testing.T) {
+	tfc := testFileConfig
+	securityCredentials := AwsSecurityCredentials{
+		AccessKeyID:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+	}
+	expectedContext := SupplierContext{Audience: tfc.Audience, SubjectTokenType: tfc.SubjectTokenType}
+
+	tfc.AwsSecurityCredentialsSupplier = testAwsSupplier{
+		awsRegion:       "us-east-2",
+		credentials:     &securityCredentials,
+		expectedContext: &expectedContext,
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err != nil {
+		t.Fatalf("subjectToken() failed %v", err)
+	}
+}
+
 func TestAwsCredential_CredentialSourceType(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
@@ -1389,22 +1414,39 @@ func TestAwsCredential_CredentialSourceType(t *testing.T) {
 }
 
 type testAwsSupplier struct {
-	err         error
-	regionErr   error
-	awsRegion   string
-	credentials *AwsSecurityCredentials
+	err             error
+	regionErr       error
+	awsRegion       string
+	credentials     *AwsSecurityCredentials
+	expectedContext *SupplierContext
 }
 
-func (supp testAwsSupplier) AwsRegion() (string, error) {
+func (supp testAwsSupplier) AwsRegion(ctx SupplierContext) (string, error) {
 	if supp.regionErr != nil {
 		return "", supp.regionErr
+	}
+	if supp.expectedContext != nil {
+		if supp.expectedContext.Audience != ctx.Audience {
+			return "", errors.New("Audience does not match")
+		}
+		if supp.expectedContext.SubjectTokenType != ctx.SubjectTokenType {
+			return "", errors.New("Audience does not match")
+		}
 	}
 	return supp.awsRegion, nil
 }
 
-func (supp testAwsSupplier) AwsSecurityCredentials() (*AwsSecurityCredentials, error) {
+func (supp testAwsSupplier) AwsSecurityCredentials(ctx SupplierContext) (*AwsSecurityCredentials, error) {
 	if supp.err != nil {
 		return nil, supp.err
+	}
+	if supp.expectedContext != nil {
+		if supp.expectedContext.Audience != ctx.Audience {
+			return nil, errors.New("Audience does not match")
+		}
+		if supp.expectedContext.SubjectTokenType != ctx.SubjectTokenType {
+			return nil, errors.New("Audience does not match")
+		}
 	}
 	return supp.credentials, nil
 }

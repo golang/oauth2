@@ -93,7 +93,7 @@ For more information on how these work (and how to implement
 executable-sourced credentials), please check out:
 https://cloud.google.com/iam/docs/workforce-obtaining-short-lived-credentials#generate_a_configuration_file_for_non-interactive_sign-in
 
-For using a user definied function to supply the token, define a function that can return
+For using a user defined function to supply the token, define a function that can return
 either a token string (for OIDC/SAML providers), or one that returns an [AwsSecurityCredentials]
 for AWS providers. This function can then be used when building an [Config].
 The [golang.org/x/oauth2.TokenSource] created from the config can then be used access Google
@@ -167,11 +167,9 @@ type Config struct {
 	// The underlying principal must still have serviceusage.services.use IAM
 	// permission to use the project for billing/quota. Optional.
 	WorkforcePoolUserProject string
-	// SubjectTokenSupplier is an optional token supplier for OIDC/SAML credentials. This should be a function that returns
-	// a valid subject token as a string. Optional.
-	SubjectTokenSupplier func() (string, error)
-	// AwsSecurityCredentialsSupplier is an AWS Security Credential supplier. This should contain a
-	// function that returns valid AwsSecurityCredentials and a valid AwsRegion. Optional.
+	// SubjectTokenSupplier is an optional token supplier for OIDC/SAML credentials. Optional.
+	SubjectTokenSupplier SubjectTokenSupplier
+	// AwsSecurityCredentialsSupplier is an AWS Security Credential supplier for AWS credentials. Optional.
 	AwsSecurityCredentialsSupplier AwsSecurityCredentialsSupplier
 }
 
@@ -247,6 +245,7 @@ const (
 	defaultTokenUrl = "https://sts.googleapis.com/v1/token"
 )
 
+// Format contains information needed to retireve a subject token for URL or File sourced credentials.
 type Format struct {
 	// Type is either "text" or "json". When not provided "text" type is assumed.
 	Type string `json:"type"`
@@ -282,19 +281,40 @@ type CredentialSource struct {
 	Format Format `json:"format"`
 }
 
+// ExecutableConfig contains information needed for executable sourced credentials.
 type ExecutableConfig struct {
-	Command       string `json:"command"`
-	TimeoutMillis *int   `json:"timeout_millis"`
-	OutputFile    string `json:"output_file"`
+	// Command is the the full command to run to retrieve the subject token.
+	// This can include arguments. Must be an absolute path for the program. Required.
+	Command string `json:"command"`
+	// TimeoutMillis is the timeout duration, in milliseconds. Defaults to 30 seconds when not provided. Optional.
+	TimeoutMillis *int `json:"timeout_millis"`
+	// OutputFile is the absolute path to the output file where the executable will cache the response.
+	// If specified the auth libraries will first check this location before running the executable. Optional.
+	OutputFile string `json:"output_file"`
+}
+
+// SubjectTokenSupplier can be used to supply a subject token to exchange for a GCP access token.
+type SubjectTokenSupplier interface {
+	// AwsRegion should return a valid subject token or an error.
+	SubjectToken(context SupplierContext) (string, error)
 }
 
 // AWSSecurityCredentialsSupplier can be used to supply AwsSecurityCredentials and an Aws Region to
 // exchange for a GCP access token.
 type AwsSecurityCredentialsSupplier interface {
 	// AwsRegion should return the AWS region or an error.
-	AwsRegion() (string, error)
+	AwsRegion(context SupplierContext) (string, error)
 	// GetAwsSecurityCredentials should return a valid set of AwsSecurityCredentials or an error.
-	AwsSecurityCredentials() (*AwsSecurityCredentials, error)
+	AwsSecurityCredentials(context SupplierContext) (*AwsSecurityCredentials, error)
+}
+
+// SupplierContext contains information about the requested subject token or Aws credentials from the
+// Google external account credential.
+type SupplierContext struct {
+	// Audience is the requested audience for the external account credential.
+	Audience string
+	// Subject token type is the requested subject token type fro the external account credential.
+	SubjectTokenType string
 }
 
 // parse determines the type of CredentialSource needed.
@@ -303,15 +323,17 @@ func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 	if c.TokenURL == "" {
 		c.TokenURL = defaultTokenUrl
 	}
+	supplierContext := SupplierContext{Audience: c.Audience, SubjectTokenType: c.SubjectTokenType}
 
 	if c.AwsSecurityCredentialsSupplier != nil {
 		awsCredSource := awsCredentialSource{
 			awsSecurityCredentialsSupplier: c.AwsSecurityCredentialsSupplier,
 			targetResource:                 c.Audience,
+			supplierContext:                supplierContext,
 		}
 		return awsCredSource, nil
 	} else if c.SubjectTokenSupplier != nil {
-		return programmaticRefreshCredentialSource{SubjectTokenSupplier: c.SubjectTokenSupplier}, nil
+		return programmaticRefreshCredentialSource{subjectTokenSupplier: c.SubjectTokenSupplier, supplierContext: supplierContext}, nil
 	} else if len(c.CredentialSource.EnvironmentID) > 3 && c.CredentialSource.EnvironmentID[:3] == "aws" {
 		if awsVersion, err := strconv.Atoi(c.CredentialSource.EnvironmentID[3:]); err == nil {
 			if awsVersion != 1 {

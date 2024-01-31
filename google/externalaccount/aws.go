@@ -268,6 +268,7 @@ type awsCredentialSource struct {
 	ctx                            context.Context
 	client                         *http.Client
 	awsSecurityCredentialsSupplier AwsSecurityCredentialsSupplier
+	supplierContext                SupplierContext
 }
 
 type awsRequestHeader struct {
@@ -432,7 +433,7 @@ func (cs *awsCredentialSource) getAWSSessionToken() (string, error) {
 
 func (cs *awsCredentialSource) getRegion(headers map[string]string) (string, error) {
 	if cs.awsSecurityCredentialsSupplier != nil {
-		return cs.awsSecurityCredentialsSupplier.AwsRegion()
+		return cs.awsSecurityCredentialsSupplier.AwsRegion(cs.supplierContext)
 	}
 	if canRetrieveRegionFromEnvironment() {
 		if envAwsRegion := getenv(awsRegion); envAwsRegion != "" {
@@ -481,7 +482,7 @@ func (cs *awsCredentialSource) getRegion(headers map[string]string) (string, err
 
 func (cs *awsCredentialSource) getSecurityCredentials(headers map[string]string) (result *AwsSecurityCredentials, err error) {
 	if cs.awsSecurityCredentialsSupplier != nil {
-		return cs.awsSecurityCredentialsSupplier.AwsSecurityCredentials()
+		return cs.awsSecurityCredentialsSupplier.AwsSecurityCredentials(cs.supplierContext)
 	}
 	if canRetrieveSecurityCredentialFromEnvironment() {
 		return &AwsSecurityCredentials{
