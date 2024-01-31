@@ -45,7 +45,7 @@ https://cloud.google.com/iam/docs/workload-identity-federation-with-other-provid
 
 For using a custom function to supply the token, define a function that can return
 either a token string (for OIDC/SAML providers), or one that returns an [AwsSecurityCredentials]
-(for AWS providers). This function can then be used when building an [ExternalAccountConfig].
+(for AWS providers). This function can then be used when building an [Config].
 The [golang.org/x/oauth2.TokenSource] created from the config can then be used access Google
 Cloud resources. For instance, you can create a NewClient from thes
 [cloud.google.com/go/storage] package and pass in option.WithTokenSource(yourTokenSource))
@@ -95,7 +95,7 @@ https://cloud.google.com/iam/docs/workforce-obtaining-short-lived-credentials#ge
 
 For using a user definied function to supply the token, define a function that can return
 either a token string (for OIDC/SAML providers), or one that returns an [AwsSecurityCredentials]
-for AWS providers. This function can then be used when building an [ExternalAccountConfig].
+for AWS providers. This function can then be used when building an [Config].
 The [golang.org/x/oauth2.TokenSource] created from the config can then be used access Google
 Cloud resources. For instance, you can create a NewClient from the
 [cloud.google.com/go/storage] package and pass in option.WithTokenSource(yourTokenSource))
@@ -118,6 +118,7 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google/internal/impersonate"
 	"golang.org/x/oauth2/google/internal/stsexchange"
 )
 
@@ -126,52 +127,52 @@ var now = func() time.Time {
 	return time.Now().UTC()
 }
 
-// ExternalAccountConfig is a config that stores the configuration for fetching tokens with external credentials.
-type ExternalAccountConfig struct {
+// Config stores the configuration for fetching tokens with external credentials.
+type Config struct {
 	// Audience is the Secure Token Service (STS) audience which contains the resource name for the workload
 	// identity pool or the workforce pool and the provider identifier in that pool. Required.
 	Audience string
 	// SubjectTokenType is the STS token type based on the Oauth2.0 token exchange spec
 	// e.g. `urn:ietf:params:oauth:token-type:jwt`. Required.
 	SubjectTokenType string
-	// TokenURL is the STS token exchange endpoint. Optional, if not provided, will default to
-	// https://sts.googleapis.com/v1/token
+	// TokenURL is the STS token exchange endpoint. If not provided, will default to
+	// https://sts.googleapis.com/v1/token. Optional.
 	TokenURL string
 	// TokenInfoURL is the token_info endpoint used to retrieve the account related information (
 	// user attributes like account identifier, eg. email, username, uid, etc). This is
-	// needed for gCloud session account identification.
+	// needed for gCloud session account identification. Optional.
 	TokenInfoURL string
 	// ServiceAccountImpersonationURL is the URL for the service account impersonation request. This is only
-	// required for workload identity pools when APIs to be accessed have not integrated with UberMint.
+	// required for workload identity pools when APIs to be accessed have not integrated with UberMint. Optional.
 	ServiceAccountImpersonationURL string
 	// ServiceAccountImpersonationLifetimeSeconds is the number of seconds the service account impersonation
-	// token will be valid for. Optional, if not provided will default to 3600.
+	// token will be valid for. If not provided will default to 3600. Optional.
 	ServiceAccountImpersonationLifetimeSeconds int
 	// ClientSecret is currently only required if token_info endpoint also
 	// needs to be called with the generated GCP access token. When provided, STS will be
-	// called with additional basic authentication using client_id as username and client_secret as password.
+	// called with additional basic authentication using client_id as username and client_secret as password. Optional.
 	ClientSecret string
-	// ClientID is only required in conjunction with ClientSecret, as described above.
+	// ClientID is only required in conjunction with ClientSecret, as described above. Optional.
 	ClientID string
 	// CredentialSource contains the necessary information to retrieve the token itself, as well
-	// as some environmental information.
-	CredentialSource CredentialSource
+	// as some environmental information. Will be used unless a supplier is provided. Optional.
+	CredentialSource *CredentialSource
 	// QuotaProjectID is injected by gCloud. If the value is non-empty, the Auth libraries
-	// will set the x-goog-user-project which overrides the project associated with the credentials.
+	// will set the x-goog-user-project which overrides the project associated with the credentials. Optional.
 	QuotaProjectID string
-	// Scopes contains the desired scopes for the returned access token.
+	// Scopes contains the desired scopes for the returned access token. Optional.
 	Scopes []string
-	// WorkforcePoolUserProject is the optional workforce pool user project number when the credential
+	// WorkforcePoolUserProject is the workforce pool user project number when the credential
 	// corresponds to a workforce pool and not a workload identity pool.
 	// The underlying principal must still have serviceusage.services.use IAM
-	// permission to use the project for billing/quota.
+	// permission to use the project for billing/quota. Optional.
 	WorkforcePoolUserProject string
 	// SubjectTokenSupplier is an optional token supplier for OIDC/SAML credentials. This should be a function that returns
-	// a valid subject token as a string.
-	SubjectTokenSupplier func() (string, error) `json:"-"` // Ignore for json.
-	// AwsSecurityCredentialsSupplier is an optional AWS Security Credential supplier. This should contain a
-	// function that returns valid AwsSecurityCredentials and a valid AwsRegion.
-	AwsSecurityCredentialsSupplier *AwsSecurityCredentialsSupplier `json:"-"` // Ignore for json.
+	// a valid subject token as a string. Optional.
+	SubjectTokenSupplier func() (string, error)
+	// AwsSecurityCredentialsSupplier is an AWS Security Credential supplier. This should contain a
+	// function that returns valid AwsSecurityCredentials and a valid AwsRegion. Optional.
+	AwsSecurityCredentialsSupplier AwsSecurityCredentialsSupplier
 }
 
 var (
@@ -182,21 +183,43 @@ func validateWorkforceAudience(input string) bool {
 	return validWorkforceAudiencePattern.MatchString(input)
 }
 
-// TokenSource Returns an external account TokenSource.
-func (c *ExternalAccountConfig) TokenSource(ctx context.Context) (oauth2.TokenSource, error) {
-	return c.tokenSource(ctx, "https")
+// NewTokenSource Returns an external account TokenSource.
+func NewTokenSource(ctx context.Context, conf Config) (oauth2.TokenSource, error) {
+	if conf.Audience == "" {
+		return nil, fmt.Errorf("oauth2/google: Audience must be set")
+	}
+	if conf.SubjectTokenType == "" {
+		return nil, fmt.Errorf("oauth2/google: Subject token type must be set")
+	}
+	if conf.WorkforcePoolUserProject != "" {
+		valid := validateWorkforceAudience(conf.Audience)
+		if !valid {
+			return nil, fmt.Errorf("oauth2/google: Workforce pool user project should not be set for non-workforce pool credentials")
+		}
+	}
+	count := 0
+	if conf.CredentialSource != nil {
+		count++
+	}
+	if conf.SubjectTokenSupplier != nil {
+		count++
+	}
+	if conf.AwsSecurityCredentialsSupplier != nil {
+		count++
+	}
+	if count == 0 {
+		return nil, fmt.Errorf("oauth2/google: One of CredentialSource, SubjectTokenSUpplier, or AwsSecurityCredentialsSupplier must be set")
+	}
+	if count > 1 {
+		return nil, fmt.Errorf("oauth2/google: Only one of CredentialSource, SubjectTokenSUpplier, or AwsSecurityCredentialsSupplier must be set")
+	}
+	return conf.tokenSource(ctx, "https")
 }
 
 // tokenSource is a private function that's directly called by some of the tests,
 // because the unit test URLs are mocked, and would otherwise fail the
 // validity check.
-func (c *ExternalAccountConfig) tokenSource(ctx context.Context, scheme string) (oauth2.TokenSource, error) {
-	if c.WorkforcePoolUserProject != "" {
-		valid := validateWorkforceAudience(c.Audience)
-		if !valid {
-			return nil, fmt.Errorf("oauth2/google: workforce_pool_user_project should not be set for non-workforce pool credentials")
-		}
-	}
+func (c *Config) tokenSource(ctx context.Context, scheme string) (oauth2.TokenSource, error) {
 
 	ts := tokenSource{
 		ctx:  ctx,
@@ -207,7 +230,7 @@ func (c *ExternalAccountConfig) tokenSource(ctx context.Context, scheme string) 
 	}
 	scopes := c.Scopes
 	ts.conf.Scopes = []string{"https://www.googleapis.com/auth/cloud-platform"}
-	imp := ImpersonateTokenSource{
+	imp := impersonate.ImpersonateTokenSource{
 		Ctx:                  ctx,
 		URL:                  c.ServiceAccountImpersonationURL,
 		Scopes:               scopes,
@@ -224,7 +247,7 @@ const (
 	defaultTokenUrl = "https://sts.googleapis.com/v1/token"
 )
 
-type format struct {
+type Format struct {
 	// Type is either "text" or "json". When not provided "text" type is assumed.
 	Type string `json:"type"`
 	// SubjectTokenFieldName is only required for JSON format. This would be "access_token" for azure.
@@ -256,7 +279,7 @@ type CredentialSource struct {
 	// IMDSv2SessionTokenURL is the URL to retrieve the session token when using IMDSv2 in AWS.
 	IMDSv2SessionTokenURL string `json:"imdsv2_session_token_url"`
 	// Format is the format type for the subject token. Used for File and URL sourced credentials. Expected values are "text" or "json".
-	Format format `json:"format"`
+	Format Format `json:"format"`
 }
 
 type ExecutableConfig struct {
@@ -265,17 +288,17 @@ type ExecutableConfig struct {
 	OutputFile    string `json:"output_file"`
 }
 
-// AWSSecurityCredentialsSupplier is a struct that can be used to supply AwsSecurityCredentials to
+// AWSSecurityCredentialsSupplier can be used to supply AwsSecurityCredentials and an Aws Region to
 // exchange for a GCP access token.
-type AwsSecurityCredentialsSupplier struct {
-	// AwsRegion is the AWS region.
-	AwsRegion string
-	// GetAwsSecurityCredentials is a function that should return a valid set of AwsSecurityCredentials.
-	GetAwsSecurityCredentials func() (AwsSecurityCredentials, error)
+type AwsSecurityCredentialsSupplier interface {
+	// AwsRegion should return the AWS region or an error.
+	AwsRegion() (string, error)
+	// GetAwsSecurityCredentials should return a valid set of AwsSecurityCredentials or an error.
+	AwsSecurityCredentials() (*AwsSecurityCredentials, error)
 }
 
 // parse determines the type of CredentialSource needed.
-func (c *ExternalAccountConfig) parse(ctx context.Context) (baseCredentialSource, error) {
+func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 	//set Defaults
 	if c.TokenURL == "" {
 		c.TokenURL = defaultTokenUrl
@@ -283,7 +306,6 @@ func (c *ExternalAccountConfig) parse(ctx context.Context) (baseCredentialSource
 
 	if c.AwsSecurityCredentialsSupplier != nil {
 		awsCredSource := awsCredentialSource{
-			regionalCredVerificationURL:    c.CredentialSource.RegionalCredVerificationURL,
 			awsSecurityCredentialsSupplier: c.AwsSecurityCredentialsSupplier,
 			targetResource:                 c.Audience,
 		}
@@ -328,10 +350,10 @@ type baseCredentialSource interface {
 // tokenSource is the source that handles external credentials. It is used to retrieve Tokens.
 type tokenSource struct {
 	ctx  context.Context
-	conf *ExternalAccountConfig
+	conf *Config
 }
 
-func getMetricsHeaderValue(conf *ExternalAccountConfig, credSource baseCredentialSource) string {
+func getMetricsHeaderValue(conf *Config, credSource baseCredentialSource) string {
 	return fmt.Sprintf("gl-go/%s auth/%s google-byoid-sdk source/%s sa-impersonation/%t config-lifetime/%t",
 		goVersion(),
 		"unknown",

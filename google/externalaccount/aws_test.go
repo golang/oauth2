@@ -37,7 +37,7 @@ func setEnvironment(env map[string]string) func(string) string {
 
 var defaultRequestSigner = &awsRequestSigner{
 	RegionName: "us-east-1",
-	AwsSecurityCredentials: AwsSecurityCredentials{
+	AwsSecurityCredentials: &AwsSecurityCredentials{
 		AccessKeyID:     "AKIDEXAMPLE",
 		SecretAccessKey: "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
 	},
@@ -51,7 +51,7 @@ const (
 
 var requestSignerWithToken = &awsRequestSigner{
 	RegionName: "us-east-2",
-	AwsSecurityCredentials: AwsSecurityCredentials{
+	AwsSecurityCredentials: &AwsSecurityCredentials{
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
 		SessionToken:    securityToken,
@@ -389,7 +389,7 @@ func TestAWSv4Signature_PostRequestWithSecurityTokenAndAdditionalHeaders(t *test
 func TestAWSv4Signature_PostRequestWithAmzDateButNoSecurityToken(t *testing.T) {
 	var requestSigner = &awsRequestSigner{
 		RegionName: "us-east-2",
-		AwsSecurityCredentials: AwsSecurityCredentials{
+		AwsSecurityCredentials: &AwsSecurityCredentials{
 			AccessKeyID:     accessKeyID,
 			SecretAccessKey: secretAccessKey,
 		},
@@ -527,8 +527,8 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 
 func noHeaderValidation(r *http.Request) {}
 
-func (server *testAwsServer) getCredentialSource(url string) CredentialSource {
-	return CredentialSource{
+func (server *testAwsServer) getCredentialSource(url string) *CredentialSource {
+	return &CredentialSource{
 		EnvironmentID:               "aws1",
 		URL:                         url + server.url,
 		RegionURL:                   url + server.regionURL,
@@ -542,7 +542,7 @@ func getExpectedSubjectToken(url, region, accessKeyID, secretAccessKey, security
 	req.Header.Add("x-goog-cloud-target-resource", testFileConfig.Audience)
 	signer := &awsRequestSigner{
 		RegionName: region,
-		AwsSecurityCredentials: AwsSecurityCredentials{
+		AwsSecurityCredentials: &AwsSecurityCredentials{
 			AccessKeyID:     accessKeyID,
 			SecretAccessKey: secretAccessKey,
 			SessionToken:    securityToken,
@@ -589,7 +589,6 @@ func TestAWSCredential_BasicRequest(t *testing.T) {
 
 	tfc := testFileConfig
 	tfc.CredentialSource = server.getCredentialSource(ts.URL)
-
 	oldGetenv := getenv
 	oldNow := now
 	defer func() {
@@ -1243,11 +1242,11 @@ func TestAWSCredential_ProgrammaticAuth(t *testing.T) {
 		SecretAccessKey: secretAccessKey,
 		SessionToken:    securityToken,
 	}
-	tfc.AwsSecurityCredentialsSupplier = &AwsSecurityCredentialsSupplier{
-		GetAwsSecurityCredentials: func() (AwsSecurityCredentials, error) {
-			return securityCredentials, nil
-		},
-		AwsRegion: "us-east-2",
+
+	tfc.AwsSecurityCredentialsSupplier = testAwsSupplier{
+		awsRegion:   "us-east-2",
+		err:         nil,
+		credentials: &securityCredentials,
 	}
 
 	oldNow := now
@@ -1286,11 +1285,10 @@ func TestAWSCredential_ProgrammaticAuthNoSessionToken(t *testing.T) {
 		SecretAccessKey: secretAccessKey,
 	}
 
-	tfc.AwsSecurityCredentialsSupplier = &AwsSecurityCredentialsSupplier{
-		GetAwsSecurityCredentials: func() (AwsSecurityCredentials, error) {
-			return securityCredentials, nil
-		},
-		AwsRegion: "us-east-2",
+	tfc.AwsSecurityCredentialsSupplier = testAwsSupplier{
+		awsRegion:   "us-east-2",
+		err:         nil,
+		credentials: &securityCredentials,
 	}
 
 	oldNow := now
@@ -1324,12 +1322,10 @@ func TestAWSCredential_ProgrammaticAuthNoSessionToken(t *testing.T) {
 
 func TestAWSCredential_ProgrammaticAuthError(t *testing.T) {
 	tfc := testFileConfig
-
-	tfc.AwsSecurityCredentialsSupplier = &AwsSecurityCredentialsSupplier{
-		GetAwsSecurityCredentials: func() (AwsSecurityCredentials, error) {
-			return AwsSecurityCredentials{}, errors.New("test error")
-		},
-		AwsRegion: "us-east-2",
+	tfc.AwsSecurityCredentialsSupplier = testAwsSupplier{
+		awsRegion:   "us-east-2",
+		err:         errors.New("test error"),
+		credentials: nil,
 	}
 
 	base, err := tfc.parse(context.Background())
@@ -1361,4 +1357,24 @@ func TestAwsCredential_CredentialSourceType(t *testing.T) {
 	if got, want := base.credentialSourceType(), "aws"; got != want {
 		t.Errorf("got %v but want %v", got, want)
 	}
+}
+
+type testAwsSupplier struct {
+	err         error
+	awsRegion   string
+	credentials *AwsSecurityCredentials
+}
+
+func (supp testAwsSupplier) AwsRegion() (string, error) {
+	if supp.err != nil {
+		return "", supp.err
+	}
+	return supp.awsRegion, nil
+}
+
+func (supp testAwsSupplier) AwsSecurityCredentials() (*AwsSecurityCredentials, error) {
+	if supp.err != nil {
+		return nil, supp.err
+	}
+	return supp.credentials, nil
 }

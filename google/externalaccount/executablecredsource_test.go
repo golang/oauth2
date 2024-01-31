@@ -160,16 +160,16 @@ func TestCreateExecutableCredential(t *testing.T) {
 
 var getEnvironmentTests = []struct {
 	name                string
-	config              ExternalAccountConfig
+	config              Config
 	environment         testEnvironment
 	expectedEnvironment []string
 }{
 	{
 		name: "Minimal Executable Config",
-		config: ExternalAccountConfig{
+		config: Config{
 			Audience:         "//iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/pool/providers/oidc",
 			SubjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
-			CredentialSource: CredentialSource{
+			CredentialSource: &CredentialSource{
 				Executable: &ExecutableConfig{
 					Command: "blarg",
 				},
@@ -189,11 +189,11 @@ var getEnvironmentTests = []struct {
 	},
 	{
 		name: "Full Impersonation URL",
-		config: ExternalAccountConfig{
+		config: Config{
 			Audience:                       "//iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/pool/providers/oidc",
 			ServiceAccountImpersonationURL: "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/test@project.iam.gserviceaccount.com:generateAccessToken",
 			SubjectTokenType:               "urn:ietf:params:oauth:token-type:jwt",
-			CredentialSource: CredentialSource{
+			CredentialSource: &CredentialSource{
 				Executable: &ExecutableConfig{
 					Command:    "blarg",
 					OutputFile: "/path/to/generated/cached/credentials",
@@ -216,11 +216,11 @@ var getEnvironmentTests = []struct {
 	},
 	{
 		name: "Impersonation Email",
-		config: ExternalAccountConfig{
+		config: Config{
 			Audience:                       "//iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/pool/providers/oidc",
 			ServiceAccountImpersonationURL: "test@project.iam.gserviceaccount.com",
 			SubjectTokenType:               "urn:ietf:params:oauth:token-type:jwt",
-			CredentialSource: CredentialSource{
+			CredentialSource: &CredentialSource{
 				Executable: &ExecutableConfig{
 					Command:    "blarg",
 					OutputFile: "/path/to/generated/cached/credentials",
@@ -471,7 +471,7 @@ func TestRetrieveExecutableSubjectTokenExecutableErrors(t *testing.T) {
 	}
 
 	tfc := testFileConfig
-	tfc.CredentialSource = cs
+	tfc.CredentialSource = &cs
 
 	base, err := tfc.parse(context.Background())
 	if err != nil {
@@ -578,7 +578,7 @@ func TestRetrieveExecutableSubjectTokenSuccesses(t *testing.T) {
 	}
 
 	tfc := testFileConfig
-	tfc.CredentialSource = cs
+	tfc.CredentialSource = &cs
 
 	base, err := tfc.parse(context.Background())
 	if err != nil {
@@ -629,7 +629,7 @@ func TestRetrieveOutputFileSubjectTokenNotJSON(t *testing.T) {
 	}
 
 	tfc := testFileConfig
-	tfc.CredentialSource = cs
+	tfc.CredentialSource = &cs
 
 	base, err := tfc.parse(context.Background())
 	if err != nil {
@@ -778,7 +778,7 @@ func TestRetrieveOutputFileSubjectTokenFailureTests(t *testing.T) {
 			}
 
 			tfc := testFileConfig
-			tfc.CredentialSource = cs
+			tfc.CredentialSource = &cs
 
 			base, err := tfc.parse(context.Background())
 			if err != nil {
@@ -881,7 +881,7 @@ func TestRetrieveOutputFileSubjectTokenInvalidCache(t *testing.T) {
 			}
 
 			tfc := testFileConfig
-			tfc.CredentialSource = cs
+			tfc.CredentialSource = &cs
 
 			base, err := tfc.parse(context.Background())
 			if err != nil {
@@ -986,7 +986,7 @@ func TestRetrieveOutputFileSubjectTokenJwt(t *testing.T) {
 			}
 
 			tfc := testFileConfig
-			tfc.CredentialSource = cs
+			tfc.CredentialSource = &cs
 
 			base, err := tfc.parse(context.Background())
 			if err != nil {

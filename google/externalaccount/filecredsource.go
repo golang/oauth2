@@ -16,7 +16,7 @@ import (
 
 type fileCredentialSource struct {
 	File   string
-	Format format
+	Format Format
 }
 
 func (cs fileCredentialSource) credentialSourceType() string {

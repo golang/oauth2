@@ -39,7 +39,7 @@ type AwsSecurityCredentials struct {
 // awsRequestSigner is a utility class to sign http requests using a AWS V4 signature.
 type awsRequestSigner struct {
 	RegionName             string
-	AwsSecurityCredentials AwsSecurityCredentials
+	AwsSecurityCredentials *AwsSecurityCredentials
 }
 
 // getenv aliases os.Getenv for testing
@@ -267,7 +267,7 @@ type awsCredentialSource struct {
 	region                         string
 	ctx                            context.Context
 	client                         *http.Client
-	awsSecurityCredentialsSupplier *AwsSecurityCredentialsSupplier
+	awsSecurityCredentialsSupplier AwsSecurityCredentialsSupplier
 }
 
 type awsRequestHeader struct {
@@ -432,7 +432,7 @@ func (cs *awsCredentialSource) getAWSSessionToken() (string, error) {
 
 func (cs *awsCredentialSource) getRegion(headers map[string]string) (string, error) {
 	if cs.awsSecurityCredentialsSupplier != nil {
-		return cs.awsSecurityCredentialsSupplier.AwsRegion, nil
+		return cs.awsSecurityCredentialsSupplier.AwsRegion()
 	}
 	if canRetrieveRegionFromEnvironment() {
 		if envAwsRegion := getenv(awsRegion); envAwsRegion != "" {
@@ -479,15 +479,12 @@ func (cs *awsCredentialSource) getRegion(headers map[string]string) (string, err
 	return string(respBody[:respBodyEnd]), nil
 }
 
-func (cs *awsCredentialSource) getSecurityCredentials(headers map[string]string) (result AwsSecurityCredentials, err error) {
+func (cs *awsCredentialSource) getSecurityCredentials(headers map[string]string) (result *AwsSecurityCredentials, err error) {
 	if cs.awsSecurityCredentialsSupplier != nil {
-		if cs.awsSecurityCredentialsSupplier.AwsRegion == "" {
-			return result, errors.New("oauth2/google: AwsRegion must be provided when using an AwsSecurityCredentialsSupplier")
-		}
-		return cs.awsSecurityCredentialsSupplier.GetAwsSecurityCredentials()
+		return cs.awsSecurityCredentialsSupplier.AwsSecurityCredentials()
 	}
 	if canRetrieveSecurityCredentialFromEnvironment() {
-		return AwsSecurityCredentials{
+		return &AwsSecurityCredentials{
 			AccessKeyID:     getenv(awsAccessKeyId),
 			SecretAccessKey: getenv(awsSecretAccessKey),
 			SessionToken:    getenv(awsSessionToken),
@@ -512,7 +509,7 @@ func (cs *awsCredentialSource) getSecurityCredentials(headers map[string]string)
 		return result, errors.New("oauth2/google: missing SecretAccessKey credential")
 	}
 
-	return credentials, nil
+	return &credentials, nil
 }
 
 func (cs *awsCredentialSource) getMetadataSecurityCredentials(roleName string, headers map[string]string) (AwsSecurityCredentials, error) {

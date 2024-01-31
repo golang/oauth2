@@ -19,7 +19,7 @@ import (
 type urlCredentialSource struct {
 	URL     string
 	Headers map[string]string
-	Format  format
+	Format  Format
 	ctx     context.Context
 }
 

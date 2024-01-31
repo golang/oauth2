@@ -17,6 +17,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google/externalaccount"
 	"golang.org/x/oauth2/google/internal/externalaccountauthorizeduser"
+	"golang.org/x/oauth2/google/internal/impersonate"
 	"golang.org/x/oauth2/jwt"
 )
 
@@ -191,7 +192,7 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 		tok := &oauth2.Token{RefreshToken: f.RefreshToken}
 		return cfg.TokenSource(ctx, tok), nil
 	case externalAccountKey:
-		cfg := &externalaccount.ExternalAccountConfig{
+		cfg := &externalaccount.Config{
 			Audience:                       f.Audience,
 			SubjectTokenType:               f.SubjectTokenType,
 			TokenURL:                       f.TokenURLExternal,
@@ -200,12 +201,12 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 			ServiceAccountImpersonationLifetimeSeconds: f.ServiceAccountImpersonation.TokenLifetimeSeconds,
 			ClientSecret:             f.ClientSecret,
 			ClientID:                 f.ClientID,
-			CredentialSource:         f.CredentialSource,
+			CredentialSource:         &f.CredentialSource,
 			QuotaProjectID:           f.QuotaProjectID,
 			Scopes:                   params.Scopes,
 			WorkforcePoolUserProject: f.WorkforcePoolUserProject,
 		}
-		return cfg.TokenSource(ctx)
+		return externalaccount.NewTokenSource(ctx, *cfg)
 	case externalAccountAuthorizedUserKey:
 		cfg := &externalaccountauthorizeduser.Config{
 			Audience:       f.Audience,
@@ -228,7 +229,7 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 		if err != nil {
 			return nil, err
 		}
-		imp := externalaccount.ImpersonateTokenSource{
+		imp := impersonate.ImpersonateTokenSource{
 			Ctx:       ctx,
 			URL:       f.ServiceAccountImpersonationURL,
 			Scopes:    params.Scopes,

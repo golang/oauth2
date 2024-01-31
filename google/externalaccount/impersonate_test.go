@@ -73,19 +73,19 @@ func createTargetServer(metricsHeaderWanted string, t *testing.T) *httptest.Serv
 
 var impersonationTests = []struct {
 	name                      string
-	config                    ExternalAccountConfig
+	config                    Config
 	expectedImpersonationBody string
 	expectedMetricsHeader     string
 }{
 	{
 		name: "Base Impersonation",
-		config: ExternalAccountConfig{
+		config: Config{
 			Audience:         "32555940559.apps.googleusercontent.com",
 			SubjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
 			TokenInfoURL:     "http://localhost:8080/v1/tokeninfo",
 			ClientSecret:     "notsosecret",
 			ClientID:         "rbrgnognrhongo3bi4gb9ghg9g",
-			CredentialSource: testBaseCredSource,
+			CredentialSource: &testBaseCredSource,
 			Scopes:           []string{"https://www.googleapis.com/auth/devstorage.full_control"},
 		},
 		expectedImpersonationBody: "{\"lifetime\":\"3600s\",\"scope\":[\"https://www.googleapis.com/auth/devstorage.full_control\"]}",
@@ -93,13 +93,13 @@ var impersonationTests = []struct {
 	},
 	{
 		name: "With TokenLifetime Set",
-		config: ExternalAccountConfig{
+		config: Config{
 			Audience:         "32555940559.apps.googleusercontent.com",
 			SubjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
 			TokenInfoURL:     "http://localhost:8080/v1/tokeninfo",
 			ClientSecret:     "notsosecret",
 			ClientID:         "rbrgnognrhongo3bi4gb9ghg9g",
-			CredentialSource: testBaseCredSource,
+			CredentialSource: &testBaseCredSource,
 			Scopes:           []string{"https://www.googleapis.com/auth/devstorage.full_control"},
 			ServiceAccountImpersonationLifetimeSeconds: 10000,
 		},

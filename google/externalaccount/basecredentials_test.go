@@ -23,16 +23,16 @@ const (
 
 var testBaseCredSource = CredentialSource{
 	File:   textBaseCredPath,
-	Format: format{Type: fileTypeText},
+	Format: Format{Type: fileTypeText},
 }
 
-var testConfig = ExternalAccountConfig{
+var testConfig = Config{
 	Audience:         "32555940559.apps.googleusercontent.com",
 	SubjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
 	TokenInfoURL:     "http://localhost:8080/v1/tokeninfo",
 	ClientSecret:     "notsosecret",
 	ClientID:         "rbrgnognrhongo3bi4gb9ghg9g",
-	CredentialSource: testBaseCredSource,
+	CredentialSource: &testBaseCredSource,
 	Scopes:           []string{"https://www.googleapis.com/auth/devstorage.full_control"},
 }
 
@@ -57,7 +57,7 @@ type testExchangeTokenServer struct {
 	response      string
 }
 
-func run(t *testing.T, config *ExternalAccountConfig, tets *testExchangeTokenServer) (*oauth2.Token, error) {
+func run(t *testing.T, config *Config, tets *testExchangeTokenServer) (*oauth2.Token, error) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got, want := r.URL.String(), tets.url; got != want {
 			t.Errorf("URL.String(): got %v but want %v", got, want)
@@ -117,12 +117,12 @@ func getExpectedMetricsHeader(source string, saImpersonation bool, configLifetim
 }
 
 func TestToken(t *testing.T) {
-	config := ExternalAccountConfig{
+	config := Config{
 		Audience:         "32555940559.apps.googleusercontent.com",
 		SubjectTokenType: "urn:ietf:params:oauth:token-type:id_token",
 		ClientSecret:     "notsosecret",
 		ClientID:         "rbrgnognrhongo3bi4gb9ghg9g",
-		CredentialSource: testBaseCredSource,
+		CredentialSource: &testBaseCredSource,
 		Scopes:           []string{"https://www.googleapis.com/auth/devstorage.full_control"},
 	}
 
@@ -144,12 +144,12 @@ func TestToken(t *testing.T) {
 }
 
 func TestWorkforcePoolTokenWithClientID(t *testing.T) {
-	config := ExternalAccountConfig{
+	config := Config{
 		Audience:                 "//iam.googleapis.com/locations/eu/workforcePools/pool-id/providers/provider-id",
 		SubjectTokenType:         "urn:ietf:params:oauth:token-type:id_token",
 		ClientSecret:             "notsosecret",
 		ClientID:                 "rbrgnognrhongo3bi4gb9ghg9g",
-		CredentialSource:         testBaseCredSource,
+		CredentialSource:         &testBaseCredSource,
 		Scopes:                   []string{"https://www.googleapis.com/auth/devstorage.full_control"},
 		WorkforcePoolUserProject: "myProject",
 	}
@@ -172,11 +172,11 @@ func TestWorkforcePoolTokenWithClientID(t *testing.T) {
 }
 
 func TestWorkforcePoolTokenWithoutClientID(t *testing.T) {
-	config := ExternalAccountConfig{
+	config := Config{
 		Audience:                 "//iam.googleapis.com/locations/eu/workforcePools/pool-id/providers/provider-id",
 		SubjectTokenType:         "urn:ietf:params:oauth:token-type:id_token",
 		ClientSecret:             "notsosecret",
-		CredentialSource:         testBaseCredSource,
+		CredentialSource:         &testBaseCredSource,
 		Scopes:                   []string{"https://www.googleapis.com/auth/devstorage.full_control"},
 		WorkforcePoolUserProject: "myProject",
 	}
@@ -199,23 +199,23 @@ func TestWorkforcePoolTokenWithoutClientID(t *testing.T) {
 }
 
 func TestNonworkforceWithWorkforcePoolUserProject(t *testing.T) {
-	config := ExternalAccountConfig{
+	config := Config{
 		Audience:                 "32555940559.apps.googleusercontent.com",
 		SubjectTokenType:         "urn:ietf:params:oauth:token-type:id_token",
 		TokenURL:                 "https://sts.googleapis.com",
 		ClientSecret:             "notsosecret",
 		ClientID:                 "rbrgnognrhongo3bi4gb9ghg9g",
-		CredentialSource:         testBaseCredSource,
+		CredentialSource:         &testBaseCredSource,
 		Scopes:                   []string{"https://www.googleapis.com/auth/devstorage.full_control"},
 		WorkforcePoolUserProject: "myProject",
 	}
 
-	_, err := config.TokenSource(context.Background())
+	_, err := NewTokenSource(context.Background(), config)
 
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: workforce_pool_user_project should not be set for non-workforce pool credentials"; got != want {
+	if got, want := err.Error(), "oauth2/google: Workforce pool user project should not be set for non-workforce pool credentials"; got != want {
 		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
 	}
 }
@@ -247,7 +247,7 @@ func TestWorkforcePoolCreation(t *testing.T) {
 			config.ServiceAccountImpersonationURL = "https://iamcredentials.googleapis.com"
 			config.Audience = tt.audience
 			config.WorkforcePoolUserProject = "myProject"
-			_, err := config.TokenSource(ctx)
+			_, err := NewTokenSource(ctx, config)
 
 			if tt.expectSuccess && err != nil {
 				t.Errorf("got %v but want nil", err)
