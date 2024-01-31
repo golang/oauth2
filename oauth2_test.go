@@ -425,7 +425,6 @@ func TestPasswordCredentialsTokenRequest(t *testing.T) {
 
 func TestPasswordCredentialsTokenRequest_AuthCodeOption(t *testing.T) {
 	testCases := map[string]struct {
-		ctx                   context.Context
 		username              string
 		password              string
 		authCodeOptions       []AuthCodeOption
