@@ -29,6 +29,8 @@ var (
 	defaultHeader    = &jws.Header{Algorithm: "RS256", Typ: "JWT"}
 )
 
+type Signer = jws.Signer
+
 // Config is the configuration for using JWT to fetch tokens,
 // commonly known as "two-legged OAuth 2.0".
 type Config struct {
