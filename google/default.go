@@ -213,7 +213,7 @@ func FindDefaultCredentialsWithParams(ctx context.Context, params CredentialsPar
 	if filename := os.Getenv(envVar); filename != "" {
 		creds, err := readCredentialsFile(ctx, filename, params)
 		if err != nil {
-			return nil, fmt.Errorf("google: error getting credentials using %v environment variable: %v", envVar, err)
+			return nil, fmt.Errorf("google: error getting credentials using %v environment variable: %w", envVar, err)
 		}
 		return creds, nil
 	}

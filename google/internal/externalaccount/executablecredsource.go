@@ -71,7 +71,7 @@ func exitCodeError(exitCode int) error {
 }
 
 func executableError(err error) error {
-	return fmt.Errorf("oauth2/google: executable command failed: %v", err)
+	return fmt.Errorf("oauth2/google: executable command failed: %w", err)
 }
 
 func executablesDisallowedError() error {

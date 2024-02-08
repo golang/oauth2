@@ -54,18 +54,18 @@ type SDKConfig struct {
 func NewSDKConfig(account string) (*SDKConfig, error) {
 	configPath, err := sdkConfigPath()
 	if err != nil {
-		return nil, fmt.Errorf("oauth2/google: error getting SDK config path: %v", err)
+		return nil, fmt.Errorf("oauth2/google: error getting SDK config path: %w", err)
 	}
 	credentialsPath := filepath.Join(configPath, "credentials")
 	f, err := os.Open(credentialsPath)
 	if err != nil {
-		return nil, fmt.Errorf("oauth2/google: failed to load SDK credentials: %v", err)
+		return nil, fmt.Errorf("oauth2/google: failed to load SDK credentials: %w", err)
 	}
 	defer f.Close()
 
 	var c sdkCredentials
 	if err := json.NewDecoder(f).Decode(&c); err != nil {
-		return nil, fmt.Errorf("oauth2/google: failed to decode SDK credentials from %q: %v", credentialsPath, err)
+		return nil, fmt.Errorf("oauth2/google: failed to decode SDK credentials from %q: %w", credentialsPath, err)
 	}
 	if len(c.Data) == 0 {
 		return nil, fmt.Errorf("oauth2/google: no credentials found in %q, run `gcloud auth login` to create one", credentialsPath)
@@ -74,12 +74,12 @@ func NewSDKConfig(account string) (*SDKConfig, error) {
 		propertiesPath := filepath.Join(configPath, "properties")
 		f, err := os.Open(propertiesPath)
 		if err != nil {
-			return nil, fmt.Errorf("oauth2/google: failed to load SDK properties: %v", err)
+			return nil, fmt.Errorf("oauth2/google: failed to load SDK properties: %w", err)
 		}
 		defer f.Close()
 		ini, err := parseINI(f)
 		if err != nil {
-			return nil, fmt.Errorf("oauth2/google: failed to parse SDK properties %q: %v", propertiesPath, err)
+			return nil, fmt.Errorf("oauth2/google: failed to parse SDK properties %q: %w", propertiesPath, err)
 		}
 		core, ok := ini["core"]
 		if !ok {
@@ -170,7 +170,7 @@ func parseINI(ini io.Reader) (map[string]map[string]string, error) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error scanning ini: %v", err)
+		return nil, fmt.Errorf("error scanning ini: %w", err)
 	}
 	return result, nil
 }
