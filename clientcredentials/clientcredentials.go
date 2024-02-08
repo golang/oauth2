@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/internal"
 )
@@ -68,6 +69,17 @@ func (c *Config) Token(ctx context.Context) (*oauth2.Token, error) {
 //
 // The returned Client and its Transport should not be modified.
 func (c *Config) Client(ctx context.Context) *http.Client {
+	return oauth2.NewClient(ctx, c.TokenSource(ctx))
+}
+
+func (c *Config) ClientWithXRay(ctx context.Context, hc *http.Client) *http.Client {
+	if hc == nil {
+		hc = http.DefaultClient
+	}
+
+	client := xray.Client(hc)
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, client)
+
 	return oauth2.NewClient(ctx, c.TokenSource(ctx))
 }
 
