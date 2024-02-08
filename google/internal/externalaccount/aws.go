@@ -89,28 +89,6 @@ func getHmacSha256(key, input []byte) ([]byte, error) {
 	return hash.Sum(nil), nil
 }
 
-func cloneRequest(r *http.Request) *http.Request {
-	r2 := new(http.Request)
-	*r2 = *r
-	if r.Header != nil {
-		r2.Header = make(http.Header, len(r.Header))
-
-		// Find total number of values.
-		headerCount := 0
-		for _, headerValues := range r.Header {
-			headerCount += len(headerValues)
-		}
-		copiedHeaders := make([]string, headerCount) // shared backing array for headers' values
-
-		for headerKey, headerValues := range r.Header {
-			headerCount = copy(copiedHeaders, headerValues)
-			r2.Header[headerKey] = copiedHeaders[:headerCount:headerCount]
-			copiedHeaders = copiedHeaders[headerCount:]
-		}
-	}
-	return r2
-}
-
 func canonicalPath(req *http.Request) string {
 	result := req.URL.EscapedPath()
 	if result == "" {
@@ -192,7 +170,7 @@ func canonicalRequest(req *http.Request, canonicalHeaderColumns, canonicalHeader
 // SignRequest adds the appropriate headers to an http.Request
 // or returns an error if something prevented this.
 func (rs *awsRequestSigner) SignRequest(req *http.Request) error {
-	signedRequest := cloneRequest(req)
+	signedRequest := req.Clone(req.Context())
 	timestamp := now()
 
 	signedRequest.Header.Add("host", requestHost(req))
