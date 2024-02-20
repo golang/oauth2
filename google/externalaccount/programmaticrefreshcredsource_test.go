@@ -56,11 +56,11 @@ func TestRetrieveSubjectToken_ProgrammaticAuthFails(t *testing.T) {
 
 func TestRetrieveSubjectToken_ProgrammaticAuthContext(t *testing.T) {
 	tfc := testConfig
-	expectedContext := SupplierContext{Audience: tfc.Audience, SubjectTokenType: tfc.SubjectTokenType}
+	expectedOptions := SupplierOptions{Audience: tfc.Audience, SubjectTokenType: tfc.SubjectTokenType}
 
 	tfc.SubjectTokenSupplier = testSubjectTokenSupplier{
 		subjectToken:    "subjectToken",
-		expectedContext: &expectedContext,
+		expectedContext: &expectedOptions,
 	}
 
 	base, err := tfc.parse(context.Background())
@@ -77,18 +77,18 @@ func TestRetrieveSubjectToken_ProgrammaticAuthContext(t *testing.T) {
 type testSubjectTokenSupplier struct {
 	err             error
 	subjectToken    string
-	expectedContext *SupplierContext
+	expectedContext *SupplierOptions
 }
 
-func (supp testSubjectTokenSupplier) SubjectToken(ctx SupplierContext) (string, error) {
+func (supp testSubjectTokenSupplier) SubjectToken(ctx context.Context, options SupplierOptions) (string, error) {
 	if supp.err != nil {
 		return "", supp.err
 	}
 	if supp.expectedContext != nil {
-		if supp.expectedContext.Audience != ctx.Audience {
+		if supp.expectedContext.Audience != options.Audience {
 			return "", errors.New("Audience does not match")
 		}
-		if supp.expectedContext.SubjectTokenType != ctx.SubjectTokenType {
+		if supp.expectedContext.SubjectTokenType != options.SubjectTokenType {
 			return "", errors.New("Audience does not match")
 		}
 	}

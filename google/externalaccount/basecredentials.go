@@ -132,8 +132,13 @@ type Config struct {
 	// Audience is the Secure Token Service (STS) audience which contains the resource name for the workload
 	// identity pool or the workforce pool and the provider identifier in that pool. Required.
 	Audience string
-	// SubjectTokenType is the STS token type based on the Oauth2.0 token exchange spec
-	// e.g. `urn:ietf:params:oauth:token-type:jwt`. Required.
+	// SubjectTokenType is the STS token type based on the Oauth2.0 token exchange spec.
+	// Expected values include:
+	// “urn:ietf:params:oauth:token-type:jwt”
+	// “urn:ietf:params:oauth:token-type:id-token”
+	// “urn:ietf:params:oauth:token-type:saml2”
+	// “urn:ietf:params:aws:token-type:aws4_request”
+	// Required.
 	SubjectTokenType string
 	// TokenURL is the STS token exchange endpoint. If not provided, will default to
 	// https://sts.googleapis.com/v1/token. Optional.
@@ -146,7 +151,7 @@ type Config struct {
 	// required for workload identity pools when APIs to be accessed have not integrated with UberMint. Optional.
 	ServiceAccountImpersonationURL string
 	// ServiceAccountImpersonationLifetimeSeconds is the number of seconds the service account impersonation
-	// token will be valid for. If not provided will default to 3600. Optional.
+	// token will be valid for. If not provided, it will default to 3600. Optional.
 	ServiceAccountImpersonationLifetimeSeconds int
 	// ClientSecret is currently only required if token_info endpoint also
 	// needs to be called with the generated GCP access token. When provided, STS will be
@@ -155,7 +160,8 @@ type Config struct {
 	// ClientID is only required in conjunction with ClientSecret, as described above. Optional.
 	ClientID string
 	// CredentialSource contains the necessary information to retrieve the token itself, as well
-	// as some environmental information. Will be used unless a supplier is provided. Optional.
+	// as some environmental information. One of SubjectTokenSupplier, AWSSecurityCredentialSupplier or
+	// CredentialSource must be provided. Optional.
 	CredentialSource *CredentialSource
 	// QuotaProjectID is injected by gCloud. If the value is non-empty, the Auth libraries
 	// will set the x-goog-user-project which overrides the project associated with the credentials. Optional.
@@ -167,9 +173,11 @@ type Config struct {
 	// The underlying principal must still have serviceusage.services.use IAM
 	// permission to use the project for billing/quota. Optional.
 	WorkforcePoolUserProject string
-	// SubjectTokenSupplier is an optional token supplier for OIDC/SAML credentials. Optional.
+	// SubjectTokenSupplier is an optional token supplier for OIDC/SAML credentials.
+	// One of SubjectTokenSupplier, AWSSecurityCredentialSupplier or CredentialSource must be provided. Optional.
 	SubjectTokenSupplier SubjectTokenSupplier
-	// AwsSecurityCredentialsSupplier is an AWS Security Credential supplier for AWS credentials. Optional.
+	// AwsSecurityCredentialsSupplier is an AWS Security Credential supplier for AWS credentials.
+	// One of SubjectTokenSupplier, AWSSecurityCredentialSupplier or CredentialSource must be provided. Optional.
 	AwsSecurityCredentialsSupplier AwsSecurityCredentialsSupplier
 }
 
@@ -296,24 +304,28 @@ type ExecutableConfig struct {
 // SubjectTokenSupplier can be used to supply a subject token to exchange for a GCP access token.
 type SubjectTokenSupplier interface {
 	// AwsRegion should return a valid subject token or an error.
-	SubjectToken(context SupplierContext) (string, error)
+	SubjectToken(ctx context.Context, options SupplierOptions) (string, error)
 }
 
 // AWSSecurityCredentialsSupplier can be used to supply AwsSecurityCredentials and an Aws Region to
 // exchange for a GCP access token.
 type AwsSecurityCredentialsSupplier interface {
 	// AwsRegion should return the AWS region or an error.
-	AwsRegion(context SupplierContext) (string, error)
+	AwsRegion(ctx context.Context, options SupplierOptions) (string, error)
 	// GetAwsSecurityCredentials should return a valid set of AwsSecurityCredentials or an error.
-	AwsSecurityCredentials(context SupplierContext) (*AwsSecurityCredentials, error)
+	AwsSecurityCredentials(ctx context.Context, options SupplierOptions) (*AwsSecurityCredentials, error)
 }
 
-// SupplierContext contains information about the requested subject token or Aws credentials from the
+// SupplierOptions contains information about the requested subject token or Aws credentials from the
 // Google external account credential.
-type SupplierContext struct {
+type SupplierOptions struct {
 	// Audience is the requested audience for the external account credential.
 	Audience string
-	// Subject token type is the requested subject token type fro the external account credential.
+	// Subject token type is the requested subject token type for the external account credential. Expected values include:
+	// “urn:ietf:params:oauth:token-type:jwt”
+	// “urn:ietf:params:oauth:token-type:id-token”
+	// “urn:ietf:params:oauth:token-type:saml2”
+	// “urn:ietf:params:aws:token-type:aws4_request”
 	SubjectTokenType string
 }
 
@@ -323,17 +335,18 @@ func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 	if c.TokenURL == "" {
 		c.TokenURL = defaultTokenUrl
 	}
-	supplierContext := SupplierContext{Audience: c.Audience, SubjectTokenType: c.SubjectTokenType}
+	supplierOptions := SupplierOptions{Audience: c.Audience, SubjectTokenType: c.SubjectTokenType}
 
 	if c.AwsSecurityCredentialsSupplier != nil {
 		awsCredSource := awsCredentialSource{
 			awsSecurityCredentialsSupplier: c.AwsSecurityCredentialsSupplier,
 			targetResource:                 c.Audience,
-			supplierContext:                supplierContext,
+			supplierOptions:                supplierOptions,
+			ctx:                            ctx,
 		}
 		return awsCredSource, nil
 	} else if c.SubjectTokenSupplier != nil {
-		return programmaticRefreshCredentialSource{subjectTokenSupplier: c.SubjectTokenSupplier, supplierContext: supplierContext}, nil
+		return programmaticRefreshCredentialSource{subjectTokenSupplier: c.SubjectTokenSupplier, supplierOptions: supplierOptions, ctx: ctx}, nil
 	} else if len(c.CredentialSource.EnvironmentID) > 3 && c.CredentialSource.EnvironmentID[:3] == "aws" {
 		if awsVersion, err := strconv.Atoi(c.CredentialSource.EnvironmentID[3:]); err == nil {
 			if awsVersion != 1 {

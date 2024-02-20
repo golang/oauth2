@@ -4,9 +4,12 @@
 
 package externalaccount
 
+import "context"
+
 type programmaticRefreshCredentialSource struct {
-	supplierContext      SupplierContext
+	supplierOptions      SupplierOptions
 	subjectTokenSupplier SubjectTokenSupplier
+	ctx                  context.Context
 }
 
 func (cs programmaticRefreshCredentialSource) credentialSourceType() string {
@@ -14,5 +17,5 @@ func (cs programmaticRefreshCredentialSource) credentialSourceType() string {
 }
 
 func (cs programmaticRefreshCredentialSource) subjectToken() (string, error) {
-	return cs.subjectTokenSupplier.SubjectToken(cs.supplierContext)
+	return cs.subjectTokenSupplier.SubjectToken(cs.ctx, cs.supplierOptions)
 }
