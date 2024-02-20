@@ -43,10 +43,9 @@ For more information on how these work (and how to implement
 executable-sourced credentials), please check out:
 https://cloud.google.com/iam/docs/workload-identity-federation-with-other-providers#create_a_credential_configuration
 
-For using a custom function to supply the token, define a function that can return
-either a token string (for OIDC/SAML providers), or one that returns an [AwsSecurityCredentials]
-(for AWS providers). This function can then be used when building an [Config].
-The [golang.org/x/oauth2.TokenSource] created from the config can then be used access Google
+To use a custom function to supply the token, define a struct that implements the [SubjectTokenSupplier] interface for OIDC/SAML providers,
+or one that implements [AwsSecurityCredentialsSupplier] for AWS providers. This can then be used when building a [Config].
+The [golang.org/x/oauth2.TokenSource] created from the config using [NewTokenSource] can then be used access Google
 Cloud resources. For instance, you can create a NewClient from thes
 [cloud.google.com/go/storage] package and pass in option.WithTokenSource(yourTokenSource))
 
@@ -93,11 +92,10 @@ For more information on how these work (and how to implement
 executable-sourced credentials), please check out:
 https://cloud.google.com/iam/docs/workforce-obtaining-short-lived-credentials#generate_a_configuration_file_for_non-interactive_sign-in
 
-For using a user defined function to supply the token, define a function that can return
-either a token string (for OIDC/SAML providers), or one that returns an [AwsSecurityCredentials]
-for AWS providers. This function can then be used when building an [Config].
-The [golang.org/x/oauth2.TokenSource] created from the config can then be used access Google
-Cloud resources. For instance, you can create a NewClient from the
+To use a custom function to supply the token, define a struct that implements the [SubjectTokenSupplier] interface for OIDC/SAML providers.
+This can then be used when building a [Config].
+The [golang.org/x/oauth2.TokenSource] created from the config using [NewTokenSource] can then be used access Google
+Cloud resources. For instance, you can create a NewClient from thes
 [cloud.google.com/go/storage] package and pass in option.WithTokenSource(yourTokenSource))
 
 # Security considerations
