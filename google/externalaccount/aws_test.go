@@ -1371,7 +1371,7 @@ func TestAWSCredential_ProgrammaticAuthRegionError(t *testing.T) {
 	}
 }
 
-func TestAWSCredential_ProgrammaticAuthContext(t *testing.T) {
+func TestAWSCredential_ProgrammaticAuthOptions(t *testing.T) {
 	tfc := testFileConfig
 	securityCredentials := AwsSecurityCredentials{
 		AccessKeyID:     accessKeyID,
@@ -1386,6 +1386,31 @@ func TestAWSCredential_ProgrammaticAuthContext(t *testing.T) {
 	}
 
 	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err != nil {
+		t.Fatalf("subjectToken() failed %v", err)
+	}
+}
+
+func TestAWSCredential_ProgrammaticAuthContext(t *testing.T) {
+	tfc := testFileConfig
+	securityCredentials := AwsSecurityCredentials{
+		AccessKeyID:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+	}
+	ctx := context.Background()
+
+	tfc.AwsSecurityCredentialsSupplier = testAwsSupplier{
+		awsRegion:       "us-east-2",
+		credentials:     &securityCredentials,
+		expectedContext: ctx,
+	}
+
+	base, err := tfc.parse(ctx)
 	if err != nil {
 		t.Fatalf("parse() failed %v", err)
 	}
@@ -1419,6 +1444,7 @@ type testAwsSupplier struct {
 	awsRegion       string
 	credentials     *AwsSecurityCredentials
 	expectedOptions *SupplierOptions
+	expectedContext context.Context
 }
 
 func (supp testAwsSupplier) AwsRegion(ctx context.Context, options SupplierOptions) (string, error) {
@@ -1431,6 +1457,11 @@ func (supp testAwsSupplier) AwsRegion(ctx context.Context, options SupplierOptio
 		}
 		if supp.expectedOptions.SubjectTokenType != options.SubjectTokenType {
 			return "", errors.New("Audience does not match")
+		}
+	}
+	if supp.expectedContext != nil {
+		if supp.expectedContext != ctx {
+			return "", errors.New("Context does not match")
 		}
 	}
 	return supp.awsRegion, nil
@@ -1446,6 +1477,11 @@ func (supp testAwsSupplier) AwsSecurityCredentials(ctx context.Context, options 
 		}
 		if supp.expectedOptions.SubjectTokenType != options.SubjectTokenType {
 			return nil, errors.New("Audience does not match")
+		}
+	}
+	if supp.expectedContext != nil {
+		if supp.expectedContext != ctx {
+			return nil, errors.New("Context does not match")
 		}
 	}
 	return supp.credentials, nil

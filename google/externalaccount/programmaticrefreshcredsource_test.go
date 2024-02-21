@@ -54,13 +54,13 @@ func TestRetrieveSubjectToken_ProgrammaticAuthFails(t *testing.T) {
 	}
 }
 
-func TestRetrieveSubjectToken_ProgrammaticAuthContext(t *testing.T) {
+func TestRetrieveSubjectToken_ProgrammaticAuthOptions(t *testing.T) {
 	tfc := testConfig
 	expectedOptions := SupplierOptions{Audience: tfc.Audience, SubjectTokenType: tfc.SubjectTokenType}
 
 	tfc.SubjectTokenSupplier = testSubjectTokenSupplier{
 		subjectToken:    "subjectToken",
-		expectedContext: &expectedOptions,
+		expectedOptions: &expectedOptions,
 	}
 
 	base, err := tfc.parse(context.Background())
@@ -74,22 +74,48 @@ func TestRetrieveSubjectToken_ProgrammaticAuthContext(t *testing.T) {
 	}
 }
 
+func TestRetrieveSubjectToken_ProgrammaticAuthContext(t *testing.T) {
+	tfc := testConfig
+	ctx := context.Background()
+
+	tfc.SubjectTokenSupplier = testSubjectTokenSupplier{
+		subjectToken:    "subjectToken",
+		expectedContext: ctx,
+	}
+
+	base, err := tfc.parse(ctx)
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+}
+
 type testSubjectTokenSupplier struct {
 	err             error
 	subjectToken    string
-	expectedContext *SupplierOptions
+	expectedOptions *SupplierOptions
+	expectedContext context.Context
 }
 
 func (supp testSubjectTokenSupplier) SubjectToken(ctx context.Context, options SupplierOptions) (string, error) {
 	if supp.err != nil {
 		return "", supp.err
 	}
-	if supp.expectedContext != nil {
-		if supp.expectedContext.Audience != options.Audience {
+	if supp.expectedOptions != nil {
+		if supp.expectedOptions.Audience != options.Audience {
 			return "", errors.New("Audience does not match")
 		}
-		if supp.expectedContext.SubjectTokenType != options.SubjectTokenType {
+		if supp.expectedOptions.SubjectTokenType != options.SubjectTokenType {
 			return "", errors.New("Audience does not match")
+		}
+	}
+	if supp.expectedContext != nil {
+		if supp.expectedContext != ctx {
+			return "", errors.New("Context does not match")
 		}
 	}
 	return supp.subjectToken, nil
