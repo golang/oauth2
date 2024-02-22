@@ -95,7 +95,7 @@ https://cloud.google.com/iam/docs/workforce-obtaining-short-lived-credentials#ge
 To use a custom function to supply the token, define a struct that implements the [SubjectTokenSupplier] interface for OIDC/SAML providers.
 This can then be used when building a [Config].
 The [golang.org/x/oauth2.TokenSource] created from the config using [NewTokenSource] can then be used access Google
-Cloud resources. For instance, you can create a NewClient from thes
+Cloud resources. For instance, you can create a new client from the
 [cloud.google.com/go/storage] package and pass in option.WithTokenSource(yourTokenSource))
 
 # Security considerations
