@@ -1021,3 +1021,37 @@ func TestRetrieveOutputFileSubjectTokenJwt(t *testing.T) {
 		})
 	}
 }
+
+func TestServiceAccountImpersonationRE(t *testing.T) {
+	tests := []struct {
+		name                           string
+		serviceAccountImpersonationURL string
+		want                           string
+	}{
+		{
+			name:                           "universe domain Google Default Universe (GDU) googleapis.com",
+			serviceAccountImpersonationURL: "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/test@project.iam.gserviceaccount.com:generateAccessToken",
+			want:                           "test@project.iam.gserviceaccount.com",
+		},
+		{
+			name:                           "email does not match",
+			serviceAccountImpersonationURL: "test@project.iam.gserviceaccount.com",
+			want:                           "",
+		},
+		{
+			name:                           "universe domain non-GDU",
+			serviceAccountImpersonationURL: "https://iamcredentials.apis-tpclp.goog/v1/projects/-/serviceAccounts/test@project.iam.gserviceaccount.com:generateAccessToken",
+			want:                           "test@project.iam.gserviceaccount.com",
+		},
+	}
+	for _, tt := range tests {
+		matches := serviceAccountImpersonationRE.FindStringSubmatch(tt.serviceAccountImpersonationURL)
+		if matches == nil {
+			if tt.want != "" {
+				t.Errorf("%q: got nil, want %q", tt.name, tt.want)
+			}
+		} else if matches[1] != tt.want {
+			t.Errorf("%q: got %q, want %q", tt.name, matches[1], tt.want)
+		}
+	}
+}

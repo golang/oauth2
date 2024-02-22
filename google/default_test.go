@@ -6,6 +6,9 @@ package google
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -53,6 +56,10 @@ var userJSONUniverseDomain = []byte(`{
   "universe_domain": "example.com"
 }`)
 
+var universeDomain = "example.com"
+
+var universeDomain2 = "apis-tpclp.goog"
+
 func TestCredentialsFromJSONWithParams_SA(t *testing.T) {
 	ctx := context.Background()
 	scope := "https://www.googleapis.com/auth/cloud-platform"
@@ -70,6 +77,32 @@ func TestCredentialsFromJSONWithParams_SA(t *testing.T) {
 	if want := "googleapis.com"; creds.UniverseDomain() != want {
 		t.Fatalf("got %q, want %q", creds.UniverseDomain(), want)
 	}
+	if want := "googleapis.com"; creds.UniverseDomain() != want {
+		t.Fatalf("got %q, want %q", creds.UniverseDomain(), want)
+	}
+}
+
+func TestCredentialsFromJSONWithParams_SA_Params_UniverseDomain(t *testing.T) {
+	ctx := context.Background()
+	scope := "https://www.googleapis.com/auth/cloud-platform"
+	params := CredentialsParams{
+		Scopes:         []string{scope},
+		UniverseDomain: universeDomain2,
+	}
+	creds, err := CredentialsFromJSONWithParams(ctx, saJSONJWT, params)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want := "fake_project"; creds.ProjectID != want {
+		t.Fatalf("got %q, want %q", creds.ProjectID, want)
+	}
+	if creds.UniverseDomain() != universeDomain2 {
+		t.Fatalf("got %q, want %q", creds.UniverseDomain(), universeDomain2)
+	}
+	if creds.UniverseDomain() != universeDomain2 {
+		t.Fatalf("got %q, want %q", creds.UniverseDomain(), universeDomain2)
+	}
 }
 
 func TestCredentialsFromJSONWithParams_SA_UniverseDomain(t *testing.T) {
@@ -86,8 +119,42 @@ func TestCredentialsFromJSONWithParams_SA_UniverseDomain(t *testing.T) {
 	if want := "fake_project"; creds.ProjectID != want {
 		t.Fatalf("got %q, want %q", creds.ProjectID, want)
 	}
-	if want := "example.com"; creds.UniverseDomain() != want {
-		t.Fatalf("got %q, want %q", creds.UniverseDomain(), want)
+	if creds.UniverseDomain() != universeDomain {
+		t.Fatalf("got %q, want %q", creds.UniverseDomain(), universeDomain)
+	}
+	got, err := creds.GetUniverseDomain()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != universeDomain {
+		t.Fatalf("got %q, want %q", got, universeDomain)
+	}
+}
+
+func TestCredentialsFromJSONWithParams_SA_UniverseDomain_Params_UniverseDomain(t *testing.T) {
+	ctx := context.Background()
+	scope := "https://www.googleapis.com/auth/cloud-platform"
+	params := CredentialsParams{
+		Scopes:         []string{scope},
+		UniverseDomain: universeDomain2,
+	}
+	creds, err := CredentialsFromJSONWithParams(ctx, saJSONJWTUniverseDomain, params)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want := "fake_project"; creds.ProjectID != want {
+		t.Fatalf("got %q, want %q", creds.ProjectID, want)
+	}
+	if creds.UniverseDomain() != universeDomain2 {
+		t.Fatalf("got %q, want %q", creds.UniverseDomain(), universeDomain2)
+	}
+	got, err := creds.GetUniverseDomain()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != universeDomain2 {
+		t.Fatalf("got %q, want %q", got, universeDomain2)
 	}
 }
 
@@ -105,6 +172,37 @@ func TestCredentialsFromJSONWithParams_User(t *testing.T) {
 	if want := "googleapis.com"; creds.UniverseDomain() != want {
 		t.Fatalf("got %q, want %q", creds.UniverseDomain(), want)
 	}
+	got, err := creds.GetUniverseDomain()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "googleapis.com"; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestCredentialsFromJSONWithParams_User_Params_UniverseDomain(t *testing.T) {
+	ctx := context.Background()
+	scope := "https://www.googleapis.com/auth/cloud-platform"
+	params := CredentialsParams{
+		Scopes:         []string{scope},
+		UniverseDomain: universeDomain2,
+	}
+	creds, err := CredentialsFromJSONWithParams(ctx, userJSON, params)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want := "googleapis.com"; creds.UniverseDomain() != want {
+		t.Fatalf("got %q, want %q", creds.UniverseDomain(), want)
+	}
+	got, err := creds.GetUniverseDomain()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "googleapis.com"; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
 }
 
 func TestCredentialsFromJSONWithParams_User_UniverseDomain(t *testing.T) {
@@ -121,4 +219,79 @@ func TestCredentialsFromJSONWithParams_User_UniverseDomain(t *testing.T) {
 	if want := "googleapis.com"; creds.UniverseDomain() != want {
 		t.Fatalf("got %q, want %q", creds.UniverseDomain(), want)
 	}
+	got, err := creds.GetUniverseDomain()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "googleapis.com"; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestCredentialsFromJSONWithParams_User_UniverseDomain_Params_UniverseDomain(t *testing.T) {
+	ctx := context.Background()
+	scope := "https://www.googleapis.com/auth/cloud-platform"
+	params := CredentialsParams{
+		Scopes:         []string{scope},
+		UniverseDomain: universeDomain2,
+	}
+	creds, err := CredentialsFromJSONWithParams(ctx, userJSONUniverseDomain, params)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want := "googleapis.com"; creds.UniverseDomain() != want {
+		t.Fatalf("got %q, want %q", creds.UniverseDomain(), want)
+	}
+	got, err := creds.GetUniverseDomain()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "googleapis.com"; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestComputeUniverseDomain(t *testing.T) {
+	universeDomainPath := "/computeMetadata/v1/universe/universe_domain"
+	universeDomainResponseBody := "example.com"
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != universeDomainPath {
+			t.Errorf("got %s, want %s", r.URL.Path, universeDomainPath)
+		}
+		w.Write([]byte(universeDomainResponseBody))
+	}))
+	defer s.Close()
+	t.Setenv("GCE_METADATA_HOST", strings.TrimPrefix(s.URL, "http://"))
+
+	scope := "https://www.googleapis.com/auth/cloud-platform"
+	params := CredentialsParams{
+		Scopes: []string{scope},
+	}
+	// Copied from FindDefaultCredentialsWithParams, metadata.OnGCE() = true block
+	creds := &Credentials{
+		ProjectID:      "fake_project",
+		TokenSource:    computeTokenSource("", params.EarlyTokenRefresh, params.Scopes...),
+		universeDomain: params.UniverseDomain, // empty
+	}
+	c := make(chan bool)
+	go func() {
+		got, err := creds.GetUniverseDomain() // First conflicting access.
+		if err != nil {
+			t.Error(err)
+		}
+		if want := universeDomainResponseBody; got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+		c <- true
+	}()
+	got, err := creds.GetUniverseDomain() // Second conflicting access.
+	<-c
+	if err != nil {
+		t.Error(err)
+	}
+	if want := universeDomainResponseBody; got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+
 }
