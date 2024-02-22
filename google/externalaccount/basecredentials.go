@@ -187,7 +187,7 @@ func validateWorkforceAudience(input string) bool {
 	return validWorkforceAudiencePattern.MatchString(input)
 }
 
-// NewTokenSource Returns an external account TokenSource.
+// NewTokenSource Returns an external account TokenSource using the provided external account config.
 func NewTokenSource(ctx context.Context, conf Config) (oauth2.TokenSource, error) {
 	if conf.Audience == "" {
 		return nil, fmt.Errorf("oauth2/google: Audience must be set")
@@ -253,14 +253,17 @@ const (
 
 // Format contains information needed to retireve a subject token for URL or File sourced credentials.
 type Format struct {
-	// Type is either "text" or "json". When not provided "text" type is assumed.
+	// Type should be either "text" or "json". This determines whether the file or URL sourced credentials
+	// expect a simple text subject token or if the subject token will be contained in a JSON object.
+	// When not provided "text" type is assumed.
 	Type string `json:"type"`
-	// SubjectTokenFieldName is only required for JSON format. This would be "access_token" for azure.
+	// SubjectTokenFieldName is only required for JSON format. This is the field name that the credentials will check
+	// for the subject token in the file or URL response. This would be "access_token" for azure.
 	SubjectTokenFieldName string `json:"subject_token_field_name"`
 }
 
 // CredentialSource stores the information necessary to retrieve the credentials for the STS exchange.
-// One field amongst File, URL, Executable should be filled, depending on the kind of credential in question.
+// One field amongst File, URL, Executable, or EnvironmentID should be provided, depending on the kind of credential in question.
 // The EnvironmentID should start with AWS if being used for an AWS credential.
 type CredentialSource struct {
 	// File is the location for file sourced credentials.
@@ -301,7 +304,9 @@ type ExecutableConfig struct {
 
 // SubjectTokenSupplier can be used to supply a subject token to exchange for a GCP access token.
 type SubjectTokenSupplier interface {
-	// AwsRegion should return a valid subject token or an error.
+	// SubjectToken should return a valid subject token or an error.
+	// The external account token source does not cache the returned subject token, so caching
+	// logic should be implemented in the supplier to prevent multiple requests for the same subject token.
 	SubjectToken(ctx context.Context, options SupplierOptions) (string, error)
 }
 
@@ -311,6 +316,8 @@ type AwsSecurityCredentialsSupplier interface {
 	// AwsRegion should return the AWS region or an error.
 	AwsRegion(ctx context.Context, options SupplierOptions) (string, error)
 	// GetAwsSecurityCredentials should return a valid set of AwsSecurityCredentials or an error.
+	// The external account token source does not cache the returned security credentials, so caching
+	// logic should be implemented in the supplier to prevent multiple requests for the same security credentials.
 	AwsSecurityCredentials(ctx context.Context, options SupplierOptions) (*AwsSecurityCredentials, error)
 }
 
