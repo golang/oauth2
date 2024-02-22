@@ -45,7 +45,7 @@ https://cloud.google.com/iam/docs/workload-identity-federation-with-other-provid
 
 To use a custom function to supply the token, define a struct that implements the [SubjectTokenSupplier] interface for OIDC/SAML providers,
 or one that implements [AwsSecurityCredentialsSupplier] for AWS providers. This can then be used when building a [Config].
-The [golang.org/x/oauth2.TokenSource] created from the config using [NewTokenSource] can then be used access Google
+The [golang.org/x/oauth2.TokenSource] created from the config using [NewTokenSource] can then be used to access Google
 Cloud resources. For instance, you can create a new client from the
 [cloud.google.com/go/storage] package and pass in option.WithTokenSource(yourTokenSource))
 
