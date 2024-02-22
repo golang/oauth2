@@ -32,7 +32,7 @@ type AwsSecurityCredentials struct {
 	AccessKeyID string `json:"AccessKeyID"`
 	// SecretAccessKey is the AWS Secret Access Key - Required.
 	SecretAccessKey string `json:"SecretAccessKey"`
-	// SessionToken is the AWS Session token - Optional.
+	// SessionToken is the AWS Session token. This should be provided for temporary AWS security credentials - Optional.
 	SessionToken string `json:"Token"`
 }
 
