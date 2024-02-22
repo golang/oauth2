@@ -271,7 +271,7 @@ func TestNonworkforceWithWorkforcePoolUserProject(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error but found none")
 	}
-	if got, want := err.Error(), "oauth2/google: Workforce pool user project should not be set for non-workforce pool credentials"; got != want {
+	if got, want := err.Error(), "oauth2/google/externalaccount: Workforce pool user project should not be set for non-workforce pool credentials"; got != want {
 		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
 	}
 }

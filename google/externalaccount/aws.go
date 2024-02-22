@@ -425,7 +425,7 @@ func (cs *awsCredentialSource) getAWSSessionToken() (string, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("oauth2/google: unable to retrieve AWS session token - %s", string(respBody))
+		return "", fmt.Errorf("oauth2/google/externalaccount: unable to retrieve AWS session token - %s", string(respBody))
 	}
 
 	return string(respBody), nil
@@ -444,7 +444,7 @@ func (cs *awsCredentialSource) getRegion(headers map[string]string) (string, err
 	}
 
 	if cs.regionURL == "" {
-		return "", errors.New("oauth2/google: unable to determine AWS region")
+		return "", errors.New("oauth2/google/externalaccount: unable to determine AWS region")
 	}
 
 	req, err := http.NewRequest("GET", cs.regionURL, nil)
@@ -468,7 +468,7 @@ func (cs *awsCredentialSource) getRegion(headers map[string]string) (string, err
 	}
 
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("oauth2/google: unable to retrieve AWS region - %s", string(respBody))
+		return "", fmt.Errorf("oauth2/google/externalaccount: unable to retrieve AWS region - %s", string(respBody))
 	}
 
 	// This endpoint will return the region in format: us-east-2b.
@@ -503,11 +503,11 @@ func (cs *awsCredentialSource) getSecurityCredentials(headers map[string]string)
 	}
 
 	if credentials.AccessKeyID == "" {
-		return result, errors.New("oauth2/google: missing AccessKeyId credential")
+		return result, errors.New("oauth2/google/externalaccount: missing AccessKeyId credential")
 	}
 
 	if credentials.SecretAccessKey == "" {
-		return result, errors.New("oauth2/google: missing SecretAccessKey credential")
+		return result, errors.New("oauth2/google/externalaccount: missing SecretAccessKey credential")
 	}
 
 	return &credentials, nil
@@ -538,7 +538,7 @@ func (cs *awsCredentialSource) getMetadataSecurityCredentials(roleName string, h
 	}
 
 	if resp.StatusCode != 200 {
-		return result, fmt.Errorf("oauth2/google: unable to retrieve AWS security credentials - %s", string(respBody))
+		return result, fmt.Errorf("oauth2/google/externalaccount: unable to retrieve AWS security credentials - %s", string(respBody))
 	}
 
 	err = json.Unmarshal(respBody, &result)
@@ -547,7 +547,7 @@ func (cs *awsCredentialSource) getMetadataSecurityCredentials(roleName string, h
 
 func (cs *awsCredentialSource) getMetadataRoleName(headers map[string]string) (string, error) {
 	if cs.credVerificationURL == "" {
-		return "", errors.New("oauth2/google: unable to determine the AWS metadata server security credentials endpoint")
+		return "", errors.New("oauth2/google/externalaccount: unable to determine the AWS metadata server security credentials endpoint")
 	}
 
 	req, err := http.NewRequest("GET", cs.credVerificationURL, nil)
@@ -571,7 +571,7 @@ func (cs *awsCredentialSource) getMetadataRoleName(headers map[string]string) (s
 	}
 
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("oauth2/google: unable to retrieve AWS role name - %s", string(respBody))
+		return "", fmt.Errorf("oauth2/google/externalaccount: unable to retrieve AWS role name - %s", string(respBody))
 	}
 
 	return string(respBody), nil

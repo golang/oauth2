@@ -846,7 +846,7 @@ func TestAWSCredential_RequestWithBadVersion(t *testing.T) {
 	if err == nil {
 		t.Fatalf("parse() should have failed")
 	}
-	if got, want := err.Error(), "oauth2/google: aws version '3' is not supported in the current build"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: aws version '3' is not supported in the current build"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }
@@ -875,7 +875,7 @@ func TestAWSCredential_RequestWithNoRegionURL(t *testing.T) {
 		t.Fatalf("retrieveSubjectToken() should have failed")
 	}
 
-	if got, want := err.Error(), "oauth2/google: unable to determine AWS region"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: unable to determine AWS region"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }
@@ -905,7 +905,7 @@ func TestAWSCredential_RequestWithBadRegionURL(t *testing.T) {
 		t.Fatalf("retrieveSubjectToken() should have failed")
 	}
 
-	if got, want := err.Error(), "oauth2/google: unable to retrieve AWS region - Not Found"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: unable to retrieve AWS region - Not Found"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }
@@ -937,7 +937,7 @@ func TestAWSCredential_RequestWithMissingCredential(t *testing.T) {
 		t.Fatalf("retrieveSubjectToken() should have failed")
 	}
 
-	if got, want := err.Error(), "oauth2/google: missing AccessKeyId credential"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: missing AccessKeyId credential"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }
@@ -969,7 +969,7 @@ func TestAWSCredential_RequestWithIncompleteCredential(t *testing.T) {
 		t.Fatalf("retrieveSubjectToken() should have failed")
 	}
 
-	if got, want := err.Error(), "oauth2/google: missing SecretAccessKey credential"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: missing SecretAccessKey credential"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }
@@ -998,7 +998,7 @@ func TestAWSCredential_RequestWithNoCredentialURL(t *testing.T) {
 		t.Fatalf("retrieveSubjectToken() should have failed")
 	}
 
-	if got, want := err.Error(), "oauth2/google: unable to determine the AWS metadata server security credentials endpoint"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: unable to determine the AWS metadata server security credentials endpoint"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }
@@ -1027,7 +1027,7 @@ func TestAWSCredential_RequestWithBadCredentialURL(t *testing.T) {
 		t.Fatalf("retrieveSubjectToken() should have failed")
 	}
 
-	if got, want := err.Error(), "oauth2/google: unable to retrieve AWS role name - Not Found"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: unable to retrieve AWS role name - Not Found"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }
@@ -1056,7 +1056,7 @@ func TestAWSCredential_RequestWithBadFinalCredentialURL(t *testing.T) {
 		t.Fatalf("retrieveSubjectToken() should have failed")
 	}
 
-	if got, want := err.Error(), "oauth2/google: unable to retrieve AWS security credentials - Not Found"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: unable to retrieve AWS security credentials - Not Found"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }

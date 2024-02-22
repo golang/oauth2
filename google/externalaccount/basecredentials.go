@@ -46,7 +46,7 @@ https://cloud.google.com/iam/docs/workload-identity-federation-with-other-provid
 To use a custom function to supply the token, define a struct that implements the [SubjectTokenSupplier] interface for OIDC/SAML providers,
 or one that implements [AwsSecurityCredentialsSupplier] for AWS providers. This can then be used when building a [Config].
 The [golang.org/x/oauth2.TokenSource] created from the config using [NewTokenSource] can then be used access Google
-Cloud resources. For instance, you can create a NewClient from thes
+Cloud resources. For instance, you can create a new client from the
 [cloud.google.com/go/storage] package and pass in option.WithTokenSource(yourTokenSource))
 
 Note that this library does not perform any validation on the token_url, token_info_url,
@@ -153,7 +153,7 @@ type Config struct {
 	ServiceAccountImpersonationLifetimeSeconds int
 	// ClientSecret is currently only required if token_info endpoint also
 	// needs to be called with the generated GCP access token. When provided, STS will be
-	// called with additional basic authentication using client_id as username and client_secret as password. Optional.
+	// called with additional basic authentication using ClientId as username and ClientSecret as password. Optional.
 	ClientSecret string
 	// ClientID is only required in conjunction with ClientSecret, as described above. Optional.
 	ClientID string
@@ -162,7 +162,7 @@ type Config struct {
 	// CredentialSource must be provided. Optional.
 	CredentialSource *CredentialSource
 	// QuotaProjectID is injected by gCloud. If the value is non-empty, the Auth libraries
-	// will set the x-goog-user-project which overrides the project associated with the credentials. Optional.
+	// will set the x-goog-user-project header which overrides the project associated with the credentials. Optional.
 	QuotaProjectID string
 	// Scopes contains the desired scopes for the returned access token. Optional.
 	Scopes []string
@@ -190,15 +190,15 @@ func validateWorkforceAudience(input string) bool {
 // NewTokenSource Returns an external account TokenSource using the provided external account config.
 func NewTokenSource(ctx context.Context, conf Config) (oauth2.TokenSource, error) {
 	if conf.Audience == "" {
-		return nil, fmt.Errorf("oauth2/google: Audience must be set")
+		return nil, fmt.Errorf("oauth2/google/externalaccount: Audience must be set")
 	}
 	if conf.SubjectTokenType == "" {
-		return nil, fmt.Errorf("oauth2/google: Subject token type must be set")
+		return nil, fmt.Errorf("oauth2/google/externalaccount: Subject token type must be set")
 	}
 	if conf.WorkforcePoolUserProject != "" {
 		valid := validateWorkforceAudience(conf.Audience)
 		if !valid {
-			return nil, fmt.Errorf("oauth2/google: Workforce pool user project should not be set for non-workforce pool credentials")
+			return nil, fmt.Errorf("oauth2/google/externalaccount: Workforce pool user project should not be set for non-workforce pool credentials")
 		}
 	}
 	count := 0
@@ -212,10 +212,10 @@ func NewTokenSource(ctx context.Context, conf Config) (oauth2.TokenSource, error
 		count++
 	}
 	if count == 0 {
-		return nil, fmt.Errorf("oauth2/google: One of CredentialSource, SubjectTokenSupplier, or AwsSecurityCredentialsSupplier must be set")
+		return nil, fmt.Errorf("oauth2/google/externalaccount: One of CredentialSource, SubjectTokenSupplier, or AwsSecurityCredentialsSupplier must be set")
 	}
 	if count > 1 {
-		return nil, fmt.Errorf("oauth2/google: Only one of CredentialSource, SubjectTokenSupplier, or AwsSecurityCredentialsSupplier must be set")
+		return nil, fmt.Errorf("oauth2/google/externalaccount: Only one of CredentialSource, SubjectTokenSupplier, or AwsSecurityCredentialsSupplier must be set")
 	}
 	return conf.tokenSource(ctx, "https")
 }
@@ -263,21 +263,23 @@ type Format struct {
 }
 
 // CredentialSource stores the information necessary to retrieve the credentials for the STS exchange.
-// One field amongst File, URL, Executable, or EnvironmentID should be provided, depending on the kind of credential in question.
-// The EnvironmentID should start with AWS if being used for an AWS credential.
 type CredentialSource struct {
 	// File is the location for file sourced credentials.
+	// One field amongst File, URL, Executable, or EnvironmentID should be provided, depending on the kind of credential in question.
 	File string `json:"file"`
 
 	// Url is the URL to call for URL sourced credentials.
+	// One field amongst File, URL, Executable, or EnvironmentID should be provided, depending on the kind of credential in question.
 	URL string `json:"url"`
-	// Headers are the Headers to attach to the request for URL sourced credentials.
+	// Headers are the headers to attach to the request for URL sourced credentials.
 	Headers map[string]string `json:"headers"`
 
 	// Executable is the configuration object for executable sourced credentials.
+	// One field amongst File, URL, Executable, or EnvironmentID should be provided, depending on the kind of credential in question.
 	Executable *ExecutableConfig `json:"executable"`
 
-	// EnvironmentID is the EnvironmentID used for AWS sourced credentials.
+	// EnvironmentID is the EnvironmentID used for AWS sourced credentials. This should start with "AWS".
+	// One field amongst File, URL, Executable, or EnvironmentID should be provided, depending on the kind of credential in question.
 	EnvironmentID string `json:"environment_id"`
 	// RegionURL is the metadata URL to retrieve the region from for EC2 AWS credentials.
 	RegionURL string `json:"region_url"`
@@ -295,7 +297,7 @@ type ExecutableConfig struct {
 	// Command is the the full command to run to retrieve the subject token.
 	// This can include arguments. Must be an absolute path for the program. Required.
 	Command string `json:"command"`
-	// TimeoutMillis is the timeout duration, in milliseconds. Defaults to 30 seconds when not provided. Optional.
+	// TimeoutMillis is the timeout duration, in milliseconds. Defaults to 30000 milliseconds when not provided. Optional.
 	TimeoutMillis *int `json:"timeout_millis"`
 	// OutputFile is the absolute path to the output file where the executable will cache the response.
 	// If specified the auth libraries will first check this location before running the executable. Optional.
@@ -310,7 +312,7 @@ type SubjectTokenSupplier interface {
 	SubjectToken(ctx context.Context, options SupplierOptions) (string, error)
 }
 
-// AWSSecurityCredentialsSupplier can be used to supply AwsSecurityCredentials and an Aws Region to
+// AWSSecurityCredentialsSupplier can be used to supply AwsSecurityCredentials and an AWS Region to
 // exchange for a GCP access token.
 type AwsSecurityCredentialsSupplier interface {
 	// AwsRegion should return the AWS region or an error.
@@ -321,7 +323,7 @@ type AwsSecurityCredentialsSupplier interface {
 	AwsSecurityCredentials(ctx context.Context, options SupplierOptions) (*AwsSecurityCredentials, error)
 }
 
-// SupplierOptions contains information about the requested subject token or Aws credentials from the
+// SupplierOptions contains information about the requested subject token or AWS security credentials from the
 // Google external account credential.
 type SupplierOptions struct {
 	// Audience is the requested audience for the external account credential.
@@ -355,7 +357,7 @@ func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 	} else if len(c.CredentialSource.EnvironmentID) > 3 && c.CredentialSource.EnvironmentID[:3] == "aws" {
 		if awsVersion, err := strconv.Atoi(c.CredentialSource.EnvironmentID[3:]); err == nil {
 			if awsVersion != 1 {
-				return nil, fmt.Errorf("oauth2/google: aws version '%d' is not supported in the current build", awsVersion)
+				return nil, fmt.Errorf("oauth2/google/externalaccount: aws version '%d' is not supported in the current build", awsVersion)
 			}
 
 			awsCredSource := awsCredentialSource{
@@ -379,7 +381,7 @@ func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 	} else if c.CredentialSource.Executable != nil {
 		return createExecutableCredential(ctx, c.CredentialSource.Executable, c)
 	}
-	return nil, fmt.Errorf("oauth2/google: unable to parse credential source")
+	return nil, fmt.Errorf("oauth2/google/externalaccount: unable to parse credential source")
 }
 
 type baseCredentialSource interface {
@@ -449,7 +451,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 		TokenType:   stsResp.TokenType,
 	}
 	if stsResp.ExpiresIn < 0 {
-		return nil, fmt.Errorf("oauth2/google: got invalid expiry from security token service")
+		return nil, fmt.Errorf("oauth2/google/externalaccount: got invalid expiry from security token service")
 	} else if stsResp.ExpiresIn >= 0 {
 		accessToken.Expiry = now().Add(time.Duration(stsResp.ExpiresIn) * time.Second)
 	}
