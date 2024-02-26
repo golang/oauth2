@@ -128,7 +128,7 @@ var creationTests = []struct {
 func TestCreateExecutableCredential(t *testing.T) {
 	for _, tt := range creationTests {
 		t.Run(tt.name, func(t *testing.T) {
-			ecs, err := CreateExecutableCredential(context.Background(), &tt.executableConfig, nil)
+			ecs, err := createExecutableCredential(context.Background(), &tt.executableConfig, nil)
 			if tt.expectedErr != nil {
 				if err == nil {
 					t.Fatalf("Expected error but found none")
@@ -169,7 +169,7 @@ var getEnvironmentTests = []struct {
 		config: Config{
 			Audience:         "//iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/pool/providers/oidc",
 			SubjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
-			CredentialSource: CredentialSource{
+			CredentialSource: &CredentialSource{
 				Executable: &ExecutableConfig{
 					Command: "blarg",
 				},
@@ -193,7 +193,7 @@ var getEnvironmentTests = []struct {
 			Audience:                       "//iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/pool/providers/oidc",
 			ServiceAccountImpersonationURL: "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/test@project.iam.gserviceaccount.com:generateAccessToken",
 			SubjectTokenType:               "urn:ietf:params:oauth:token-type:jwt",
-			CredentialSource: CredentialSource{
+			CredentialSource: &CredentialSource{
 				Executable: &ExecutableConfig{
 					Command:    "blarg",
 					OutputFile: "/path/to/generated/cached/credentials",
@@ -220,7 +220,7 @@ var getEnvironmentTests = []struct {
 			Audience:                       "//iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/pool/providers/oidc",
 			ServiceAccountImpersonationURL: "test@project.iam.gserviceaccount.com",
 			SubjectTokenType:               "urn:ietf:params:oauth:token-type:jwt",
-			CredentialSource: CredentialSource{
+			CredentialSource: &CredentialSource{
 				Executable: &ExecutableConfig{
 					Command:    "blarg",
 					OutputFile: "/path/to/generated/cached/credentials",
@@ -247,7 +247,7 @@ func TestExecutableCredentialGetEnvironment(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config := tt.config
 
-			ecs, err := CreateExecutableCredential(context.Background(), config.CredentialSource.Executable, &config)
+			ecs, err := createExecutableCredential(context.Background(), config.CredentialSource.Executable, &config)
 			if err != nil {
 				t.Fatalf("creation failed %v", err)
 			}
@@ -471,7 +471,7 @@ func TestRetrieveExecutableSubjectTokenExecutableErrors(t *testing.T) {
 	}
 
 	tfc := testFileConfig
-	tfc.CredentialSource = cs
+	tfc.CredentialSource = &cs
 
 	base, err := tfc.parse(context.Background())
 	if err != nil {
@@ -578,7 +578,7 @@ func TestRetrieveExecutableSubjectTokenSuccesses(t *testing.T) {
 	}
 
 	tfc := testFileConfig
-	tfc.CredentialSource = cs
+	tfc.CredentialSource = &cs
 
 	base, err := tfc.parse(context.Background())
 	if err != nil {
@@ -629,7 +629,7 @@ func TestRetrieveOutputFileSubjectTokenNotJSON(t *testing.T) {
 	}
 
 	tfc := testFileConfig
-	tfc.CredentialSource = cs
+	tfc.CredentialSource = &cs
 
 	base, err := tfc.parse(context.Background())
 	if err != nil {
@@ -778,7 +778,7 @@ func TestRetrieveOutputFileSubjectTokenFailureTests(t *testing.T) {
 			}
 
 			tfc := testFileConfig
-			tfc.CredentialSource = cs
+			tfc.CredentialSource = &cs
 
 			base, err := tfc.parse(context.Background())
 			if err != nil {
@@ -881,7 +881,7 @@ func TestRetrieveOutputFileSubjectTokenInvalidCache(t *testing.T) {
 			}
 
 			tfc := testFileConfig
-			tfc.CredentialSource = cs
+			tfc.CredentialSource = &cs
 
 			base, err := tfc.parse(context.Background())
 			if err != nil {
@@ -986,7 +986,7 @@ func TestRetrieveOutputFileSubjectTokenJwt(t *testing.T) {
 			}
 
 			tfc := testFileConfig
-			tfc.CredentialSource = cs
+			tfc.CredentialSource = &cs
 
 			base, err := tfc.parse(context.Background())
 			if err != nil {

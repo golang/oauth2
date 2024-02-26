@@ -7,6 +7,7 @@ package externalaccount
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -36,7 +37,7 @@ func setEnvironment(env map[string]string) func(string) string {
 
 var defaultRequestSigner = &awsRequestSigner{
 	RegionName: "us-east-1",
-	AwsSecurityCredentials: awsSecurityCredentials{
+	AwsSecurityCredentials: &AwsSecurityCredentials{
 		AccessKeyID:     "AKIDEXAMPLE",
 		SecretAccessKey: "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
 	},
@@ -50,10 +51,10 @@ const (
 
 var requestSignerWithToken = &awsRequestSigner{
 	RegionName: "us-east-2",
-	AwsSecurityCredentials: awsSecurityCredentials{
+	AwsSecurityCredentials: &AwsSecurityCredentials{
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
-		SecurityToken:   securityToken,
+		SessionToken:    securityToken,
 	},
 }
 
@@ -388,7 +389,7 @@ func TestAWSv4Signature_PostRequestWithSecurityTokenAndAdditionalHeaders(t *test
 func TestAWSv4Signature_PostRequestWithAmzDateButNoSecurityToken(t *testing.T) {
 	var requestSigner = &awsRequestSigner{
 		RegionName: "us-east-2",
-		AwsSecurityCredentials: awsSecurityCredentials{
+		AwsSecurityCredentials: &AwsSecurityCredentials{
 			AccessKeyID:     accessKeyID,
 			SecretAccessKey: secretAccessKey,
 		},
@@ -526,8 +527,8 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 
 func noHeaderValidation(r *http.Request) {}
 
-func (server *testAwsServer) getCredentialSource(url string) CredentialSource {
-	return CredentialSource{
+func (server *testAwsServer) getCredentialSource(url string) *CredentialSource {
+	return &CredentialSource{
 		EnvironmentID:               "aws1",
 		URL:                         url + server.url,
 		RegionURL:                   url + server.regionURL,
@@ -541,10 +542,10 @@ func getExpectedSubjectToken(url, region, accessKeyID, secretAccessKey, security
 	req.Header.Add("x-goog-cloud-target-resource", testFileConfig.Audience)
 	signer := &awsRequestSigner{
 		RegionName: region,
-		AwsSecurityCredentials: awsSecurityCredentials{
+		AwsSecurityCredentials: &AwsSecurityCredentials{
 			AccessKeyID:     accessKeyID,
 			SecretAccessKey: secretAccessKey,
-			SecurityToken:   securityToken,
+			SessionToken:    securityToken,
 		},
 	}
 	signer.SignRequest(req)
@@ -588,7 +589,6 @@ func TestAWSCredential_BasicRequest(t *testing.T) {
 
 	tfc := testFileConfig
 	tfc.CredentialSource = server.getCredentialSource(ts.URL)
-
 	oldGetenv := getenv
 	oldNow := now
 	defer func() {
@@ -846,7 +846,7 @@ func TestAWSCredential_RequestWithBadVersion(t *testing.T) {
 	if err == nil {
 		t.Fatalf("parse() should have failed")
 	}
-	if got, want := err.Error(), "oauth2/google: aws version '3' is not supported in the current build"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: aws version '3' is not supported in the current build"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }
@@ -875,7 +875,7 @@ func TestAWSCredential_RequestWithNoRegionURL(t *testing.T) {
 		t.Fatalf("retrieveSubjectToken() should have failed")
 	}
 
-	if got, want := err.Error(), "oauth2/google: unable to determine AWS region"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: unable to determine AWS region"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }
@@ -905,7 +905,7 @@ func TestAWSCredential_RequestWithBadRegionURL(t *testing.T) {
 		t.Fatalf("retrieveSubjectToken() should have failed")
 	}
 
-	if got, want := err.Error(), "oauth2/google: unable to retrieve AWS region - Not Found"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: unable to retrieve AWS region - Not Found"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }
@@ -937,7 +937,7 @@ func TestAWSCredential_RequestWithMissingCredential(t *testing.T) {
 		t.Fatalf("retrieveSubjectToken() should have failed")
 	}
 
-	if got, want := err.Error(), "oauth2/google: missing AccessKeyId credential"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: missing AccessKeyId credential"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }
@@ -969,7 +969,7 @@ func TestAWSCredential_RequestWithIncompleteCredential(t *testing.T) {
 		t.Fatalf("retrieveSubjectToken() should have failed")
 	}
 
-	if got, want := err.Error(), "oauth2/google: missing SecretAccessKey credential"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: missing SecretAccessKey credential"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }
@@ -998,7 +998,7 @@ func TestAWSCredential_RequestWithNoCredentialURL(t *testing.T) {
 		t.Fatalf("retrieveSubjectToken() should have failed")
 	}
 
-	if got, want := err.Error(), "oauth2/google: unable to determine the AWS metadata server security credentials endpoint"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: unable to determine the AWS metadata server security credentials endpoint"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }
@@ -1027,7 +1027,7 @@ func TestAWSCredential_RequestWithBadCredentialURL(t *testing.T) {
 		t.Fatalf("retrieveSubjectToken() should have failed")
 	}
 
-	if got, want := err.Error(), "oauth2/google: unable to retrieve AWS role name - Not Found"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: unable to retrieve AWS role name - Not Found"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }
@@ -1056,7 +1056,7 @@ func TestAWSCredential_RequestWithBadFinalCredentialURL(t *testing.T) {
 		t.Fatalf("retrieveSubjectToken() should have failed")
 	}
 
-	if got, want := err.Error(), "oauth2/google: unable to retrieve AWS security credentials - Not Found"; !reflect.DeepEqual(got, want) {
+	if got, want := err.Error(), "oauth2/google/externalaccount: unable to retrieve AWS security credentials - Not Found"; !reflect.DeepEqual(got, want) {
 		t.Errorf("subjectToken = %q, want %q", got, want)
 	}
 }
@@ -1235,6 +1235,192 @@ func TestAWSCredential_ShouldCallMetadataEndpointWhenNoSecretAccessKey(t *testin
 	}
 }
 
+func TestAWSCredential_ProgrammaticAuth(t *testing.T) {
+	tfc := testFileConfig
+	securityCredentials := AwsSecurityCredentials{
+		AccessKeyID:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+		SessionToken:    securityToken,
+	}
+
+	tfc.AwsSecurityCredentialsSupplier = testAwsSupplier{
+		awsRegion:   "us-east-2",
+		err:         nil,
+		credentials: &securityCredentials,
+	}
+
+	oldNow := now
+	defer func() {
+		now = oldNow
+	}()
+	now = setTime(defaultTime)
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+
+	expected := getExpectedSubjectToken(
+		"https://sts.us-east-2.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+		"us-east-2",
+		accessKeyID,
+		secretAccessKey,
+		securityToken,
+	)
+
+	if got, want := out, expected; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
+	}
+}
+
+func TestAWSCredential_ProgrammaticAuthNoSessionToken(t *testing.T) {
+	tfc := testFileConfig
+	securityCredentials := AwsSecurityCredentials{
+		AccessKeyID:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+	}
+
+	tfc.AwsSecurityCredentialsSupplier = testAwsSupplier{
+		awsRegion:   "us-east-2",
+		err:         nil,
+		credentials: &securityCredentials,
+	}
+
+	oldNow := now
+	defer func() {
+		now = oldNow
+	}()
+	now = setTime(defaultTime)
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	out, err := base.subjectToken()
+	if err != nil {
+		t.Fatalf("retrieveSubjectToken() failed: %v", err)
+	}
+
+	expected := getExpectedSubjectToken(
+		"https://sts.us-east-2.amazonaws.com?Action=GetCallerIdentity&Version=2011-06-15",
+		"us-east-2",
+		accessKeyID,
+		secretAccessKey,
+		"",
+	)
+
+	if got, want := out, expected; !reflect.DeepEqual(got, want) {
+		t.Errorf("subjectToken = \n%q\n want \n%q", got, want)
+	}
+}
+
+func TestAWSCredential_ProgrammaticAuthError(t *testing.T) {
+	tfc := testFileConfig
+	testErr := errors.New("test error")
+	tfc.AwsSecurityCredentialsSupplier = testAwsSupplier{
+		awsRegion:   "us-east-2",
+		err:         testErr,
+		credentials: nil,
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("subjectToken() should have failed")
+	}
+	if err != testErr {
+		t.Errorf("error = %e, want %e", err, testErr)
+	}
+}
+
+func TestAWSCredential_ProgrammaticAuthRegionError(t *testing.T) {
+	tfc := testFileConfig
+	securityCredentials := AwsSecurityCredentials{
+		AccessKeyID:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+	}
+
+	testErr := errors.New("test")
+	tfc.AwsSecurityCredentialsSupplier = testAwsSupplier{
+		awsRegion:   "",
+		regionErr:   testErr,
+		credentials: &securityCredentials,
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err == nil {
+		t.Fatalf("subjectToken() should have failed")
+	}
+	if err != testErr {
+		t.Errorf("error = %e, want %e", err, testErr)
+	}
+}
+
+func TestAWSCredential_ProgrammaticAuthOptions(t *testing.T) {
+	tfc := testFileConfig
+	securityCredentials := AwsSecurityCredentials{
+		AccessKeyID:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+	}
+	expectedOptions := SupplierOptions{Audience: tfc.Audience, SubjectTokenType: tfc.SubjectTokenType}
+
+	tfc.AwsSecurityCredentialsSupplier = testAwsSupplier{
+		awsRegion:       "us-east-2",
+		credentials:     &securityCredentials,
+		expectedOptions: &expectedOptions,
+	}
+
+	base, err := tfc.parse(context.Background())
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err != nil {
+		t.Fatalf("subjectToken() failed %v", err)
+	}
+}
+
+func TestAWSCredential_ProgrammaticAuthContext(t *testing.T) {
+	tfc := testFileConfig
+	securityCredentials := AwsSecurityCredentials{
+		AccessKeyID:     accessKeyID,
+		SecretAccessKey: secretAccessKey,
+	}
+	ctx := context.Background()
+
+	tfc.AwsSecurityCredentialsSupplier = testAwsSupplier{
+		awsRegion:       "us-east-2",
+		credentials:     &securityCredentials,
+		expectedContext: ctx,
+	}
+
+	base, err := tfc.parse(ctx)
+	if err != nil {
+		t.Fatalf("parse() failed %v", err)
+	}
+
+	_, err = base.subjectToken()
+	if err != nil {
+		t.Fatalf("subjectToken() failed %v", err)
+	}
+}
+
 func TestAwsCredential_CredentialSourceType(t *testing.T) {
 	server := createDefaultAwsTestServer()
 	ts := httptest.NewServer(server)
@@ -1250,4 +1436,53 @@ func TestAwsCredential_CredentialSourceType(t *testing.T) {
 	if got, want := base.credentialSourceType(), "aws"; got != want {
 		t.Errorf("got %v but want %v", got, want)
 	}
+}
+
+type testAwsSupplier struct {
+	err             error
+	regionErr       error
+	awsRegion       string
+	credentials     *AwsSecurityCredentials
+	expectedOptions *SupplierOptions
+	expectedContext context.Context
+}
+
+func (supp testAwsSupplier) AwsRegion(ctx context.Context, options SupplierOptions) (string, error) {
+	if supp.regionErr != nil {
+		return "", supp.regionErr
+	}
+	if supp.expectedOptions != nil {
+		if supp.expectedOptions.Audience != options.Audience {
+			return "", errors.New("Audience does not match")
+		}
+		if supp.expectedOptions.SubjectTokenType != options.SubjectTokenType {
+			return "", errors.New("Audience does not match")
+		}
+	}
+	if supp.expectedContext != nil {
+		if supp.expectedContext != ctx {
+			return "", errors.New("Context does not match")
+		}
+	}
+	return supp.awsRegion, nil
+}
+
+func (supp testAwsSupplier) AwsSecurityCredentials(ctx context.Context, options SupplierOptions) (*AwsSecurityCredentials, error) {
+	if supp.err != nil {
+		return nil, supp.err
+	}
+	if supp.expectedOptions != nil {
+		if supp.expectedOptions.Audience != options.Audience {
+			return nil, errors.New("Audience does not match")
+		}
+		if supp.expectedOptions.SubjectTokenType != options.SubjectTokenType {
+			return nil, errors.New("Audience does not match")
+		}
+	}
+	if supp.expectedContext != nil {
+		if supp.expectedContext != ctx {
+			return nil, errors.New("Context does not match")
+		}
+	}
+	return supp.credentials, nil
 }
