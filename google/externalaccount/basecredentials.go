@@ -113,11 +113,18 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google/internal/impersonate"
 	"golang.org/x/oauth2/google/internal/stsexchange"
+)
+
+const (
+	universeDomainPlaceholder = "UNIVERSE_DOMAIN"
+	defaultTokenURL           = "https://sts.UNIVERSE_DOMAIN/v1/token"
+	defaultUniverseDomain     = "googleapis.com"
 )
 
 // now aliases time.Now for testing
@@ -139,7 +146,9 @@ type Config struct {
 	// Required.
 	SubjectTokenType string
 	// TokenURL is the STS token exchange endpoint. If not provided, will default to
-	// https://sts.googleapis.com/v1/token. Optional.
+	// https://sts.UNIVERSE_DOMAIN/v1/token, with UNIVERSE_DOMAIN set to the
+	// default service domain googleapis.com unless UniverseDomain is set.
+	// Optional.
 	TokenURL string
 	// TokenInfoURL is the token_info endpoint used to retrieve the account related information (
 	// user attributes like account identifier, eg. email, username, uid, etc). This is
@@ -177,6 +186,10 @@ type Config struct {
 	// AwsSecurityCredentialsSupplier is an AWS Security Credential supplier for AWS credentials.
 	// One of SubjectTokenSupplier, AWSSecurityCredentialSupplier or CredentialSource must be provided. Optional.
 	AwsSecurityCredentialsSupplier AwsSecurityCredentialsSupplier
+	// UniverseDomain is the default service domain for a given Cloud universe.
+	// This value will be used in the default STS token URL. The default value
+	// is "googleapis.com". It will not be used if TokenURL is set. Optional.
+	UniverseDomain string
 }
 
 var (
@@ -246,9 +259,8 @@ func (c *Config) tokenSource(ctx context.Context, scheme string) (oauth2.TokenSo
 
 // Subject token file types.
 const (
-	fileTypeText    = "text"
-	fileTypeJSON    = "json"
-	defaultTokenUrl = "https://sts.googleapis.com/v1/token"
+	fileTypeText = "text"
+	fileTypeJSON = "json"
 )
 
 // Format contains information needed to retireve a subject token for URL or File sourced credentials.
@@ -336,11 +348,20 @@ type SupplierOptions struct {
 	SubjectTokenType string
 }
 
+// tokenURL returns the default STS token endpoint with the configured universe
+// domain.
+func (c *Config) tokenURL() string {
+	if c.UniverseDomain == "" {
+		return strings.Replace(defaultTokenURL, universeDomainPlaceholder, defaultUniverseDomain, 1)
+	}
+	return strings.Replace(defaultTokenURL, universeDomainPlaceholder, c.UniverseDomain, 1)
+}
+
 // parse determines the type of CredentialSource needed.
 func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 	//set Defaults
 	if c.TokenURL == "" {
-		c.TokenURL = defaultTokenUrl
+		c.TokenURL = c.tokenURL()
 	}
 	supplierOptions := SupplierOptions{Audience: c.Audience, SubjectTokenType: c.SubjectTokenType}
 

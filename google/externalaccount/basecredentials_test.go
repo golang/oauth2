@@ -454,3 +454,46 @@ func TestNewToken(t *testing.T) {
 		})
 	}
 }
+
+func TestConfig_TokenURL(t *testing.T) {
+	tests := []struct {
+		tokenURL       string
+		universeDomain string
+		want           string
+	}{
+		{
+			tokenURL:       "https://sts.googleapis.com/v1/token",
+			universeDomain: "",
+			want:           "https://sts.googleapis.com/v1/token",
+		},
+		{
+			tokenURL:       "",
+			universeDomain: "",
+			want:           "https://sts.googleapis.com/v1/token",
+		},
+		{
+			tokenURL:       "",
+			universeDomain: "googleapis.com",
+			want:           "https://sts.googleapis.com/v1/token",
+		},
+		{
+			tokenURL:       "",
+			universeDomain: "example.com",
+			want:           "https://sts.example.com/v1/token",
+		},
+	}
+	for _, tt := range tests {
+		config := &Config{
+			Audience:         "//iam.googleapis.com/locations/eu/workforcePools/pool-id/providers/provider-id",
+			SubjectTokenType: "urn:ietf:params:oauth:token-type:id_token",
+			CredentialSource: &testBaseCredSource,
+			Scopes:           []string{"https://www.googleapis.com/auth/devstorage.full_control"},
+		}
+		config.TokenURL = tt.tokenURL
+		config.UniverseDomain = tt.universeDomain
+		config.parse(context.Background())
+		if got := config.TokenURL; got != tt.want {
+			t.Errorf("got %q, want %q", got, tt.want)
+		}
+	}
+}
