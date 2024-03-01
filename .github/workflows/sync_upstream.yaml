@@ -1,0 +1,38 @@
+# for reference: https://stackoverflow.com/questions/23793062/can-forks-be-synced-automatically-in-github
+# .github/workflows/example.yml
+
+name: Sync upstream oauth2 repo
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron:  '0 9 * * 1'
+    # run once a week on monday morning
+    # if it fails
+    #   send slack message (iw-engineering or integration-inovators)
+    
+
+permissions:
+  contents: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Merge upstream
+        run: |
+          git config --global user.name 'upstream-sync-bot'
+          git config --global user.email 'upstream-sync-bot@users.noreply.github.com'
+          git config --global push.followTags true
+
+          git pull 
+
+          git remote add upstream https://github.com/golang/oauth2.git
+          git fetch --tags upstream
+
+          git checkout master
+          git merge --allow-unrelated-histories --no-edit upstream/master
+          git push origin master 
+
+
