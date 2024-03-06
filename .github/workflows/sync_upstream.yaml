@@ -17,8 +17,8 @@ permissions:
 
 jobs:
   merge:
-    secrets: inherit
     runs-on: ubuntu-latest
+    secrets: inherit
     steps:
       - uses: actions/checkout@v4
       - name: Merge upstream
