@@ -47,4 +47,4 @@ jobs:
 
       - name: Send Slack Message Result
         if: ${{ failure() }}
-        run: echo "${{ steps.send-message.outputs.slack-result }}"
+        run: echo "${{ steps.notify-slack.outputs.slack-result }}"
