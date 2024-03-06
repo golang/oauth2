@@ -43,7 +43,7 @@ jobs:
           ACTIONS_STEP_DEBUG: true
           ACTIONS_RUNNER_DEBUG: true
         with:
-          slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_USER_OAUTH_ACCESS_TOKEN  }}
+          slack-bot-user-oauth-access-token: ${{ secrets.SLACK_BOT_TOKEN }}
           slack-channel: ${{ secrets.SLACK_BOT_INTEGRATION_INNOVATORS_CHANNEL }} #USE CHANNEL ID, NOT CHANNEL NAME, SINCE ID IS USED IN NEW SLACK API's
           slack-text: |
             OAuth2 fork upstream sync failed. [action](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
