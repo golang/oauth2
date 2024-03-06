@@ -46,4 +46,5 @@ jobs:
             OAuth2 fork upstream sync failed. [action](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
       - name: Send Slack Message Result
+        if: ${{ failure() }}
         run: echo "${{ steps.send-message.outputs.slack-result }}"
