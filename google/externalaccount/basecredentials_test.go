@@ -241,7 +241,10 @@ func TestToken(t *testing.T) {
 			Scopes:           []string{"https://www.googleapis.com/auth/devstorage.full_control"},
 		}
 
-		responseBody, _ := json.Marshal(testCase.responseBody)
+		responseBody, err := json.Marshal(testCase.responseBody)
+		if err != nil {
+			t.Errorf("Invalid response received.")
+		}
 
 		server := testExchangeTokenServer{
 			url:           "/",
@@ -254,10 +257,8 @@ func TestToken(t *testing.T) {
 
 		tok, err := run(t, &config, &server)
 
-		if err != nil {
-			if err.Error() != testCase.expectErrorMsg {
-				t.Errorf("Error actual = %v, and Expect = %v", err, testCase.expectErrorMsg)
-			}
+		if err != nil && err.Error() != testCase.expectErrorMsg {
+			t.Errorf("Error not as expected: got = %v, and want = %v", err, testCase.expectErrorMsg)
 		}
 		validateToken(t, tok, testCase.expectToken)
 	}
