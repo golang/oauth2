@@ -199,9 +199,7 @@ func DefaultTokenSource(ctx context.Context, scope ...string) (oauth2.TokenSourc
 //  2. A JSON file in a location known to the gcloud command-line tool.
 //     On Windows, this is %APPDATA%/gcloud/application_default_credentials.json.
 //     On other systems, $HOME/.config/gcloud/application_default_credentials.json.
-//  3. On Google App Engine standard first generation runtimes (<= Go 1.9) it uses
-//     the appengine.AccessToken function.
-//  4. On Google Compute Engine, Google App Engine standard second generation runtimes
+//  3. On Google Compute Engine, Google App Engine standard second generation runtimes
 //     (>= Go 1.11), and Google App Engine flexible environment, it fetches
 //     credentials from the metadata server.
 func FindDefaultCredentialsWithParams(ctx context.Context, params CredentialsParams) (*Credentials, error) {
@@ -224,17 +222,7 @@ func FindDefaultCredentialsWithParams(ctx context.Context, params CredentialsPar
 		return CredentialsFromJSONWithParams(ctx, b, params)
 	}
 
-	// Third, if we're on a Google App Engine standard first generation runtime (<= Go 1.9)
-	// use those credentials. App Engine standard second generation runtimes (>= Go 1.11)
-	// and App Engine flexible use ComputeTokenSource and the metadata server.
-	if appengineTokenFunc != nil {
-		return &Credentials{
-			ProjectID:   appengineAppIDFunc(ctx),
-			TokenSource: AppEngineTokenSource(ctx, params.Scopes...),
-		}, nil
-	}
-
-	// Fourth, if we're on Google Compute Engine, an App Engine standard second generation runtime,
+	// Third, if we're on Google Compute Engine, an App Engine standard second generation runtime,
 	// or App Engine flexible, use the metadata server.
 	if metadata.OnGCE() {
 		id, _ := metadata.ProjectID()
