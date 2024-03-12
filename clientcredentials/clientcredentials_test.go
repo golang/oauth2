@@ -136,3 +136,56 @@ func TestTokenRefreshRequest(t *testing.T) {
 	c := conf.Client(context.Background())
 	c.Get(ts.URL + "/somethingelse")
 }
+
+func TestTokenRequestWithoutCredentialsEncoding(t *testing.T) {
+	attempt := 1
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if attempt != 3 {
+			w.WriteHeader(401)
+			attempt++
+			return
+		}
+		if r.URL.String() != "/token" {
+			t.Errorf("authenticate client request URL = %q; want %q", r.URL, "/token")
+		}
+		headerAuth := r.Header.Get("Authorization")
+		if headerAuth != "Basic Q0xJRU5UX0lEISs6Q0xJRU5UX1NFQ1JFVCYrQA==" {
+			t.Errorf("Unexpected authorization header, %v is found.", headerAuth)
+		}
+		if got, want := r.Header.Get("Content-Type"), "application/x-www-form-urlencoded"; got != want {
+			t.Errorf("Content-Type header = %q; want %q", got, want)
+		}
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			r.Body.Close()
+		}
+		if err != nil {
+			t.Errorf("failed reading request body: %s.", err)
+		}
+		if string(body) != "grant_type=client_credentials&scope=scope" {
+			t.Errorf("payload = %q; want %q", string(body), "grant_type=client_credentials&scope=scope")
+		}
+		w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
+		w.Write([]byte("access_token=90d64460d14870c08c81352a05dedd3465940a7c&token_type=bearer"))
+	}))
+	defer ts.Close()
+	conf := &Config{
+		ClientID:     "CLIENT_ID!+",
+		ClientSecret: "CLIENT_SECRET&+@",
+		Scopes:       []string{"scope"},
+		TokenURL:     ts.URL + "/token",
+	}
+	tok, err := conf.Token(context.Background())
+	if err != nil {
+		t.Error(err)
+	}
+	if !tok.Valid() {
+		t.Fatalf("token invalid. got: %#v", tok)
+	}
+	if tok.AccessToken != "90d64460d14870c08c81352a05dedd3465940a7c" {
+		t.Errorf("Access token = %q; want %q", tok.AccessToken, "90d64460d14870c08c81352a05dedd3465940a7c")
+	}
+	if tok.TokenType != "bearer" {
+		t.Errorf("token type = %q; want %q", tok.TokenType, "bearer")
+	}
+}

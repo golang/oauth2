@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"mime"
 	"net/http"
@@ -111,9 +110,10 @@ func RegisterBrokenAuthHeaderProvider(tokenURL string) {}
 type AuthStyle int
 
 const (
-	AuthStyleUnknown  AuthStyle = 0
-	AuthStyleInParams AuthStyle = 1
-	AuthStyleInHeader AuthStyle = 2
+	AuthStyleUnknown                 AuthStyle = 0
+	AuthStyleInParams                AuthStyle = 1
+	AuthStyleInHeader                AuthStyle = 2
+	AuthStyleInHeaderWithoutEncoding AuthStyle = 3
 )
 
 // LazyAuthStyleCache is a backwards compatibility compromise to let Configs
@@ -197,6 +197,8 @@ func newTokenRequest(tokenURL, clientID, clientSecret string, v url.Values, auth
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	if authStyle == AuthStyleInHeader {
 		req.SetBasicAuth(url.QueryEscape(clientID), url.QueryEscape(clientSecret))
+	} else if authStyle == AuthStyleInHeaderWithoutEncoding {
+		req.SetBasicAuth(clientID, clientSecret)
 	}
 	return req, nil
 }
@@ -240,6 +242,15 @@ func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string,
 		authStyle = AuthStyleInParams // the second way we'll try
 		req, _ = newTokenRequest(tokenURL, clientID, clientSecret, v, authStyle)
 		token, err = doTokenRoundTrip(ctx, req)
+
+		// although https://tools.ietf.org/html/rfc6749#section-2.3.1 states that
+		// clientID & clientSecret must be urlencoded in the authorization header
+		// there are some sites that don't do this thus resulting in authentication failure
+		if err != nil {
+			authStyle = AuthStyleInHeaderWithoutEncoding
+			req, _ = newTokenRequest(tokenURL, clientID, clientSecret, v, authStyle)
+			token, err = doTokenRoundTrip(ctx, req)
+		}
 	}
 	if needsAuthStyleProbe && err == nil {
 		styleCache.setAuthStyle(tokenURL, authStyle)
@@ -257,7 +268,7 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1<<20))
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	r.Body.Close()
 	if err != nil {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
