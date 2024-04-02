@@ -43,9 +43,13 @@ func TestTokenExpiry(t *testing.T) {
 		want bool
 	}{
 		{name: "12 seconds", tok: &Token{Expiry: now.Add(12 * time.Second)}, want: false},
-		{name: "10 seconds", tok: &Token{Expiry: now.Add(expiryDelta)}, want: false},
-		{name: "10 seconds-1ns", tok: &Token{Expiry: now.Add(expiryDelta - 1*time.Nanosecond)}, want: true},
+		{name: "10 seconds", tok: &Token{Expiry: now.Add(defaultExpiryDelta)}, want: false},
+		{name: "10 seconds-1ns", tok: &Token{Expiry: now.Add(defaultExpiryDelta - 1*time.Nanosecond)}, want: true},
 		{name: "-1 hour", tok: &Token{Expiry: now.Add(-1 * time.Hour)}, want: true},
+		{name: "12 seconds, custom expiryDelta", tok: &Token{Expiry: now.Add(12 * time.Second), expiryDelta: time.Second * 5}, want: false},
+		{name: "5 seconds, custom expiryDelta", tok: &Token{Expiry: now.Add(time.Second * 5), expiryDelta: time.Second * 5}, want: false},
+		{name: "5 seconds-1ns, custom expiryDelta", tok: &Token{Expiry: now.Add(time.Second*5 - 1*time.Nanosecond), expiryDelta: time.Second * 5}, want: true},
+		{name: "-1 hour, custom expiryDelta", tok: &Token{Expiry: now.Add(-1 * time.Hour), expiryDelta: time.Second * 5}, want: true},
 	}
 	for _, tc := range cases {
 		if got, want := tc.tok.expired(), tc.want; got != want {

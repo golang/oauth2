@@ -12,8 +12,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
-
-	"golang.org/x/oauth2/internal"
 )
 
 func newConf(serverURL string) *Config {
@@ -114,7 +112,6 @@ func TestTokenRequest(t *testing.T) {
 }
 
 func TestTokenRefreshRequest(t *testing.T) {
-	internal.ResetAuthCache()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() == "/somethingelse" {
 			return

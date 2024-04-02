@@ -5,6 +5,8 @@
 package google
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -37,7 +39,8 @@ var jwtJSONKey = []byte(`{
   "client_email": "gopher@developer.gserviceaccount.com",
   "client_id": "gopher.apps.googleusercontent.com",
   "token_uri": "https://accounts.google.com/o/gophers/token",
-  "type": "service_account"
+  "type": "service_account",
+  "audience": "https://testservice.googleapis.com/"
 }`)
 
 var jwtJSONKeyNoTokenURL = []byte(`{
@@ -45,6 +48,15 @@ var jwtJSONKeyNoTokenURL = []byte(`{
   "private_key": "super secret key",
   "client_email": "gopher@developer.gserviceaccount.com",
   "client_id": "gopher.apps.googleusercontent.com",
+  "type": "service_account"
+}`)
+
+var jwtJSONKeyNoAudience = []byte(`{
+  "private_key_id": "268f54e43a1af97cfc71731688434f45aca15c8b",
+  "private_key": "super secret key",
+  "client_email": "gopher@developer.gserviceaccount.com",
+  "client_id": "gopher.apps.googleusercontent.com",
+  "token_uri": "https://accounts.google.com/o/gophers/token",
   "type": "service_account"
 }`)
 
@@ -103,6 +115,9 @@ func TestJWTConfigFromJSON(t *testing.T) {
 	if got, want := conf.TokenURL, "https://accounts.google.com/o/gophers/token"; got != want {
 		t.Errorf("TokenURL = %q; want %q", got, want)
 	}
+	if got, want := conf.Audience, "https://testservice.googleapis.com/"; got != want {
+		t.Errorf("Audience = %q; want %q", got, want)
+	}
 }
 
 func TestJWTConfigFromJSONNoTokenURL(t *testing.T) {
@@ -112,5 +127,33 @@ func TestJWTConfigFromJSONNoTokenURL(t *testing.T) {
 	}
 	if got, want := conf.TokenURL, "https://oauth2.googleapis.com/token"; got != want {
 		t.Errorf("TokenURL = %q; want %q", got, want)
+	}
+}
+
+func TestJWTConfigFromJSONNoAudience(t *testing.T) {
+	conf, err := JWTConfigFromJSON(jwtJSONKeyNoAudience, "scope1", "scope2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := conf.Audience, ""; got != want {
+		t.Errorf("Audience = %q; want %q", got, want)
+	}
+}
+
+func TestComputeTokenSource(t *testing.T) {
+	tokenPath := "/computeMetadata/v1/instance/service-accounts/default/token"
+	tokenResponseBody := `{"access_token":"Sample.Access.Token","token_type":"Bearer","expires_in":3600}`
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != tokenPath {
+			t.Errorf("got %s, want %s", r.URL.Path, tokenPath)
+		}
+		w.Write([]byte(tokenResponseBody))
+	}))
+	defer s.Close()
+	t.Setenv("GCE_METADATA_HOST", strings.TrimPrefix(s.URL, "http://"))
+	ts := ComputeTokenSource("")
+	_, err := ts.Token()
+	if err != nil {
+		t.Errorf("ts.Token() = %v", err)
 	}
 }

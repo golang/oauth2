@@ -73,7 +73,7 @@ func TestJWTAccessTokenSourceFromJSON(t *testing.T) {
 		t.Fatalf("base64 DecodeString: %v\nString: %q", err, parts[0])
 	}
 	var hdr jws.Header
-	if err := json.Unmarshal([]byte(hdrJSON), &hdr); err != nil {
+	if err := json.Unmarshal(hdrJSON, &hdr); err != nil {
 		t.Fatalf("json.Unmarshal: %v (%q)", err, hdrJSON)
 	}
 
@@ -129,7 +129,7 @@ func TestJWTAccessTokenSourceWithScope(t *testing.T) {
 		t.Fatalf("base64 DecodeString: %v\nString: %q", err, parts[0])
 	}
 	var hdr jws.Header
-	if err := json.Unmarshal([]byte(hdrJSON), &hdr); err != nil {
+	if err := json.Unmarshal(hdrJSON, &hdr); err != nil {
 		t.Fatalf("json.Unmarshal: %v (%q)", err, hdrJSON)
 	}
 
