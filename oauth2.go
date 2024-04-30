@@ -255,7 +255,7 @@ func (c *Config) Client(ctx context.Context, t *Token) *http.Client {
 // At the same time, RFC allows client to use this optional parameter and
 // implementation should not restrict this usage.
 //
-// In fact, without specifing scopes on refresh request, at least Microsoft
+// In fact, without specifying scopes on refresh request, at least Microsoft
 // Advertising API resets access token scopes to (their own, not those
 // specified in Config) defaults on refresh, meaning new access token has less
 // scopes than initial.
