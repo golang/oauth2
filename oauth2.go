@@ -195,7 +195,7 @@ func (c *Config) AuthCodeURL(state string, opts ...AuthCodeOption) string {
 // See https://tools.ietf.org/html/rfc6749#section-4.3 for more info.
 //
 // The provided context optionally controls which HTTP client is used. See the HTTPClient variable.
-func (c *Config) PasswordCredentialsToken(ctx context.Context, username, password string) (*Token, error) {
+func (c *Config) PasswordCredentialsToken(ctx context.Context, username, password string, opts ...AuthCodeOption) (*Token, error) {
 	v := url.Values{
 		"grant_type": {"password"},
 		"username":   {username},
@@ -203,6 +203,9 @@ func (c *Config) PasswordCredentialsToken(ctx context.Context, username, passwor
 	}
 	if len(c.Scopes) > 0 {
 		v.Set("scope", strings.Join(c.Scopes, " "))
+	}
+	for _, opt := range opts {
+		opt.setValue(v)
 	}
 	return retrieveToken(ctx, c, v)
 }
