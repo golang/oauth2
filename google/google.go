@@ -96,6 +96,18 @@ func JWTConfigFromJSON(jsonKey []byte, scope ...string) (*jwt.Config, error) {
 	return f.jwtConfig(scope, ""), nil
 }
 
+// IDConfigFromJSON uses a Google Developers service account JSON key file to request
+// an id-token signed by Google for a specific target audience.
+func IDConfigFromJSON(jsonKey []byte, audience string) (*jwt.Config, error) {
+	cfg, err := JWTConfigFromJSON(jsonKey)
+	if err != nil {
+		return nil, err
+	}
+	cfg.PrivateClaims = map[string]interface{}{"target_audience": audience}
+	cfg.UseIDToken = true
+	return cfg, err
+}
+
 // JSON key file types.
 const (
 	serviceAccountKey                = "service_account"
@@ -262,9 +274,27 @@ func computeTokenSource(account string, earlyExpiry time.Duration, scope ...stri
 	return oauth2.ReuseTokenSourceWithExpiry(nil, computeSource{account: account, scopes: scope}, earlyExpiry)
 }
 
+// IDComputeTokenSource returns a token source that fetches id tokens
+// from Google Compute Engine (GCE)'s metadata server. It's only valid to use
+// this token source if your program is running on a GCE instance.
+func IDComputeTokenSource(account string, opts IDTokenOpts) oauth2.TokenSource {
+	return oauth2.ReuseTokenSource(nil, computeSource{account: account, idTokenOpts: opts})
+}
+
+// IDTokenOpts includes options that can be used with IDComputeTokenSource
+// Audiences are the target audiences, that should be used in the 'aud' claim of the token payload
+// FullFormat determines whether extra details are included from the instance in the payload, the default is false (standard format)
+// Licenses is an optional string for any instance license codes to include in the payload https://cloud.google.com/compute/docs/reference/rest/v1/images/get#body.Image.FIELDS.license_code
+type IDTokenOpts struct {
+	Audiences  []string
+	FullFormat bool
+	Licenses   []string
+}
+
 type computeSource struct {
-	account string
-	scopes  []string
+	account     string
+	scopes      []string
+	idTokenOpts IDTokenOpts
 }
 
 func (cs computeSource) Token() (*oauth2.Token, error) {
@@ -275,25 +305,54 @@ func (cs computeSource) Token() (*oauth2.Token, error) {
 	if acct == "" {
 		acct = "default"
 	}
-	tokenURI := "instance/service-accounts/" + acct + "/token"
-	if len(cs.scopes) > 0 {
+	var tokenURI string
+	if len(cs.idTokenOpts.Audiences) > 0 {
 		v := url.Values{}
-		v.Set("scopes", strings.Join(cs.scopes, ","))
-		tokenURI = tokenURI + "?" + v.Encode()
+		v.Set("audience", strings.Join(cs.idTokenOpts.Audiences, ","))
+		tokenURI = fmt.Sprintf("instance/service-accounts/%s/identity?", acct) + v.Encode()
+		// tokenURI = fmt.Sprintf("instance/service-accounts/%s/identity?audience=%s&format=full", acct, cs.idTokenOpts.Audience)
+		if cs.idTokenOpts.FullFormat {
+			// standard format is default
+			tokenURI = tokenURI + "&format=full"
+		}
+		if len(cs.idTokenOpts.Licenses) > 0 {
+			l := url.Values{}
+			l.Set("licenses", strings.Join(cs.idTokenOpts.Licenses, ","))
+			tokenURI = tokenURI + "&" + l.Encode()
+		}
+	} else {
+		tokenURI = "instance/service-accounts/" + acct + "/token"
+		if len(cs.scopes) > 0 {
+			v := url.Values{}
+			v.Set("scopes", strings.Join(cs.scopes, ","))
+			tokenURI = tokenURI + "?" + v.Encode()
+		}
 	}
-	tokenJSON, err := metadata.Get(tokenURI)
+
+	metadataResult, err := metadata.Get(tokenURI)
 	if err != nil {
 		return nil, err
 	}
+
 	var res struct {
 		AccessToken  string `json:"access_token"`
 		ExpiresInSec int    `json:"expires_in"`
 		TokenType    string `json:"token_type"`
 	}
-	err = json.NewDecoder(strings.NewReader(tokenJSON)).Decode(&res)
-	if err != nil {
-		return nil, fmt.Errorf("oauth2/google: invalid token JSON from metadata: %v", err)
+
+	if len(cs.idTokenOpts.Audiences) > 0 {
+		// Metadata Server returns raw JWT token as bytes
+		res.AccessToken = metadataResult
+		res.TokenType = "bearer"
+		// approx 5 minute expiration buffer
+		res.ExpiresInSec = 3300
+	} else {
+		err = json.NewDecoder(strings.NewReader(metadataResult)).Decode(&res)
+		if err != nil {
+			return nil, fmt.Errorf("oauth2/google: invalid token JSON from metadata: %v", err)
+		}
 	}
+
 	if res.ExpiresInSec == 0 || res.AccessToken == "" {
 		return nil, fmt.Errorf("oauth2/google: incomplete token received from metadata")
 	}
@@ -302,6 +361,7 @@ func (cs computeSource) Token() (*oauth2.Token, error) {
 		TokenType:   res.TokenType,
 		Expiry:      time.Now().Add(time.Duration(res.ExpiresInSec) * time.Second),
 	}
+
 	// NOTE(cbro): add hidden metadata about where the token is from.
 	// This is needed for detection by client libraries to know that credentials come from the metadata server.
 	// This may be removed in a future version of this library.
