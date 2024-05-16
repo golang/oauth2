@@ -10,6 +10,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"cloud.google.com/go/compute/metadata"
 )
 
 var saJSONJWT = []byte(`{
@@ -255,9 +257,14 @@ func TestCredentialsFromJSONWithParams_User_UniverseDomain_Params_UniverseDomain
 func TestComputeUniverseDomain(t *testing.T) {
 	universeDomainPath := "/computeMetadata/v1/universe/universe_domain"
 	universeDomainResponseBody := "example.com"
+	var requests int
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
 		if r.URL.Path != universeDomainPath {
-			t.Errorf("got %s, want %s", r.URL.Path, universeDomainPath)
+			t.Errorf("bad path, got %s, want %s", r.URL.Path, universeDomainPath)
+		}
+		if requests > 1 {
+			t.Errorf("too many requests, got %d, want 1", requests)
 		}
 		w.Write([]byte(universeDomainResponseBody))
 	}))
@@ -268,11 +275,19 @@ func TestComputeUniverseDomain(t *testing.T) {
 	params := CredentialsParams{
 		Scopes: []string{scope},
 	}
+	universeDomainProvider := func() (string, error) {
+		universeDomain, err := metadata.Get("universe/universe_domain")
+		if err != nil {
+			return "", err
+		}
+		return universeDomain, nil
+	}
 	// Copied from FindDefaultCredentialsWithParams, metadata.OnGCE() = true block
 	creds := &Credentials{
-		ProjectID:      "fake_project",
-		TokenSource:    computeTokenSource("", params.EarlyTokenRefresh, params.Scopes...),
-		universeDomain: params.UniverseDomain, // empty
+		ProjectID:              "fake_project",
+		TokenSource:            computeTokenSource("", params.EarlyTokenRefresh, params.Scopes...),
+		UniverseDomainProvider: universeDomainProvider,
+		universeDomain:         params.UniverseDomain, // empty
 	}
 	c := make(chan bool)
 	go func() {
@@ -285,7 +300,7 @@ func TestComputeUniverseDomain(t *testing.T) {
 		}
 		c <- true
 	}()
-	got, err := creds.GetUniverseDomain() // Second conflicting access.
+	got, err := creds.GetUniverseDomain() // Second conflicting (and potentially uncached) access.
 	<-c
 	if err != nil {
 		t.Error(err)

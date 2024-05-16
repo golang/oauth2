@@ -51,7 +51,7 @@ import (
 const (
 	universeDomainPlaceholder       = "UNIVERSE_DOMAIN"
 	identityBindingEndpointTemplate = "https://sts.UNIVERSE_DOMAIN/v1/token"
-	universeDomainDefault           = "googleapis.com"
+	defaultUniverseDomain           = "googleapis.com"
 )
 
 type accessBoundary struct {
@@ -117,7 +117,7 @@ type DownscopingConfig struct {
 // configured universe domain.
 func (dc *DownscopingConfig) identityBindingEndpoint() string {
 	if dc.UniverseDomain == "" {
-		return strings.Replace(identityBindingEndpointTemplate, universeDomainPlaceholder, universeDomainDefault, 1)
+		return strings.Replace(identityBindingEndpointTemplate, universeDomainPlaceholder, defaultUniverseDomain, 1)
 	}
 	return strings.Replace(identityBindingEndpointTemplate, universeDomainPlaceholder, dc.UniverseDomain, 1)
 }
