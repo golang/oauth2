@@ -37,7 +37,7 @@ func TestRetrieveToken_InParams(t *testing.T) {
 }
 
 func TestRetrieveToken_InHeader(t *testing.T) {
-	ResetAuthCache()
+	styleCache := new(AuthStyleCache)
 	const clientID = "client-id%"
 	const clientSecret = "client-secret%"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -50,14 +50,14 @@ func TestRetrieveToken_InHeader(t *testing.T) {
 		io.WriteString(w, `{"access_token": "ACCESS_TOKEN", "token_type": "bearer"}`)
 	}))
 	defer ts.Close()
-	_, err := RetrieveToken(context.Background(), clientID, clientSecret, ts.URL, url.Values{}, AuthStyleInHeader)
+	_, err := RetrieveToken(context.Background(), clientID, clientSecret, ts.URL, url.Values{}, AuthStyleInHeader, styleCache)
 	if err != nil {
 		t.Errorf("RetrieveToken = %v; want no error", err)
 	}
 }
 
 func TestRetrieveToken_InHeaderNoEscape(t *testing.T) {
-	ResetAuthCache()
+	styleCache := new(AuthStyleCache)
 	const clientID = "client-id%"
 	const clientSecret = "client-secret%"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +70,7 @@ func TestRetrieveToken_InHeaderNoEscape(t *testing.T) {
 		io.WriteString(w, `{"access_token": "ACCESS_TOKEN", "token_type": "bearer"}`)
 	}))
 	defer ts.Close()
-	_, err := RetrieveToken(context.Background(), clientID, clientSecret, ts.URL, url.Values{}, AuthStyleInHeaderNoEscape)
+	_, err := RetrieveToken(context.Background(), clientID, clientSecret, ts.URL, url.Values{}, AuthStyleInHeaderNoEscape, styleCache)
 	if err != nil {
 		t.Errorf("RetrieveToken = %v; want no error", err)
 	}
