@@ -11,6 +11,9 @@ package oauth2 // import "golang.org/x/oauth2"
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"net/http"
 	"net/url"
@@ -58,6 +61,14 @@ type Config struct {
 
 	// Scope specifies optional requested permissions.
 	Scopes []string
+
+	CodeChallenge string
+
+	CodeChallengeMethod string
+
+	Nonce string
+
+	CodeVerifier string
 
 	// authStyleCache caches which auth style to use when Endpoint.AuthStyle is
 	// the zero value (AuthStyleAutoDetect).
@@ -141,6 +152,28 @@ func SetAuthURLParam(key, value string) AuthCodeOption {
 	return setParam{key, value}
 }
 
+func generateCodeVerifier() string {
+	data := make([]byte, 32)
+	if _, err := rand.Read(data); err != nil {
+		panic(err)
+	}
+	return base64.RawURLEncoding.EncodeToString(data)
+
+}
+
+func generateCodeChallenge(verifier string) string {
+	hash := sha256.Sum256([]byte(verifier))
+	return base64.RawURLEncoding.EncodeToString(hash[:])
+}
+
+func generateNonce() string {
+	nonce := make([]byte, 32)
+	if _, err := rand.Read(nonce); err != nil {
+		panic(err)
+	}
+	return base64.RawURLEncoding.EncodeToString(nonce)
+}
+
 // AuthCodeURL returns a URL to OAuth 2.0 provider's consent page
 // that asks for permissions for the required scopes explicitly.
 //
@@ -158,6 +191,12 @@ func SetAuthURLParam(key, value string) AuthCodeOption {
 // PKCE), https://www.oauth.com/oauth2-servers/pkce/ and
 // https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-09.html#name-cross-site-request-forgery (describing both approaches)
 func (c *Config) AuthCodeURL(state string, opts ...AuthCodeOption) string {
+
+	c.CodeVerifier = generateCodeVerifier()
+	c.CodeChallenge = generateCodeChallenge(c.CodeVerifier)
+	c.Nonce = generateNonce()
+	c.CodeChallengeMethod = "S256"
+
 	var buf bytes.Buffer
 	buf.WriteString(c.Endpoint.AuthURL)
 	v := url.Values{
@@ -172,6 +211,15 @@ func (c *Config) AuthCodeURL(state string, opts ...AuthCodeOption) string {
 	}
 	if state != "" {
 		v.Set("state", state)
+	}
+	if c.CodeChallenge != "" {
+		v.Set("code_challenge", c.CodeChallenge)
+	}
+	if c.CodeChallengeMethod != "" {
+		v.Set("code_challenge_method", c.CodeChallengeMethod)
+	}
+	if c.Nonce != "" {
+		v.Set("nonce", c.Nonce)
 	}
 	for _, opt := range opts {
 		opt.setValue(v)
@@ -224,9 +272,16 @@ func (c *Config) Exchange(ctx context.Context, code string, opts ...AuthCodeOpti
 	v := url.Values{
 		"grant_type": {"authorization_code"},
 		"code":       {code},
+		"client_id":  {c.ClientID},
 	}
 	if c.RedirectURL != "" {
 		v.Set("redirect_uri", c.RedirectURL)
+	}
+	if c.ClientSecret != "" {
+		v.Set("client_secret", c.ClientSecret)
+	}
+	if c.CodeVerifier != "" {
+		v.Set("code_verifier", c.CodeVerifier)
 	}
 	for _, opt := range opts {
 		opt.setValue(v)
