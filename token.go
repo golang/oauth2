@@ -57,10 +57,19 @@ type Token struct {
 	// expired, by subtracting from Expiry. If zero, defaultExpiryDelta
 	// is used.
 	expiryDelta time.Duration
+
+	// CustomTokenHeaderKey - If set, Instead of `Authorization` this will be used as header key
+	CustomTokenHeaderKey string
+
+	// CustomTokenPrefix - If set, Instead of `Bearer ` prefix / token type retrieved, this will be used
+	CustomTokenPrefix string
 }
 
 // Type returns t.TokenType if non-empty, else "Bearer".
 func (t *Token) Type() string {
+	if t.CustomTokenPrefix != "" {
+		return ""
+	}
 	if strings.EqualFold(t.TokenType, "bearer") {
 		return "Bearer"
 	}
@@ -82,7 +91,15 @@ func (t *Token) Type() string {
 // This method is unnecessary when using Transport or an HTTP Client
 // returned by this package.
 func (t *Token) SetAuthHeader(r *http.Request) {
-	r.Header.Set("Authorization", t.Type()+" "+t.AccessToken)
+	headerKey := "Authorization"
+	if strings.TrimSpace(t.CustomTokenHeaderKey) != "" {
+		headerKey = t.CustomTokenHeaderKey
+	}
+	headerValue := strings.TrimSpace(strings.Join([]string{t.Type(), t.AccessToken}, " "))
+	if t.CustomTokenPrefix != "" {
+		headerValue = strings.TrimSpace(strings.Join([]string{t.CustomTokenPrefix, headerValue}, ""))
+	}
+	r.Header.Set(headerKey, headerValue)
 }
 
 // WithExtra returns a new Token that's a clone of t, but using the
