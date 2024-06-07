@@ -74,6 +74,12 @@ type Config struct {
 	// UseIDToken optionally specifies whether ID token should be used instead
 	// of access token when the server returns both.
 	UseIDToken bool
+
+	// CustomTokenHeaderKey - If set, Instead of `Authorization` this will be used as header key
+	CustomTokenHeaderKey string
+
+	// CustomTokenPrefix - If set, Instead of `Bearer ` prefix / token type retrieved, this will be used
+	CustomTokenPrefix string
 }
 
 // TokenSource returns a JWT TokenSource using the configuration
@@ -180,6 +186,10 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 			return nil, fmt.Errorf("oauth2: response doesn't have JWT token")
 		}
 		token.AccessToken = tokenRes.IDToken
+	}
+	if js.conf != nil {
+		token.CustomTokenHeaderKey = js.conf.CustomTokenHeaderKey
+		token.CustomTokenPrefix = js.conf.CustomTokenPrefix
 	}
 	return token, nil
 }
