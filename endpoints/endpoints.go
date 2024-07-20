@@ -257,3 +257,19 @@ func AWSCognito(domain string) oauth2.Endpoint {
 		TokenURL: domain + "/oauth2/token",
 	}
 }
+
+// AuthentikProvider returns a new oauth2.Endpoint for the supplied Authentik domain
+//
+// Example domain: https://testing.auth.us-east-1.amazoncognito.com
+//
+// For more information see:
+// https://docs.goauthentik.io/docs/providers/oauth2/
+func AuthentikProvider(userHost, serverHost string) oauth2.Endpoint {
+	userHost = strings.TrimRight(userHost, "/")
+	serverHost = strings.TrimRight(serverHost, "/")
+
+	return oauth2.Endpoint{
+		AuthURL:  userHost + "/application/o/authorize/",
+		TokenURL: serverHost + "/application/o/token/",
+	}
+}
