@@ -218,6 +218,12 @@ var Zoom = oauth2.Endpoint{
 	TokenURL: "https://zoom.us/oauth/token",
 }
 
+// Patreon is the endpoint for Patreon.
+var Patreon = oauth2.Endpoint{
+	AuthURL:  "https://www.patreon.com/oauth2/authorize",
+	TokenURL: "https://www.patreon.com/api/oauth2/token",
+}
+
 // AzureAD returns a new oauth2.Endpoint for the given tenant at Azure Active Directory.
 // If tenant is empty, it uses the tenant called `common`.
 //
