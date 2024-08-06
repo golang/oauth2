@@ -35,6 +35,12 @@ var Cern = oauth2.Endpoint{
 	TokenURL: "https://oauth.web.cern.ch/OAuth/Token",
 }
 
+// Coinbase is the endpoint for Amazon.
+var Coinbase = oauth2.Endpoint{
+	AuthURL:  "https://www.coinbase.com/oauth/authorize",
+	TokenURL: "http://www.coinbase.com/oauth/token",
+}
+
 // Facebook is the endpoint for Facebook.
 var Facebook = oauth2.Endpoint{
 	AuthURL:  "https://www.facebook.com/v3.2/dialog/oauth",
