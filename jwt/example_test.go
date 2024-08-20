@@ -10,7 +10,7 @@ import (
 	"golang.org/x/oauth2/jwt"
 )
 
-func ExampleJWTConfig() {
+func ExampleConfig() {
 	ctx := context.Background()
 	conf := &jwt.Config{
 		Email: "xxx@developer.com",
