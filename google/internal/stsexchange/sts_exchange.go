@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/internal"
 )
 
 func defaultHeader() http.Header {
@@ -87,7 +88,10 @@ func makeRequest(ctx context.Context, endpoint string, data url.Values, authenti
 		return nil, err
 	}
 	if c := resp.StatusCode; c < 200 || c > 299 {
-		return nil, fmt.Errorf("oauth2/google: status code %d: %s", c, body)
+		return nil, &internal.RetrieveError{
+			Response: resp,
+			Body:     body,
+		}
 	}
 	var stsResp Response
 	err = json.Unmarshal(body, &stsResp)
