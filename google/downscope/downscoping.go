@@ -39,7 +39,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -198,7 +198,7 @@ func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
 		return nil, fmt.Errorf("unable to generate POST Request %v", err)
 	}
 	defer resp.Body.Close()
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("downscope: unable to read response body: %v", err)
 	}

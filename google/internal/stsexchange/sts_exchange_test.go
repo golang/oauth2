@@ -7,7 +7,7 @@ package stsexchange
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -73,7 +73,7 @@ func TestExchangeToken(t *testing.T) {
 		if got, want := r.Header.Get("Content-Type"), "application/x-www-form-urlencoded"; got != want {
 			t.Errorf("Unexpected Content-Type header, got %v, want %v", got, want)
 		}
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Errorf("Failed reading request body: %v.", err)
 		}
@@ -132,7 +132,7 @@ var optsValues = [][]string{{"foo", "bar"}, {"cat", "pan"}}
 
 func TestExchangeToken_Opts(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatalf("Failed reading request body: %v.", err)
 		}
@@ -220,7 +220,7 @@ func TestRefreshToken(t *testing.T) {
 		if got, want := r.Header.Get("Content-Type"), "application/x-www-form-urlencoded"; got != want {
 			t.Errorf("Unexpected Content-Type header, got %v, want %v", got, want)
 		}
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Errorf("Failed reading request body: %v.", err)
 		}

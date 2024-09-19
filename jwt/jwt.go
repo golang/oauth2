@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -136,7 +135,7 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 	}
@@ -148,10 +147,8 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	}
 	// tokenRes is the JSON response body.
 	var tokenRes struct {
-		AccessToken string `json:"access_token"`
-		TokenType   string `json:"token_type"`
-		IDToken     string `json:"id_token"`
-		ExpiresIn   int64  `json:"expires_in"` // relative seconds from now
+		oauth2.Token
+		IDToken string `json:"id_token"`
 	}
 	if err := json.Unmarshal(body, &tokenRes); err != nil {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)

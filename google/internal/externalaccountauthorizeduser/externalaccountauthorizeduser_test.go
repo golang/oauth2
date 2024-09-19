@@ -8,7 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -227,7 +227,7 @@ func (trts *testRefreshTokenServer) run(t *testing.T) (string, error) {
 		if got, want := headerContentType, trts.ContentType; got != want {
 			t.Errorf("got %v but want %v", got, want)
 		}
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatalf("Failed reading request body: %s.", err)
 		}

@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -104,7 +103,7 @@ func TestExchangeRequest(t *testing.T) {
 		if headerContentType != "application/x-www-form-urlencoded" {
 			t.Errorf("Unexpected Content-Type header %q", headerContentType)
 		}
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Errorf("Failed reading request body: %s.", err)
 		}
@@ -148,7 +147,7 @@ func TestExchangeRequest_CustomParam(t *testing.T) {
 		if headerContentType != "application/x-www-form-urlencoded" {
 			t.Errorf("Unexpected Content-Type header, %v is found.", headerContentType)
 		}
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Errorf("Failed reading request body: %s.", err)
 		}
@@ -194,7 +193,7 @@ func TestExchangeRequest_JSONResponse(t *testing.T) {
 		if headerContentType != "application/x-www-form-urlencoded" {
 			t.Errorf("Unexpected Content-Type header, %v is found.", headerContentType)
 		}
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Errorf("Failed reading request body: %s.", err)
 		}
@@ -393,7 +392,7 @@ func TestPasswordCredentialsTokenRequest(t *testing.T) {
 		if headerContentType != expected {
 			t.Errorf("Content-Type header = %q; want %q", headerContentType, expected)
 		}
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Errorf("Failed reading request body: %s.", err)
 		}
@@ -435,7 +434,7 @@ func TestTokenRefreshRequest(t *testing.T) {
 		if headerContentType != "application/x-www-form-urlencoded" {
 			t.Errorf("Unexpected Content-Type header %q", headerContentType)
 		}
-		body, _ := ioutil.ReadAll(r.Body)
+		body, _ := io.ReadAll(r.Body)
 		if string(body) != "grant_type=refresh_token&refresh_token=REFRESH_TOKEN" {
 			t.Errorf("Unexpected refresh token payload %q", body)
 		}
@@ -460,7 +459,7 @@ func TestFetchWithNoRefreshToken(t *testing.T) {
 		if headerContentType != "application/x-www-form-urlencoded" {
 			t.Errorf("Unexpected Content-Type header, %v is found.", headerContentType)
 		}
-		body, _ := ioutil.ReadAll(r.Body)
+		body, _ := io.ReadAll(r.Body)
 		if string(body) != "client_id=CLIENT_ID&grant_type=refresh_token&refresh_token=REFRESH_TOKEN" {
 			t.Errorf("Unexpected refresh token payload, %v is found.", string(body))
 		}

@@ -6,7 +6,7 @@ package downscope
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -27,7 +27,7 @@ func Test_DownscopedTokenSource(t *testing.T) {
 		if r.URL.String() != "/" {
 			t.Errorf("Unexpected request URL, %v is found", r.URL)
 		}
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatalf("Failed to read request body: %v", err)
 		}

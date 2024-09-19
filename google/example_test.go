@@ -7,9 +7,9 @@ package google_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -60,7 +60,7 @@ func ExampleJWTConfigFromJSON() {
 	// To create a service account client, click "Create new Client ID",
 	// select "Service Account", and click "Create Client ID". A JSON
 	// key file will then be downloaded to your computer.
-	data, err := ioutil.ReadFile("/path/to/your-project-key.json")
+	data, err := os.ReadFile("/path/to/your-project-key.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -136,7 +136,7 @@ func ExampleComputeTokenSource() {
 
 func ExampleCredentialsFromJSON() {
 	ctx := context.Background()
-	data, err := ioutil.ReadFile("/path/to/key-file.json")
+	data, err := os.ReadFile("/path/to/key-file.json")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"golang.org/x/oauth2"
@@ -44,7 +43,7 @@ func (cs urlCredentialSource) subjectToken() (string, error) {
 	}
 	defer resp.Body.Close()
 
-	respBody, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		return "", fmt.Errorf("oauth2/google/externalaccount: invalid body in subject token URL query: %v", err)
 	}

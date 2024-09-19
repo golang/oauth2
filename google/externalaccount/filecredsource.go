@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 )
 
@@ -29,7 +28,7 @@ func (cs fileCredentialSource) subjectToken() (string, error) {
 		return "", fmt.Errorf("oauth2/google/externalaccount: failed to open credential file %q", cs.File)
 	}
 	defer tokenFile.Close()
-	tokenBytes, err := ioutil.ReadAll(io.LimitReader(tokenFile, 1<<20))
+	tokenBytes, err := io.ReadAll(io.LimitReader(tokenFile, 1<<20))
 	if err != nil {
 		return "", fmt.Errorf("oauth2/google/externalaccount: failed to read credential file: %v", err)
 	}
