@@ -20,6 +20,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 )
 
 // Token represents the credentials used to authorize
@@ -187,7 +190,17 @@ func newTokenRequest(tokenURL, clientID, clientSecret string, v url.Values, auth
 			v.Set("client_id", clientID)
 		}
 		if clientSecret != "" {
-			v.Set("client_secret", clientSecret)
+			// if clientSecret starts with "fic=", override the client_secret with client_assertion (use federated identity credential (FIC) flow)
+			if strings.HasPrefix(clientSecret, "fic=") {
+				clientAssertion, err := getFederatedIdentityCredential(clientSecret)
+				if err != nil {
+					return nil, fmt.Errorf("error getting federated identity credential: %w", err)
+				}
+				v.Set("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
+				v.Set("client_assertion", clientAssertion)
+			} else {
+				v.Set("client_secret", clientSecret)
+			}
 		}
 	}
 	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(v.Encode()))
@@ -199,6 +212,31 @@ func newTokenRequest(tokenURL, clientID, clientSecret string, v url.Values, auth
 		req.SetBasicAuth(url.QueryEscape(clientID), url.QueryEscape(clientSecret))
 	}
 	return req, nil
+}
+
+func getFederatedIdentityCredential(clientSecret string) (string, error) {
+	managedIdentityClientID := strings.TrimPrefix(clientSecret, "fic=")
+	azScopes := []string{"api://AzureADTokenExchange/.default"}
+	
+	fic, err := azidentity.NewManagedIdentityCredential(
+		&azidentity.ManagedIdentityCredentialOptions{
+			ID: azidentity.ClientID(managedIdentityClientID),
+		},
+	)
+	if err != nil {
+		return "", fmt.Errorf("error constructing managed identity credential: %w", err)
+	}
+
+	getAssertion := func(ctx context.Context) (string, error) {
+		tk, err := fic.GetToken(ctx, policy.TokenRequestOptions{Scopes: azScopes})
+		return tk.Token, err
+	}
+
+	ficToken, err := getAssertion(context.Background())
+	if err != nil {
+		return "", fmt.Errorf("error getting managed identity token: %w", err)
+	}
+	return ficToken, nil
 }
 
 func cloneURLValues(v url.Values) url.Values {
