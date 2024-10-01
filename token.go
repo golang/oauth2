@@ -16,8 +16,6 @@ import (
 	"golang.org/x/oauth2/internal"
 )
 
-// yo
-
 // defaultExpiryDelta determines how earlier a token should be considered
 // expired than its actual expiration time. It is used to avoid late
 // expirations due to client-server time mismatches.
