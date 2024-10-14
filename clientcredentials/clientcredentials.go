@@ -24,6 +24,10 @@ import (
 	"golang.org/x/oauth2/internal"
 )
 
+const (
+	ClientJWTAssertionType = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+)
+
 // Config describes a 2-legged OAuth2 flow, with both the
 // client application information and the server's endpoint URLs.
 type Config struct {
@@ -32,6 +36,9 @@ type Config struct {
 
 	// ClientSecret is the application's secret.
 	ClientSecret string
+
+	// ClientAssertionFn is a function to generate a client assertion value.
+	ClientAssertionFn func(ctx context.Context) (string, error)
 
 	// TokenURL is the resource server's token endpoint
 	// URL. This is a constant specific to each server.
@@ -105,6 +112,16 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 			return nil, fmt.Errorf("oauth2: cannot overwrite parameter %q", k)
 		}
 		v[k] = p
+	}
+
+	if c.conf.ClientAssertionFn != nil {
+		clientAssertion, err := c.conf.ClientAssertionFn(c.ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		v.Set("client_assertion", clientAssertion)
+		v.Set("client_assertion_type", ClientJWTAssertionType)
 	}
 
 	tk, err := internal.RetrieveToken(c.ctx, c.conf.ClientID, c.conf.ClientSecret, c.conf.TokenURL, v, internal.AuthStyle(c.conf.AuthStyle), c.conf.authStyleCache.Get())
