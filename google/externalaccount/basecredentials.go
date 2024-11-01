@@ -109,6 +109,7 @@ package externalaccount
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -119,6 +120,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google/internal/impersonate"
 	"golang.org/x/oauth2/google/internal/stsexchange"
+	"golang.org/x/oauth2/internal"
 )
 
 const (
@@ -464,6 +466,10 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 	}
 	stsResp, err := stsexchange.ExchangeToken(ts.ctx, conf.TokenURL, &stsRequest, clientAuth, header, options)
 	if err != nil {
+		var rErr *internal.RetrieveError
+		if errors.As(err, &rErr) {
+			return nil, (*oauth2.RetrieveError)(rErr)
+		}
 		return nil, err
 	}
 
