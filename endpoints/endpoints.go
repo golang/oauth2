@@ -146,6 +146,12 @@ var Odnoklassniki = oauth2.Endpoint{
 	TokenURL: "https://api.odnoklassniki.ru/oauth/token.do",
 }
 
+// OpenStreetMap is the endpoint for OpenStreetMap.org
+var OpenStreetMap = oauth2.Endpoint{
+	AuthURL:  "https://www.openstreetmap.org/oauth2/authorize",
+	TokenURL: "https://www.openstreetmap.org/oauth2/token",
+}
+
 // PayPal is the endpoint for PayPal.
 var PayPal = oauth2.Endpoint{
 	AuthURL:  "https://www.paypal.com/webapps/auth/protocol/openidconnect/v1/authorize",
