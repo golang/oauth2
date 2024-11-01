@@ -218,6 +218,12 @@ var Zoom = oauth2.Endpoint{
 	TokenURL: "https://zoom.us/oauth/token",
 }
 
+// Baidu is the endpoint for Baidu.
+var Baidu = oauth2.Endpoint{
+	AuthURL:  "http://openapi.baidu.com/oauth/2.0/authorize",
+	TokenURL: "https://openapi.baidu.com/oauth/2.0/token",
+}
+
 // AzureAD returns a new oauth2.Endpoint for the given tenant at Azure Active Directory.
 // If tenant is empty, it uses the tenant called `common`.
 //
