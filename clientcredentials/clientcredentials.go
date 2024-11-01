@@ -51,6 +51,12 @@ type Config struct {
 	// authStyleCache caches which auth style to use when Endpoint.AuthStyle is
 	// the zero value (AuthStyleAutoDetect).
 	authStyleCache internal.LazyAuthStyleCache
+
+	// CustomTokenHeaderKey - If set, Instead of `Authorization` this will be used as header key
+	CustomTokenHeaderKey string
+
+	// CustomTokenPrefix - If set, Instead of `Bearer ` prefix / token type retrieved, this will be used
+	CustomTokenPrefix string
 }
 
 // Token uses client credentials to retrieve a token.
@@ -119,6 +125,10 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 		TokenType:    tk.TokenType,
 		RefreshToken: tk.RefreshToken,
 		Expiry:       tk.Expiry,
+	}
+	if c.conf != nil {
+		t.CustomTokenHeaderKey = c.conf.CustomTokenHeaderKey
+		t.CustomTokenPrefix = c.conf.CustomTokenPrefix
 	}
 	return t.WithExtra(tk.Raw), nil
 }
