@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/internal"
 )
@@ -67,7 +68,28 @@ func (c *Config) Token(ctx context.Context) (*oauth2.Token, error) {
 // is returned. See the oauth2.HTTPClient variable.
 //
 // The returned Client and its Transport should not be modified.
+//
+// Deprecated: Client exists for historical compatibility and should not be
+// used. It is recommended to use ClientWithXRay instead, as it provides much better visibility into the client's behavior.
 func (c *Config) Client(ctx context.Context) *http.Client {
+	return oauth2.NewClient(ctx, c.TokenSource(ctx))
+}
+
+// ClientWithXRay returns an HTTP client using the provided token with an attached XRay client..
+// The token will auto-refresh as necessary.
+//
+// The provided context optionally controls which HTTP client
+// is returned. See the oauth2.HTTPClient variable.
+//
+// The returned Client and its Transport should not be modified.
+func (c *Config) ClientWithXRay(ctx context.Context, hc *http.Client) *http.Client {
+	if hc == nil {
+		hc = http.DefaultClient
+	}
+
+	client := xray.Client(hc)
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, client)
+
 	return oauth2.NewClient(ctx, c.TokenSource(ctx))
 }
 
