@@ -5,103 +5,42 @@
 package google
 
 import (
-	"reflect"
-	"strings"
+	"fmt"
 	"testing"
+	"time"
 )
 
+const mockResponseTemplate = `{
+    "credential": {
+      "access_token": %q,
+      "token_expiry": %q
+    }
+}`
+
 func TestSDKConfig(t *testing.T) {
-	sdkConfigPath = func() (string, error) {
-		return "testdata/gcloud", nil
+	var helperCallCount int
+	mockTokenFormat := "Token #%d"
+	mockHelper := func() []byte {
+		token := fmt.Sprintf(mockTokenFormat, helperCallCount)
+		helperCallCount += 1
+		return []byte(fmt.Sprintf(mockResponseTemplate, token, time.Now().Format(time.RFC3339)))
+	}
+	for i := 0; i < 10; i++ {
+		tok, err := parseConfigHelperResp(mockHelper())
+		if err != nil {
+			t.Errorf("Unexpected error parsing a mock config helper response: %v", err)
+		} else if got, want := tok.AccessToken, fmt.Sprintf(mockTokenFormat, i); got != want {
+			t.Errorf("Got access token of %q; wanted %q", got, want)
+		}
 	}
 
-	tests := []struct {
-		account     string
-		accessToken string
-		err         bool
-	}{
-		{"", "bar_access_token", false},
-		{"foo@example.com", "foo_access_token", false},
-		{"bar@example.com", "bar_access_token", false},
-		{"baz@serviceaccount.example.com", "", true},
+	badJSON := []byte(`Not really a JSON response`)
+	if tok, err := parseConfigHelperResp(badJSON); err == nil {
+		t.Errorf("unexpected parsing result for an malformed helper response: got %v", tok)
 	}
-	for _, tt := range tests {
-		c, err := NewSDKConfig(tt.account)
-		if got, want := err != nil, tt.err; got != want {
-			if !tt.err {
-				t.Errorf("got %v, want nil", err)
-			} else {
-				t.Errorf("got nil, want error")
-			}
-			continue
-		}
-		if err != nil {
-			continue
-		}
-		tok := c.initialToken
-		if tok == nil {
-			t.Errorf("got nil, want %q", tt.accessToken)
-			continue
-		}
-		if tok.AccessToken != tt.accessToken {
-			t.Errorf("got %q, want %q", tok.AccessToken, tt.accessToken)
-		}
-	}
-}
 
-func TestParseINI(t *testing.T) {
-	tests := []struct {
-		ini  string
-		want map[string]map[string]string
-	}{
-		{
-			`root = toor
-[foo]
-bar = hop
-ini = nin
-`,
-			map[string]map[string]string{
-				"":    {"root": "toor"},
-				"foo": {"bar": "hop", "ini": "nin"},
-			},
-		},
-		{
-			"\t  extra \t =  whitespace  \t\r\n \t [everywhere] \t \r\n  here \t =  \t there  \t \r\n",
-			map[string]map[string]string{
-				"":           {"extra": "whitespace"},
-				"everywhere": {"here": "there"},
-			},
-		},
-		{
-			`[empty]
-[section]
-empty=
-`,
-			map[string]map[string]string{
-				"":        {},
-				"empty":   {},
-				"section": {"empty": ""},
-			},
-		},
-		{
-			`ignore
-[invalid
-=stuff
-;comment=true
-`,
-			map[string]map[string]string{
-				"": {},
-			},
-		},
-	}
-	for _, tt := range tests {
-		result, err := parseINI(strings.NewReader(tt.ini))
-		if err != nil {
-			t.Errorf("parseINI(%q) error %v, want: no error", tt.ini, err)
-			continue
-		}
-		if !reflect.DeepEqual(result, tt.want) {
-			t.Errorf("parseINI(%q) = %#v, want: %#v", tt.ini, result, tt.want)
-		}
+	badTimestamp := []byte(fmt.Sprintf(mockResponseTemplate, "Fake Token", "The time at which it expires"))
+	if tok, err := parseConfigHelperResp(badTimestamp); err == nil {
+		t.Errorf("unexpected parsing result for a helper response with a bad expiry timestamp: got %v", tok)
 	}
 }
