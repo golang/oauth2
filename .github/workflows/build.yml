@@ -1,0 +1,38 @@
+name: Build
+
+on:
+    push:
+      branches:
+        - master
+    pull_request:
+      branches:
+        - master
+
+jobs:
+    build:
+        name: Build
+        runs-on: ubuntu-latest
+        steps:
+
+            - name: Set up Go 1.x
+              uses: actions/setup-go@v2
+              with:
+                  go-version: ^1.13
+              id: go
+
+            - name: Checkout repository
+              uses: actions/checkout@v2
+
+            - name: Set up cache
+              uses: actions/cache@v2
+              with:
+                path: ~/go/pkg/mod
+                key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+                restore-keys: |
+                  ${{ runner.os }}-go-
+
+            - name: Install dependncies
+              run: go mod download
+
+            - name: Run tests
+              run: go test -v golang.org/x/oauth2/...
