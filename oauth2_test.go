@@ -300,7 +300,7 @@ func testExchangeRequest_JSONResponse_expiry(t *testing.T, exp string, want, nul
 	conf := newConf(ts.URL)
 	t1 := time.Now().Add(day)
 	tok, err := conf.Exchange(context.Background(), "exchange-code")
-	t2 := t1.Add(day)
+	t2 := time.Now().Add(day)
 
 	if got := (err == nil); got != want {
 		if want {
