@@ -132,11 +132,9 @@ type CredentialsParams struct {
 	TokenURL string
 
 	// EarlyTokenRefresh is the amount of time before a token expires that a new
-	// token will be preemptively fetched. If unset the default value is 10
-	// seconds.
-	//
-	// Note: This option is currently only respected when using credentials
-	// fetched from the GCE metadata server.
+	// token will be preemptively fetched. If unset, the default value is 10
+	// seconds, unless fetching credentials from the GCE metadata server, which
+	// uses a default of 3 minutes and 45 seconds.
 	EarlyTokenRefresh time.Duration
 
 	// UniverseDomain is the default service domain for a given Cloud universe.
@@ -258,9 +256,13 @@ func CredentialsFromJSONWithParams(ctx context.Context, jsonData []byte, params 
 	// First, attempt to parse jsonData as a Google Developers Console client_credentials.json.
 	config, _ := ConfigFromJSON(jsonData, params.Scopes...)
 	if config != nil {
+		source := authhandler.TokenSourceWithPKCE(ctx, config, params.State, params.AuthHandler, params.PKCE)
+		if params.EarlyTokenRefresh != 0 {
+			source = oauth2.ReuseTokenSourceWithExpiry(nil, source, params.EarlyTokenRefresh)
+		}
 		return &Credentials{
 			ProjectID:   "",
-			TokenSource: authhandler.TokenSourceWithPKCE(ctx, config, params.State, params.AuthHandler, params.PKCE),
+			TokenSource: source,
 			JSON:        jsonData,
 		}, nil
 	}

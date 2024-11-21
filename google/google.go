@@ -35,6 +35,13 @@ const MTLSTokenURL = "https://oauth2.mtls.googleapis.com/token"
 // JWTTokenURL is Google's OAuth 2.0 token URL to use with the JWT flow.
 const JWTTokenURL = "https://oauth2.googleapis.com/token"
 
+// DefaultComputeEarlyTokenRefresh is the duration prior to expiration after
+// which new token requests on GCE should fetch a new token, to avoid expiration
+// between refresh and usage of the token. The shortest Customer Metadata
+// Service (MDS) cache TTL is currently 4 minutes, so any refreshes earlier are
+// a waste of compute.
+const DefaultComputeEarlyTokenRefresh = 3*time.Minute + 45*time.Second
+
 // ConfigFromJSON uses a Google Developers Console client_credentials.json
 // file to construct a config.
 // client_credentials.json can be downloaded from
@@ -164,10 +171,11 @@ func (f *credentialsFile) jwtConfig(scopes []string, subject string) *jwt.Config
 }
 
 func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsParams) (oauth2.TokenSource, error) {
+	var source oauth2.TokenSource
 	switch f.Type {
 	case serviceAccountKey:
 		cfg := f.jwtConfig(params.Scopes, params.Subject)
-		return cfg.TokenSource(ctx), nil
+		source = cfg.TokenSource(ctx)
 	case userCredentialsKey:
 		cfg := &oauth2.Config{
 			ClientID:     f.ClientID,
@@ -190,7 +198,7 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 			}
 		}
 		tok := &oauth2.Token{RefreshToken: f.RefreshToken}
-		return cfg.TokenSource(ctx, tok), nil
+		source = cfg.TokenSource(ctx, tok)
 	case externalAccountKey:
 		cfg := &externalaccount.Config{
 			Audience:                       f.Audience,
@@ -206,7 +214,11 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 			Scopes:                   params.Scopes,
 			WorkforcePoolUserProject: f.WorkforcePoolUserProject,
 		}
-		return externalaccount.NewTokenSource(ctx, *cfg)
+		ts, err := externalaccount.NewTokenSource(ctx, *cfg)
+		if err != nil {
+			return nil, err
+		}
+		source = ts
 	case externalAccountAuthorizedUserKey:
 		cfg := &externalaccountauthorizeduser.Config{
 			Audience:       f.Audience,
@@ -219,7 +231,11 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 			QuotaProjectID: f.QuotaProjectID,
 			Scopes:         params.Scopes,
 		}
-		return cfg.TokenSource(ctx)
+		ts, err := cfg.TokenSource(ctx)
+		if err != nil {
+			return nil, err
+		}
+		source = ts
 	case impersonatedServiceAccount:
 		if f.ServiceAccountImpersonationURL == "" || f.SourceCredentials == nil {
 			return nil, errors.New("missing 'source_credentials' field or 'service_account_impersonation_url' in credentials")
@@ -229,19 +245,22 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 		if err != nil {
 			return nil, err
 		}
-		imp := impersonate.ImpersonateTokenSource{
+		source = impersonate.ImpersonateTokenSource{
 			Ctx:       ctx,
 			URL:       f.ServiceAccountImpersonationURL,
 			Scopes:    params.Scopes,
 			Ts:        ts,
 			Delegates: f.Delegates,
 		}
-		return oauth2.ReuseTokenSource(nil, imp), nil
 	case "":
 		return nil, errors.New("missing 'type' field in credentials")
 	default:
 		return nil, fmt.Errorf("unknown credential type: %q", f.Type)
 	}
+	if params.EarlyTokenRefresh != 0 {
+		return oauth2.ReuseTokenSourceWithExpiry(nil, source, params.EarlyTokenRefresh), nil
+	}
+	return source, nil
 }
 
 // ComputeTokenSource returns a token source that fetches access tokens
@@ -252,13 +271,13 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 // Further information about retrieving access tokens from the GCE metadata
 // server can be found at https://cloud.google.com/compute/docs/authentication.
 func ComputeTokenSource(account string, scope ...string) oauth2.TokenSource {
-	// refresh 3 minutes and 45 seconds early. The shortest MDS cache is currently 4 minutes, so any
-	// refreshes earlier are a waste of compute.
-	earlyExpirySecs := 225 * time.Second
-	return computeTokenSource(account, earlyExpirySecs, scope...)
+	return computeTokenSource(account, 0, scope...)
 }
 
 func computeTokenSource(account string, earlyExpiry time.Duration, scope ...string) oauth2.TokenSource {
+	if earlyExpiry == 0 {
+		earlyExpiry = DefaultComputeEarlyTokenRefresh
+	}
 	return oauth2.ReuseTokenSourceWithExpiry(nil, computeSource{account: account, scopes: scope}, earlyExpiry)
 }
 
