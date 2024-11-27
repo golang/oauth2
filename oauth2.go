@@ -22,7 +22,7 @@ import (
 )
 
 // NoContext is the default context you should supply if not using
-// your own context.Context (see https://golang.org/x/net/context).
+// your own [context.Context].
 //
 // Deprecated: Use context.Background() or context.TODO() instead.
 var NoContext = context.TODO()
@@ -338,8 +338,8 @@ func (s staticTokenSource) Token() (*Token, error) {
 	return s.t, nil
 }
 
-// HTTPClient is the context key to use with golang.org/x/net/context's
-// WithValue function to associate an *http.Client value with a context.
+// HTTPClient is the context key to use with [context.WithValue]'s
+// function to associate an *http.Client value with a context.
 var HTTPClient internal.ContextKey
 
 // NewClient creates an *http.Client from a Context and TokenSource.
