@@ -41,6 +41,12 @@ var Facebook = oauth2.Endpoint{
 	TokenURL: "https://graph.facebook.com/v3.2/oauth/access_token",
 }
 
+// Feishu is the endpoint for Feishu.
+var Feishu = oauth2.Endpoint{
+	AuthURL:  "https://open.feishu.cn/open-apis/authen/v1/authorize",
+	TokenURL: "https://open.feishu.cn/open-apis/authen/v2/oauth/token",
+}
+
 // Foursquare is the endpoint for Foursquare.
 var Foursquare = oauth2.Endpoint{
 	AuthURL:  "https://foursquare.com/oauth2/authorize",
@@ -96,6 +102,12 @@ var Instagram = oauth2.Endpoint{
 var KaKao = oauth2.Endpoint{
 	AuthURL:  "https://kauth.kakao.com/oauth/authorize",
 	TokenURL: "https://kauth.kakao.com/oauth/token",
+}
+
+// Lark is the endpoint for Lark.
+var Lark = oauth2.Endpoint{
+	AuthURL:  "https://open.larksuite.com/open-apis/authen/v1/authorize",
+	TokenURL: "https://open.larksuite.com/open-apis/authen/v2/oauth/token",
 }
 
 // LinkedIn is the endpoint for LinkedIn.
