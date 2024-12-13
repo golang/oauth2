@@ -192,6 +192,12 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 		tok := &oauth2.Token{RefreshToken: f.RefreshToken}
 		return cfg.TokenSource(ctx, tok), nil
 	case externalAccountKey:
+		scopes := params.Scopes
+		if f.ServiceAccountImpersonationURL != "" {
+			if len(scopes) == 0 {
+				scopes = []string{"https://www.googleapis.com/auth/cloud-platform"}
+			}
+		}
 		cfg := &externalaccount.Config{
 			Audience:                       f.Audience,
 			SubjectTokenType:               f.SubjectTokenType,
@@ -203,7 +209,7 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 			ClientID:                 f.ClientID,
 			CredentialSource:         &f.CredentialSource,
 			QuotaProjectID:           f.QuotaProjectID,
-			Scopes:                   params.Scopes,
+			Scopes:                   scopes,
 			WorkforcePoolUserProject: f.WorkforcePoolUserProject,
 		}
 		return externalaccount.NewTokenSource(ctx, *cfg)
@@ -229,10 +235,14 @@ func (f *credentialsFile) tokenSource(ctx context.Context, params CredentialsPar
 		if err != nil {
 			return nil, err
 		}
+		scopes := params.Scopes
+		if len(scopes) == 0 {
+			scopes = []string{"https://www.googleapis.com/auth/cloud-platform"}
+		}
 		imp := impersonate.ImpersonateTokenSource{
 			Ctx:       ctx,
 			URL:       f.ServiceAccountImpersonationURL,
-			Scopes:    params.Scopes,
+			Scopes:    scopes,
 			Ts:        ts,
 			Delegates: f.Delegates,
 		}
