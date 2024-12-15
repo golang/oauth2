@@ -21,7 +21,7 @@ const (
 //
 // A fresh verifier should be generated for each authorization.
 // S256ChallengeOption(verifier) should then be passed to Config.AuthCodeURL
-// (or Config.DeviceAccess) and VerifierOption(verifier) to Config.Exchange
+// (or Config.DeviceAuth) and VerifierOption(verifier) to Config.Exchange
 // (or Config.DeviceAccessToken).
 func GenerateVerifier() string {
 	// "RECOMMENDED that the output of a suitable random number generator be
