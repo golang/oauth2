@@ -224,6 +224,7 @@ func (c *Config) Exchange(ctx context.Context, code string, opts ...AuthCodeOpti
 	v := url.Values{
 		"grant_type": {"authorization_code"},
 		"code":       {code},
+		"client_id":  {c.ClientID},
 	}
 	if c.RedirectURL != "" {
 		v.Set("redirect_uri", c.RedirectURL)
@@ -280,6 +281,7 @@ func (tf *tokenRefresher) Token() (*Token, error) {
 	tk, err := retrieveToken(tf.ctx, tf.conf, url.Values{
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {tf.refreshToken},
+		"client_id":     {tf.conf.ClientID},
 	})
 
 	if err != nil {
