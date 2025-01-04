@@ -285,7 +285,7 @@ func (tf *tokenRefresher) Token() (*Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	if tf.refreshToken != tk.RefreshToken {
+	if tf.refreshToken != tk.RefreshToken && tk.RefreshToken != "" {
 		tf.refreshToken = tk.RefreshToken
 	}
 	return tk, err
