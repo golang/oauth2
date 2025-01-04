@@ -75,6 +75,9 @@ func (c *Config) Client(ctx context.Context) *http.Client {
 // automatically refreshing it as necessary using the provided context and the
 // client ID and client secret.
 //
+// The provided context optionally controls which HTTP client
+// is returned. See the oauth2.HTTPClient variable.
+//
 // Most users will use Config.Client instead.
 func (c *Config) TokenSource(ctx context.Context) oauth2.TokenSource {
 	source := &tokenSource{
