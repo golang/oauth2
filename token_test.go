@@ -71,6 +71,8 @@ func TestTokenTypeMethod(t *testing.T) {
 		{name: "mac", tok: &Token{TokenType: "mac"}, want: "MAC"},
 		{name: "mac-caps", tok: &Token{TokenType: "MAC"}, want: "MAC"},
 		{name: "mac-mixed_case", tok: &Token{TokenType: "mAc"}, want: "MAC"},
+		{name: "clear type", tok: &Token{TokenType: "Bearer", CustomTokenPrefix: " "}, want: ""},
+		{name: "custom type", tok: &Token{TokenType: "mAC", CustomTokenPrefix: "something"}, want: ""},
 	}
 	for _, tc := range cases {
 		if got, want := tc.tok.Type(), tc.want; got != want {
