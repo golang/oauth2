@@ -214,7 +214,10 @@ func FindDefaultCredentialsWithParams(ctx context.Context, params CredentialsPar
 	// Third, if we're on Google Compute Engine, an App Engine standard second generation runtime,
 	// or App Engine flexible, use the metadata server.
 	if metadata.OnGCE() {
-		id, _ := metadata.ProjectID()
+		id, err := metadata.ProjectID()
+		if err != nil {
+			return nil, fmt.Errorf("google: error getting project ID from metadata server: %v", err)
+		}
 		universeDomainProvider := func() (string, error) {
 			universeDomain, err := metadata.Get("universe/universe_domain")
 			if err != nil {
