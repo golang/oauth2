@@ -112,6 +112,7 @@ func retrieveDeviceAuth(ctx context.Context, c *Config, v url.Values) (*DeviceAu
 	}
 
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	r.Body.Close()
 	if err != nil {
 		return nil, fmt.Errorf("oauth2: cannot auth device: %v", err)
 	}
