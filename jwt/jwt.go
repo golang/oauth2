@@ -10,6 +10,7 @@ package jwt
 
 import (
 	"context"
+	"crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,6 +30,8 @@ var (
 	defaultHeader    = &jws.Header{Algorithm: "RS256", Typ: "JWT"}
 )
 
+type Signer = jws.Signer
+
 // Config is the configuration for using JWT to fetch tokens,
 // commonly known as "two-legged OAuth 2.0".
 type Config struct {
@@ -45,6 +48,11 @@ type Config struct {
 	//    $ openssl pkcs12 -in key.p12 -out key.pem -nodes
 	//
 	PrivateKey []byte
+
+	// SignerProvider is a function that is used to create a Signer from the
+	// PrivateKeyID which is then used to sign JWT payloads. This takes
+	// precedence over default signer using the PrivateKey.
+	SignerProvider func(privateKeyID string) (Signer, error)
 
 	// PrivateKeyID contains an optional hint indicating which key is being
 	// used.
@@ -99,10 +107,6 @@ type jwtSource struct {
 }
 
 func (js jwtSource) Token() (*oauth2.Token, error) {
-	pk, err := internal.ParseKey(js.conf.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
 	hc := oauth2.NewClient(js.ctx, nil)
 	claimSet := &jws.ClaimSet{
 		Iss:           js.conf.Email,
@@ -124,7 +128,23 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	}
 	h := *defaultHeader
 	h.KeyID = js.conf.PrivateKeyID
-	payload, err := jws.Encode(&h, claimSet, pk)
+	var err error
+	payload := ""
+	if js.conf.SignerProvider == nil {
+		var pk *rsa.PrivateKey
+		pk, err = internal.ParseKey(js.conf.PrivateKey)
+		if err != nil {
+			return nil, err
+		}
+		payload, err = jws.Encode(&h, claimSet, pk)
+	} else {
+		var signer jws.Signer
+		signer, err = js.conf.SignerProvider(h.KeyID)
+		if err != nil {
+			return nil, err
+		}
+		payload, err = jws.EncodeWithSigner(&h, claimSet, signer)
+	}
 	if err != nil {
 		return nil, err
 	}
