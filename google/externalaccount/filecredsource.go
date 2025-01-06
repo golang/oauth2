@@ -26,7 +26,7 @@ func (cs fileCredentialSource) credentialSourceType() string {
 func (cs fileCredentialSource) subjectToken() (string, error) {
 	tokenFile, err := os.Open(cs.File)
 	if err != nil {
-		return "", fmt.Errorf("oauth2/google/externalaccount: failed to open credential file %q due to %v", cs.File, err)
+		return "", fmt.Errorf("oauth2/google/externalaccount: failed to open credential file %q: %v", cs.File, err)
 	}
 	defer tokenFile.Close()
 	tokenBytes, err := ioutil.ReadAll(io.LimitReader(tokenFile, 1<<20))
