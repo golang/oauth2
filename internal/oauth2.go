@@ -10,6 +10,9 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
 )
 
 // ParseKey converts the binary contents of a private key file
@@ -34,4 +37,35 @@ func ParseKey(key []byte) (*rsa.PrivateKey, error) {
 		return nil, errors.New("private key is invalid")
 	}
 	return parsed, nil
+}
+
+// addClientAuthnRequestParams adds client_secret_post client authentication
+func addClientAuthnRequestParams(clientID, clientSecret string, v url.Values, authStyle AuthStyle) url.Values {
+	if authStyle == AuthStyleInParams {
+		v = cloneURLValues(v)
+		if clientID != "" {
+			v.Set("client_id", clientID)
+		}
+		if clientSecret != "" {
+			v.Set("client_secret", clientSecret)
+		}
+	}
+	return v
+}
+
+// addClientAuthnRequestHeaders adds client_secret_basic client authentication
+func addClientAuthnRequestHeaders(clientID, clientSecret string, req *http.Request, authStyle AuthStyle) {
+	if authStyle == AuthStyleInHeader {
+		req.SetBasicAuth(url.QueryEscape(clientID), url.QueryEscape(clientSecret))
+	}
+}
+
+func NewRequestWithClientAuthn(httpMethod string, endpointURL, clientID, clientSecret string, v url.Values, authStyle AuthStyle) (*http.Request, error) {
+	v = addClientAuthnRequestParams(clientID, clientSecret, v, authStyle)
+	req, err := http.NewRequest(httpMethod, endpointURL, strings.NewReader(v.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	addClientAuthnRequestHeaders(clientID, clientSecret, req, authStyle)
+	return req, nil
 }
