@@ -347,12 +347,12 @@ func TestNonworkforceWithWorkforcePoolUserProject(t *testing.T) {
 		t.Fatalf("Expected error but found none")
 	}
 	if got, want := err.Error(), "oauth2/google/externalaccount: Workforce pool user project should not be set for non-workforce pool credentials"; got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+		t.Errorf("Incorrect error received.\nExpected: %s\nReceived: %s", want, got)
 	}
 }
 
 func TestWorkforcePoolCreation(t *testing.T) {
-	var audienceValidatyTests = []struct {
+	var audienceValidityTests = []struct {
 		audience      string
 		expectSuccess bool
 	}{
@@ -371,7 +371,7 @@ func TestWorkforcePoolCreation(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	for _, tt := range audienceValidatyTests {
+	for _, tt := range audienceValidityTests {
 		t.Run(" "+tt.audience, func(t *testing.T) { // We prepend a space ahead of the test input when outputting for sake of readability.
 			config := testConfig
 			config.TokenURL = "https://sts.googleapis.com" // Setting the most basic acceptable tokenURL

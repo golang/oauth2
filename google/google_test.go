@@ -72,7 +72,7 @@ func TestConfigFromJSON(t *testing.T) {
 		t.Errorf("ClientSecret = %q; want %q", got, want)
 	}
 	if got, want := conf.RedirectURL, "https://www.example.com/oauth2callback"; got != want {
-		t.Errorf("RedictURL = %q; want %q", got, want)
+		t.Errorf("RedirectURL = %q; want %q", got, want)
 	}
 	if got, want := strings.Join(conf.Scopes, ","), "scope1,scope2"; got != want {
 		t.Errorf("Scopes = %q; want %q", got, want)

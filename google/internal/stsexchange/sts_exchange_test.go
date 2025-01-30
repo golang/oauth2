@@ -142,7 +142,7 @@ func TestExchangeToken_Opts(t *testing.T) {
 		}
 		strOpts, ok := data["options"]
 		if !ok {
-			t.Errorf("Server didn't recieve an \"options\" field.")
+			t.Errorf("Server didn't receive an \"options\" field.")
 		} else if len(strOpts) < 1 {
 			t.Errorf("\"options\" field has length 0.")
 		}

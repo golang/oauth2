@@ -38,7 +38,7 @@ type testRefreshTokenServer struct {
 	server          *httptest.Server
 }
 
-func TestExernalAccountAuthorizedUser_JustToken(t *testing.T) {
+func TestExternalAccountAuthorizedUser_JustToken(t *testing.T) {
 	config := &Config{
 		Token:  "AAAAAAA",
 		Expiry: now().Add(time.Hour),
@@ -57,7 +57,7 @@ func TestExernalAccountAuthorizedUser_JustToken(t *testing.T) {
 	}
 }
 
-func TestExernalAccountAuthorizedUser_TokenRefreshWithRefreshTokenInRespondse(t *testing.T) {
+func TestExternalAccountAuthorizedUser_TokenRefreshWithRefreshTokenInResponse(t *testing.T) {
 	server := &testRefreshTokenServer{
 		URL:           "/",
 		Authorization: "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=",
@@ -99,7 +99,7 @@ func TestExernalAccountAuthorizedUser_TokenRefreshWithRefreshTokenInRespondse(t 
 	}
 }
 
-func TestExernalAccountAuthorizedUser_MinimumFieldsRequiredForRefresh(t *testing.T) {
+func TestExternalAccountAuthorizedUser_MinimumFieldsRequiredForRefresh(t *testing.T) {
 	server := &testRefreshTokenServer{
 		URL:           "/",
 		Authorization: "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=",
@@ -187,7 +187,7 @@ func TestExternalAccountAuthorizedUser_MissingRefreshFields(t *testing.T) {
 			},
 		},
 		{
-			name: "missing client secrect",
+			name: "missing client secret",
 			config: Config{
 				RefreshToken: "BBBBBBBBB",
 				TokenURL:     url,

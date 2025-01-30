@@ -654,7 +654,7 @@ func TestRetrieveOutputFileSubjectTokenNotJSON(t *testing.T) {
 	if _, err = base.subjectToken(); err == nil {
 		t.Fatalf("Expected error but found none")
 	} else if got, want := err.Error(), jsonParsingError(outputFileSource, "tokentokentoken").Error(); got != want {
-		t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+		t.Errorf("Incorrect error received.\nExpected: %s\nReceived: %s", want, got)
 	}
 
 	_, deadlineSet := te.getDeadline()
@@ -801,7 +801,7 @@ func TestRetrieveOutputFileSubjectTokenFailureTests(t *testing.T) {
 			if _, err = ecs.subjectToken(); err == nil {
 				t.Errorf("Expected error but found none")
 			} else if got, want := err.Error(), tt.expectedErr.Error(); got != want {
-				t.Errorf("Incorrect error received.\nExpected: %s\nRecieved: %s", want, got)
+				t.Errorf("Incorrect error received.\nExpected: %s\nReceived: %s", want, got)
 			}
 
 			if _, deadlineSet := te.getDeadline(); deadlineSet {
@@ -923,7 +923,7 @@ func TestRetrieveOutputFileSubjectTokenInvalidCache(t *testing.T) {
 			}
 
 			if got, want := out, "tokentokentoken"; got != want {
-				t.Errorf("Incorrect token received.\nExpected: %s\nRecieved: %s", want, got)
+				t.Errorf("Incorrect token received.\nExpected: %s\nReceived: %s", want, got)
 			}
 		})
 	}
@@ -1012,7 +1012,7 @@ func TestRetrieveOutputFileSubjectTokenJwt(t *testing.T) {
 			if out, err := ecs.subjectToken(); err != nil {
 				t.Errorf("retrieveSubjectToken() failed: %v", err)
 			} else if got, want := out, "tokentokentoken"; got != want {
-				t.Errorf("Incorrect token received.\nExpected: %s\nRecieved: %s", want, got)
+				t.Errorf("Incorrect token received.\nExpected: %s\nReceived: %s", want, got)
 			}
 
 			if _, deadlineSet := te.getDeadline(); deadlineSet {
