@@ -62,8 +62,9 @@ var GitHub = oauth2.Endpoint{
 
 // GitLab is the endpoint for GitLab.
 var GitLab = oauth2.Endpoint{
-	AuthURL:  "https://gitlab.com/oauth/authorize",
-	TokenURL: "https://gitlab.com/oauth/token",
+	AuthURL:       "https://gitlab.com/oauth/authorize",
+	TokenURL:      "https://gitlab.com/oauth/token",
+	DeviceAuthURL: "https://gitlab.com/oauth/authorize_device",
 }
 
 // Google is the endpoint for Google.
@@ -233,8 +234,9 @@ func AzureAD(tenant string) oauth2.Endpoint {
 		tenant = "common"
 	}
 	return oauth2.Endpoint{
-		AuthURL:  "https://login.microsoftonline.com/" + tenant + "/oauth2/v2.0/authorize",
-		TokenURL: "https://login.microsoftonline.com/" + tenant + "/oauth2/v2.0/token",
+		AuthURL:       "https://login.microsoftonline.com/" + tenant + "/oauth2/v2.0/authorize",
+		TokenURL:      "https://login.microsoftonline.com/" + tenant + "/oauth2/v2.0/token",
+		DeviceAuthURL: "https://login.microsoftonline.com/" + tenant + "/oauth2/v2.0/devicecode",
 	}
 }
 

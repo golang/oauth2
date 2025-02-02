@@ -38,18 +38,43 @@ func Test_DownscopedTokenSource(t *testing.T) {
 		w.Write([]byte(standardRespBody))
 
 	}))
-	new := []AccessBoundaryRule{
+	myTok := oauth2.Token{AccessToken: "Mellon"}
+	tmpSrc := oauth2.StaticTokenSource(&myTok)
+	rules := []AccessBoundaryRule{
 		{
 			AvailableResource:    "test1",
 			AvailablePermissions: []string{"Perm1", "Perm2"},
 		},
 	}
-	myTok := oauth2.Token{AccessToken: "Mellon"}
-	tmpSrc := oauth2.StaticTokenSource(&myTok)
-	dts := downscopingTokenSource{context.Background(), DownscopingConfig{tmpSrc, new}}
-	identityBindingEndpoint = ts.URL
+	dts := downscopingTokenSource{
+		ctx: context.Background(),
+		config: DownscopingConfig{
+			RootSource: tmpSrc,
+			Rules:      rules,
+		},
+		identityBindingEndpoint: ts.URL,
+	}
 	_, err := dts.Token()
 	if err != nil {
 		t.Fatalf("NewDownscopedTokenSource failed with error: %v", err)
+	}
+}
+
+func Test_DownscopingConfig(t *testing.T) {
+	tests := []struct {
+		universeDomain string
+		want           string
+	}{
+		{"", "https://sts.googleapis.com/v1/token"},
+		{"googleapis.com", "https://sts.googleapis.com/v1/token"},
+		{"example.com", "https://sts.example.com/v1/token"},
+	}
+	for _, tt := range tests {
+		c := DownscopingConfig{
+			UniverseDomain: tt.universeDomain,
+		}
+		if got := c.identityBindingEndpoint(); got != tt.want {
+			t.Errorf("got %q, want %q", got, tt.want)
+		}
 	}
 }

@@ -3,6 +3,7 @@ package oauth2
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -58,6 +59,8 @@ func (c *DeviceAuthResponse) UnmarshalJSON(data []byte) error {
 	type Alias DeviceAuthResponse
 	aux := &struct {
 		ExpiresIn int64 `json:"expires_in"`
+		// workaround misspelling of verification_uri
+		VerificationURL string `json:"verification_url"`
 		*Alias
 	}{
 		Alias: (*Alias)(c),
@@ -67,6 +70,9 @@ func (c *DeviceAuthResponse) UnmarshalJSON(data []byte) error {
 	}
 	if aux.ExpiresIn != 0 {
 		c.Expiry = time.Now().UTC().Add(time.Second * time.Duration(aux.ExpiresIn))
+	}
+	if c.VerificationURI == "" {
+		c.VerificationURI = aux.VerificationURL
 	}
 	return nil
 }
@@ -88,6 +94,10 @@ func (c *Config) DeviceAuth(ctx context.Context, opts ...AuthCodeOption) (*Devic
 }
 
 func retrieveDeviceAuth(ctx context.Context, c *Config, v url.Values) (*DeviceAuthResponse, error) {
+	if c.Endpoint.DeviceAuthURL == "" {
+		return nil, errors.New("endpoint missing DeviceAuthURL")
+	}
+
 	req, err := http.NewRequest("POST", c.Endpoint.DeviceAuthURL, strings.NewReader(v.Encode()))
 	if err != nil {
 		return nil, err

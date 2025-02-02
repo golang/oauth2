@@ -5,6 +5,8 @@
 package google
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -135,5 +137,23 @@ func TestJWTConfigFromJSONNoAudience(t *testing.T) {
 	}
 	if got, want := conf.Audience, ""; got != want {
 		t.Errorf("Audience = %q; want %q", got, want)
+	}
+}
+
+func TestComputeTokenSource(t *testing.T) {
+	tokenPath := "/computeMetadata/v1/instance/service-accounts/default/token"
+	tokenResponseBody := `{"access_token":"Sample.Access.Token","token_type":"Bearer","expires_in":3600}`
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != tokenPath {
+			t.Errorf("got %s, want %s", r.URL.Path, tokenPath)
+		}
+		w.Write([]byte(tokenResponseBody))
+	}))
+	defer s.Close()
+	t.Setenv("GCE_METADATA_HOST", strings.TrimPrefix(s.URL, "http://"))
+	ts := ComputeTokenSource("")
+	_, err := ts.Token()
+	if err != nil {
+		t.Errorf("ts.Token() = %v", err)
 	}
 }

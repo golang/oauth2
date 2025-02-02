@@ -42,13 +42,16 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
 )
 
-var (
-	identityBindingEndpoint = "https://sts.googleapis.com/v1/token"
+const (
+	universeDomainPlaceholder       = "UNIVERSE_DOMAIN"
+	identityBindingEndpointTemplate = "https://sts.UNIVERSE_DOMAIN/v1/token"
+	defaultUniverseDomain           = "googleapis.com"
 )
 
 type accessBoundary struct {
@@ -105,6 +108,18 @@ type DownscopingConfig struct {
 	// access (or set of accesses) that the new token has to a given resource.
 	// There can be a maximum of 10 AccessBoundaryRules.
 	Rules []AccessBoundaryRule
+	// UniverseDomain is the default service domain for a given Cloud universe.
+	// The default value is "googleapis.com". Optional.
+	UniverseDomain string
+}
+
+// identityBindingEndpoint returns the identity binding endpoint with the
+// configured universe domain.
+func (dc *DownscopingConfig) identityBindingEndpoint() string {
+	if dc.UniverseDomain == "" {
+		return strings.Replace(identityBindingEndpointTemplate, universeDomainPlaceholder, defaultUniverseDomain, 1)
+	}
+	return strings.Replace(identityBindingEndpointTemplate, universeDomainPlaceholder, dc.UniverseDomain, 1)
 }
 
 // A downscopingTokenSource is used to retrieve a downscoped token with restricted
@@ -114,6 +129,9 @@ type downscopingTokenSource struct {
 	ctx context.Context
 	// config holds the information necessary to generate a downscoped Token.
 	config DownscopingConfig
+	// identityBindingEndpoint is the identity binding endpoint with the
+	// configured universe domain.
+	identityBindingEndpoint string
 }
 
 // NewTokenSource returns a configured downscopingTokenSource.
@@ -135,7 +153,11 @@ func NewTokenSource(ctx context.Context, conf DownscopingConfig) (oauth2.TokenSo
 			return nil, fmt.Errorf("downscope: all rules must provide at least one permission: %+v", val)
 		}
 	}
-	return downscopingTokenSource{ctx: ctx, config: conf}, nil
+	return downscopingTokenSource{
+		ctx:                     ctx,
+		config:                  conf,
+		identityBindingEndpoint: conf.identityBindingEndpoint(),
+	}, nil
 }
 
 // Token() uses a downscopingTokenSource to generate an oauth2 Token.
@@ -171,7 +193,7 @@ func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
 	form.Add("options", string(b))
 
 	myClient := oauth2.NewClient(dts.ctx, nil)
-	resp, err := myClient.PostForm(identityBindingEndpoint, form)
+	resp, err := myClient.PostForm(dts.identityBindingEndpoint, form)
 	if err != nil {
 		return nil, fmt.Errorf("unable to generate POST Request %v", err)
 	}

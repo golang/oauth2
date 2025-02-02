@@ -36,7 +36,7 @@ func TestRetrieveFileSubjectToken(t *testing.T) {
 			name: "TextFileSource",
 			cs: CredentialSource{
 				File:   textBaseCredPath,
-				Format: format{Type: fileTypeText},
+				Format: Format{Type: fileTypeText},
 			},
 			want: "street123",
 		},
@@ -44,7 +44,7 @@ func TestRetrieveFileSubjectToken(t *testing.T) {
 			name: "JSONFileSource",
 			cs: CredentialSource{
 				File:   jsonBaseCredPath,
-				Format: format{Type: fileTypeJSON, SubjectTokenFieldName: "SubjToken"},
+				Format: Format{Type: fileTypeJSON, SubjectTokenFieldName: "SubjToken"},
 			},
 			want: "321road",
 		},
@@ -53,7 +53,7 @@ func TestRetrieveFileSubjectToken(t *testing.T) {
 	for _, test := range fileSourceTests {
 		test := test
 		tfc := testFileConfig
-		tfc.CredentialSource = test.cs
+		tfc.CredentialSource = &test.cs
 
 		t.Run(test.name, func(t *testing.T) {
 			base, err := tfc.parse(context.Background())
@@ -68,6 +68,9 @@ func TestRetrieveFileSubjectToken(t *testing.T) {
 				t.Errorf("got %v but want %v", out, test.want)
 			}
 
+			if got, want := base.credentialSourceType(), "file"; got != want {
+				t.Errorf("got %v but want %v", got, want)
+			}
 		})
 	}
 }
