@@ -187,9 +187,7 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 		}
 		token.AccessToken = tokenRes.IDToken
 	}
-	if js.conf != nil {
-		token.CustomTokenHeaderKey = js.conf.CustomTokenHeaderKey
-		token.CustomTokenPrefix = js.conf.CustomTokenPrefix
-	}
+	token.CustomTokenHeaderKey = js.conf.CustomTokenHeaderKey
+	token.CustomTokenPrefix = js.conf.CustomTokenPrefix
 	return token, nil
 }

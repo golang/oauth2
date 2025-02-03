@@ -102,11 +102,11 @@ func (t *Token) SetAuthHeader(r *http.Request) {
 	if strings.TrimSpace(t.CustomTokenHeaderKey) != "" {
 		headerKey = t.CustomTokenHeaderKey
 	}
-	headerValue := strings.TrimSpace(strings.Join([]string{t.Type(), t.AccessToken}, " "))
+	headerValue := t.Type() + " " + t.AccessToken
 	if t.CustomTokenPrefix != "" {
-		headerValue = strings.TrimSpace(strings.Join([]string{t.CustomTokenPrefix, headerValue}, ""))
+		headerValue = t.CustomTokenPrefix + t.AccessToken
 	}
-	r.Header.Set(headerKey, headerValue)
+	r.Header.Set(headerKey, strings.TrimSpace(headerValue))
 }
 
 // WithExtra returns a new Token that's a clone of t, but using the

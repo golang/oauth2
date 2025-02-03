@@ -126,9 +126,7 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 		RefreshToken: tk.RefreshToken,
 		Expiry:       tk.Expiry,
 	}
-	if c.conf != nil {
-		t.CustomTokenHeaderKey = c.conf.CustomTokenHeaderKey
-		t.CustomTokenPrefix = c.conf.CustomTokenPrefix
-	}
+	t.CustomTokenHeaderKey = c.conf.CustomTokenHeaderKey
+	t.CustomTokenPrefix = c.conf.CustomTokenPrefix
 	return t.WithExtra(tk.Raw), nil
 }
