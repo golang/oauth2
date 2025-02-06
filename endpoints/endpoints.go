@@ -35,6 +35,12 @@ var Cern = oauth2.Endpoint{
 	TokenURL: "https://oauth.web.cern.ch/OAuth/Token",
 }
 
+// Deezer is the endpoint for Deezer.
+var Deezer = oauth2.Endpoint{
+	AuthURL:  "https://connect.deezer.com/oauth/auth.php",
+	TokenURL: "https://connect.deezer.com/oauth/access_token.php?output=json",
+}
+
 // Facebook is the endpoint for Facebook.
 var Facebook = oauth2.Endpoint{
 	AuthURL:  "https://www.facebook.com/v3.2/dialog/oauth",
