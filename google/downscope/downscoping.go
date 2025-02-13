@@ -193,7 +193,12 @@ func (dts downscopingTokenSource) Token() (*oauth2.Token, error) {
 	form.Add("options", string(b))
 
 	myClient := oauth2.NewClient(dts.ctx, nil)
-	resp, err := myClient.PostForm(dts.identityBindingEndpoint, form)
+	req, err := http.NewRequestWithContext(dts.ctx, http.MethodPost, dts.identityBindingEndpoint, strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := myClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("unable to generate POST Request %v", err)
 	}

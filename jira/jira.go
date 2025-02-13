@@ -109,7 +109,12 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 
 	// Fetch access token from auth server
 	hc := oauth2.NewClient(js.ctx, nil)
-	resp, err := hc.PostForm(js.conf.Endpoint.TokenURL, v)
+	req, err := http.NewRequestWithContext(js.ctx, http.MethodPost, js.conf.Endpoint.TokenURL, strings.NewReader(v.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := hc.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 	}
