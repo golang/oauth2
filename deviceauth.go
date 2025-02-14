@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -93,47 +90,40 @@ func (c *Config) DeviceAuth(ctx context.Context, opts ...AuthCodeOption) (*Devic
 	return retrieveDeviceAuth(ctx, c, v)
 }
 
+// deviceAuthFromInternal maps an *internal.DeviceAuthResponse struct into
+// a *DeviceAuthResponse struct.
+func deviceAuthFromInternal(da *internal.DeviceAuthResponse) *DeviceAuthResponse {
+	if da == nil {
+		return nil
+	}
+	return &DeviceAuthResponse{
+		DeviceCode:              da.DeviceCode,
+		UserCode:                da.UserCode,
+		VerificationURI:         da.VerificationURI,
+		VerificationURIComplete: da.VerificationURIComplete,
+		Expiry:                  time.Now().UTC().Add(time.Second * time.Duration(da.Expiry)),
+		Interval:                da.Interval,
+	}
+}
+
+// retrieveDeviceAuth takes a *Config and uses that to retrieve an *internal.DeviceAuthResponse.
+// This response is then mapped from *internal.DeviceAuthResponse into an *oauth2.DeviceAuthResponse which is returned along
+// with an error.
 func retrieveDeviceAuth(ctx context.Context, c *Config, v url.Values) (*DeviceAuthResponse, error) {
 	if c.Endpoint.DeviceAuthURL == "" {
 		return nil, errors.New("endpoint missing DeviceAuthURL")
 	}
 
-	req, err := http.NewRequest("POST", c.Endpoint.DeviceAuthURL, strings.NewReader(v.Encode()))
+	da, err := internal.RetrieveDeviceAuth(ctx, c.ClientID, c.ClientSecret, c.Endpoint.DeviceAuthURL, v, internal.AuthStyle(c.Endpoint.AuthStyle), c.authStyleCache.Get())
 	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", "application/json")
-
-	t := time.Now()
-	r, err := internal.ContextClient(ctx).Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
-	if err != nil {
-		return nil, fmt.Errorf("oauth2: cannot auth device: %v", err)
-	}
-	if code := r.StatusCode; code < 200 || code > 299 {
-		return nil, &RetrieveError{
-			Response: r,
-			Body:     body,
+		if rErr, ok := err.(*internal.RetrieveError); ok {
+			return nil, (*RetrieveError)(rErr)
 		}
+		return nil, err
 	}
+	dar := deviceAuthFromInternal(da)
 
-	da := &DeviceAuthResponse{}
-	err = json.Unmarshal(body, &da)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshal %s", err)
-	}
-
-	if !da.Expiry.IsZero() {
-		// Make a small adjustment to account for time taken by the request
-		da.Expiry = da.Expiry.Add(-time.Since(t))
-	}
-
-	return da, nil
+	return dar, err
 }
 
 // DeviceAccessToken polls the server to exchange a device code for a token.
