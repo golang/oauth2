@@ -263,21 +263,21 @@ const (
 	fileTypeJSON = "json"
 )
 
-// Format contains information needed to retireve a subject token for URL or File sourced credentials.
+// Format contains information needed to retrieve a subject token for URL, File or Memory sourced credentials.
 type Format struct {
-	// Type should be either "text" or "json". This determines whether the file or URL sourced credentials
+	// Type should be either "text" or "json". This determines whether the file, memory or URL sourced credentials
 	// expect a simple text subject token or if the subject token will be contained in a JSON object.
 	// When not provided "text" type is assumed.
 	Type string `json:"type"`
 	// SubjectTokenFieldName is only required for JSON format. This is the field name that the credentials will check
-	// for the subject token in the file or URL response. This would be "access_token" for azure.
+	// for the subject token in the file or URL response, or in-memory value. This would be "access_token" for azure.
 	SubjectTokenFieldName string `json:"subject_token_field_name"`
 }
 
 // CredentialSource stores the information necessary to retrieve the credentials for the STS exchange.
 type CredentialSource struct {
 	// File is the location for file sourced credentials.
-	// One field amongst File, URL, Executable, or EnvironmentID should be provided, depending on the kind of credential in question.
+	// One field amongst File, Memory, URL, Executable, or EnvironmentID should be provided, depending on the kind of credential in question.
 	//
 	// Important: If you accept a credential configuration (credential
 	// JSON/File/Stream) from an external source for authentication to Google
@@ -288,8 +288,21 @@ type CredentialSource struct {
 	// external sources](https://cloud.google.com/docs/authentication/external/externally-sourced-credentials).
 	File string `json:"file"`
 
+	// Memory stores memory sourced credentials. It's like File, but the credentials are already
+	// specified in the Memory field, and no files are read.
+	// One field amongst File, Memory, URL, Executable, or EnvironmentID should be provided, depending on the kind of credential in question.
+	//
+	// Important: If you accept a credential configuration (credential
+	// JSON/File/Stream) from an external source for authentication to Google
+	// Cloud Platform, you must validate it before providing it to any Google
+	// API or library. Providing an unvalidated credential configuration to
+	// Google APIs can compromise the security of your systems and data. For
+	// more information, refer to [Validate credential configurations from
+	// external sources](https://cloud.google.com/docs/authentication/external/externally-sourced-credentials).
+	Memory []byte `json:"-"`
+
 	// Url is the URL to call for URL sourced credentials.
-	// One field amongst File, URL, Executable, or EnvironmentID should be provided, depending on the kind of credential in question.
+	// One field amongst File, Memory, URL, Executable, or EnvironmentID should be provided, depending on the kind of credential in question.
 	//
 	// Important: If you accept a credential configuration (credential
 	// JSON/File/Stream) from an external source for authentication to Google
@@ -303,7 +316,7 @@ type CredentialSource struct {
 	Headers map[string]string `json:"headers"`
 
 	// Executable is the configuration object for executable sourced credentials.
-	// One field amongst File, URL, Executable, or EnvironmentID should be provided, depending on the kind of credential in question.
+	// One field amongst File, Memory, URL, Executable, or EnvironmentID should be provided, depending on the kind of credential in question.
 	//
 	// Important: If you accept a credential configuration (credential
 	// JSON/File/Stream) from an external source for authentication to Google
@@ -315,7 +328,7 @@ type CredentialSource struct {
 	Executable *ExecutableConfig `json:"executable"`
 
 	// EnvironmentID is the EnvironmentID used for AWS sourced credentials. This should start with "AWS".
-	// One field amongst File, URL, Executable, or EnvironmentID should be provided, depending on the kind of credential in question.
+	// One field amongst File, Memory, URL, Executable, or EnvironmentID should be provided, depending on the kind of credential in question.
 	//
 	// Important: If you accept a credential configuration (credential
 	// JSON/File/Stream) from an external source for authentication to Google
@@ -332,7 +345,7 @@ type CredentialSource struct {
 	RegionalCredVerificationURL string `json:"regional_cred_verification_url"`
 	// IMDSv2SessionTokenURL is the URL to retrieve the session token when using IMDSv2 in AWS.
 	IMDSv2SessionTokenURL string `json:"imdsv2_session_token_url"`
-	// Format is the format type for the subject token. Used for File and URL sourced credentials. Expected values are "text" or "json".
+	// Format is the format type for the subject token. Used for File, Memory and URL sourced credentials. Expected values are "text" or "json".
 	Format Format `json:"format"`
 }
 
@@ -429,6 +442,8 @@ func (c *Config) parse(ctx context.Context) (baseCredentialSource, error) {
 		}
 	} else if c.CredentialSource.File != "" {
 		return fileCredentialSource{File: c.CredentialSource.File, Format: c.CredentialSource.Format}, nil
+	} else if len(c.CredentialSource.Memory) > 0 {
+		return memoryCredentialSource{Token: c.CredentialSource.Memory, Format: c.CredentialSource.Format}, nil
 	} else if c.CredentialSource.URL != "" {
 		return urlCredentialSource{URL: c.CredentialSource.URL, Headers: c.CredentialSource.Headers, Format: c.CredentialSource.Format, ctx: ctx}, nil
 	} else if c.CredentialSource.Executable != nil {
