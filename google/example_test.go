@@ -17,7 +17,7 @@ import (
 )
 
 func ExampleDefaultClient() {
-	client, err := google.DefaultClient(oauth2.NoContext,
+	client, err := google.DefaultClient(context.Background(),
 		"https://www.googleapis.com/auth/devstorage.full_control")
 	if err != nil {
 		log.Fatal(err)
@@ -44,11 +44,11 @@ func Example_webServer() {
 	fmt.Printf("Visit the URL for the auth dialog: %v", url)
 
 	// Handle the exchange code to initiate a transport.
-	tok, err := conf.Exchange(oauth2.NoContext, "authorization-code")
+	tok, err := conf.Exchange(context.Background(), "authorization-code")
 	if err != nil {
 		log.Fatal(err)
 	}
-	client := conf.Client(oauth2.NoContext, tok)
+	client := conf.Client(context.Background(), tok)
 	client.Get("...")
 }
 
@@ -71,7 +71,7 @@ func ExampleJWTConfigFromJSON() {
 	// Initiate an http.Client. The following GET request will be
 	// authorized and authenticated on the behalf of
 	// your service account.
-	client := conf.Client(oauth2.NoContext)
+	client := conf.Client(context.Background())
 	client.Get("...")
 }
 
@@ -84,7 +84,7 @@ func ExampleSDKConfig() {
 	}
 	// Initiate an http.Client. The following GET request will be
 	// authorized and authenticated on the behalf of the SDK user.
-	client := conf.Client(oauth2.NoContext)
+	client := conf.Client(context.Background())
 	client.Get("...")
 }
 
@@ -116,7 +116,7 @@ func Example_serviceAccount() {
 	}
 	// Initiate an http.Client, the following GET request will be
 	// authorized and authenticated on the behalf of user@example.com.
-	client := conf.Client(oauth2.NoContext)
+	client := conf.Client(context.Background())
 	client.Get("...")
 }
 
