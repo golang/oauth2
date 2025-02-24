@@ -423,6 +423,105 @@ func TestPasswordCredentialsTokenRequest(t *testing.T) {
 	}
 }
 
+func TestPasswordCredentialsTokenRequest_AuthCodeOption(t *testing.T) {
+	testCases := map[string]struct {
+		username              string
+		password              string
+		authCodeOptions       []AuthCodeOption
+		wantURLString         string
+		wantHeaderAuth        string
+		wantHeaderContentType string
+		wantBody              string
+		wantAccessToken       string
+		wantTokenType         string
+	}{
+		"empty": {
+			username:              "user1",
+			password:              "password1",
+			authCodeOptions:       []AuthCodeOption{},
+			wantURLString:         "/token",
+			wantHeaderAuth:        "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=",
+			wantHeaderContentType: "application/x-www-form-urlencoded",
+			wantBody:              "grant_type=password&password=password1&scope=scope1+scope2&username=user1",
+			wantAccessToken:       "90d64460d14870c08c81352a05dedd3465940a7c",
+			wantTokenType:         "bearer",
+		},
+		"foo=bar": {
+			username:              "user1",
+			password:              "password1",
+			authCodeOptions:       []AuthCodeOption{SetAuthURLParam("foo", "bar")},
+			wantURLString:         "/token",
+			wantHeaderAuth:        "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=",
+			wantHeaderContentType: "application/x-www-form-urlencoded",
+			wantBody:              "foo=bar&grant_type=password&password=password1&scope=scope1+scope2&username=user1",
+			wantAccessToken:       "90d64460d14870c08c81352a05dedd3465940a7c",
+			wantTokenType:         "bearer",
+		},
+		"zoo=baz": {
+			username:              "user1",
+			password:              "password1",
+			authCodeOptions:       []AuthCodeOption{SetAuthURLParam("zoo", "baz")},
+			wantURLString:         "/token",
+			wantHeaderAuth:        "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=",
+			wantHeaderContentType: "application/x-www-form-urlencoded",
+			wantBody:              "grant_type=password&password=password1&scope=scope1+scope2&username=user1&zoo=baz",
+			wantAccessToken:       "90d64460d14870c08c81352a05dedd3465940a7c",
+			wantTokenType:         "bearer",
+		},
+		"foo=bar&zoo=baz": {
+			username:              "user1",
+			password:              "password1",
+			authCodeOptions:       []AuthCodeOption{SetAuthURLParam("foo", "bar"), SetAuthURLParam("zoo", "baz")},
+			wantURLString:         "/token",
+			wantHeaderAuth:        "Basic Q0xJRU5UX0lEOkNMSUVOVF9TRUNSRVQ=",
+			wantHeaderContentType: "application/x-www-form-urlencoded",
+			wantBody:              "foo=bar&grant_type=password&password=password1&scope=scope1+scope2&username=user1&zoo=baz",
+			wantAccessToken:       "90d64460d14870c08c81352a05dedd3465940a7c",
+			wantTokenType:         "bearer",
+		},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				defer r.Body.Close()
+				if r.URL.String() != tc.wantURLString {
+					t.Errorf("URL = %q; want %q", r.URL, tc.wantURLString)
+				}
+				if r.Header.Get("Authorization") != tc.wantHeaderAuth {
+					t.Errorf("Authorization header = %q; want %q", r.Header.Get("Authorization"), tc.wantHeaderAuth)
+				}
+				if r.Header.Get("Content-Type") != tc.wantHeaderContentType {
+					t.Errorf("Content-Type header = %q; want %q", r.Header.Get("Content-Type"), tc.wantHeaderContentType)
+				}
+				body, err := ioutil.ReadAll(r.Body)
+				if err != nil {
+					t.Errorf("Failed reading request body: %s.", err)
+				}
+				if string(body) != tc.wantBody {
+					t.Errorf("res.Body = %q; want %q", string(body), tc.wantBody)
+				}
+				w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
+				w.Write([]byte("access_token=90d64460d14870c08c81352a05dedd3465940a7c&scope=user&token_type=bearer"))
+			}))
+			defer ts.Close()
+			conf := newConf(ts.URL)
+			tok, err := conf.PasswordCredentialsToken(context.Background(), "user1", "password1", tc.authCodeOptions...)
+			if err != nil {
+				t.Error(err)
+			}
+			if !tok.Valid() {
+				t.Fatalf("Token invalid. Got: %#v", tok)
+			}
+			if tok.AccessToken != tc.wantAccessToken {
+				t.Errorf("AccessToken = %q; want %q", tok.AccessToken, tc.wantAccessToken)
+			}
+			if tok.TokenType != tc.wantTokenType {
+				t.Errorf("TokenType = %q; want %q", tok.TokenType, tc.wantTokenType)
+			}
+		})
+	}
+}
+
 func TestTokenRefreshRequest(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() == "/somethingelse" {
