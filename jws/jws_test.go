@@ -41,9 +41,29 @@ func TestSignAndVerify(t *testing.T) {
 }
 
 func TestVerifyFailsOnMalformedClaim(t *testing.T) {
-	err := Verify("abc.def", nil)
-	if err == nil {
-		t.Error("got no errors; want improperly formed JWT not to be verified")
+	cases := []struct {
+		desc  string
+		token string
+	}{
+		{
+			desc:  "no periods",
+			token: "aa",
+		}, {
+			desc:  "only one period",
+			token: "a.a",
+		}, {
+			desc:  "more than two periods",
+			token: "a.a.a.a",
+		},
+	}
+	for _, tc := range cases {
+		f := func(t *testing.T) {
+			err := Verify(tc.token, nil)
+			if err == nil {
+				t.Error("got no errors; want improperly formed JWT not to be verified")
+			}
+		}
+		t.Run(tc.desc, f)
 	}
 }
 
