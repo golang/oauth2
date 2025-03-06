@@ -7,6 +7,8 @@ package jws
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -42,5 +44,34 @@ func TestVerifyFailsOnMalformedClaim(t *testing.T) {
 	err := Verify("abc.def", nil)
 	if err == nil {
 		t.Error("got no errors; want improperly formed JWT not to be verified")
+	}
+}
+
+func BenchmarkVerify(b *testing.B) {
+	cases := []struct {
+		desc  string
+		token string
+	}{
+		{
+			desc:  "full of periods",
+			token: strings.Repeat(".", http.DefaultMaxHeaderBytes),
+		}, {
+			desc:  "two trailing periods",
+			token: strings.Repeat("a", http.DefaultMaxHeaderBytes-2) + "..",
+		},
+	}
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		b.Fatal(err)
+	}
+	for _, bc := range cases {
+		f := func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for range b.N {
+				Verify(bc.token, &privateKey.PublicKey)
+			}
+		}
+		b.Run(bc.desc, f)
 	}
 }
