@@ -43,8 +43,8 @@ var Discord = oauth2.Endpoint{
 
 // Facebook is the endpoint for Facebook.
 var Facebook = oauth2.Endpoint{
-	AuthURL:  "https://www.facebook.com/v3.2/dialog/oauth",
-	TokenURL: "https://graph.facebook.com/v3.2/oauth/access_token",
+	AuthURL:  "https://www.facebook.com/dialog/oauth",
+	TokenURL: "https://graph.facebook.com/oauth/access_token",
 }
 
 // Foursquare is the endpoint for Foursquare.
