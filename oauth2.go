@@ -310,7 +310,7 @@ type reuseTokenSource struct {
 func (s *reuseTokenSource) Token() (*Token, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.t.Valid() {
+	if s.t != nil && s.t.Valid() {
 		return s.t, nil
 	}
 	t, err := s.new.Token()
