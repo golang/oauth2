@@ -157,6 +157,11 @@ func (c *Config) DeviceAccessToken(ctx context.Context, da *DeviceAuthResponse, 
 		opt.setValue(v)
 	}
 
+	tok, err := retrieveToken(ctx, c, v)
+	if err == nil {
+		return tok, nil
+	}
+
 	// "If no value is provided, clients MUST use 5 as the default."
 	// https://datatracker.ietf.org/doc/html/rfc8628#section-3.2
 	interval := da.Interval
