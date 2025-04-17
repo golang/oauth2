@@ -54,6 +54,8 @@ type Token struct {
 	// relative to an unknown time base approximately around "now".
 	// It is the application's responsibility to populate
 	// `Expiry` from `ExpiresIn` when required.
+	// The oauth2 package does not automatically populate
+	// `ExpiresIn` even if the server returns an "expires_in" field.
 	ExpiresIn int64 `json:"expires_in,omitempty"`
 
 	// raw optionally contains extra metadata from the server
