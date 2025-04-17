@@ -216,7 +216,7 @@ func cloneURLValues(v url.Values) url.Values {
 }
 
 func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string, v url.Values, authStyle AuthStyle, styleCache *AuthStyleCache) (*Token, error) {
-	needsAuthStyleProbe := authStyle == 0
+	needsAuthStyleProbe := authStyle == AuthStyleUnknown
 	if needsAuthStyleProbe {
 		if style, ok := styleCache.lookupAuthStyle(tokenURL); ok {
 			authStyle = style
