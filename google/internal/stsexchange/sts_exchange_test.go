@@ -146,7 +146,7 @@ func TestExchangeToken_Opts(t *testing.T) {
 		} else if len(strOpts) < 1 {
 			t.Errorf("\"options\" field has length 0.")
 		}
-		var opts map[string]interface{}
+		var opts map[string]any
 		err = json.Unmarshal([]byte(strOpts[0]), &opts)
 		if err != nil {
 			t.Fatalf("Couldn't parse received \"options\" field.")
@@ -159,7 +159,7 @@ func TestExchangeToken_Opts(t *testing.T) {
 		if !ok {
 			t.Errorf("Couldn't find first option parameter.")
 		} else {
-			tOpts1, ok := val.(map[string]interface{})
+			tOpts1, ok := val.(map[string]any)
 			if !ok {
 				t.Errorf("Failed to assert the first option parameter as type testOpts.")
 			} else {
@@ -176,7 +176,7 @@ func TestExchangeToken_Opts(t *testing.T) {
 		if !ok {
 			t.Errorf("Couldn't find second option parameter.")
 		} else {
-			tOpts2, ok := val2.(map[string]interface{})
+			tOpts2, ok := val2.(map[string]any)
 			if !ok {
 				t.Errorf("Failed to assert the second option parameter as type testOpts.")
 			} else {
@@ -200,7 +200,7 @@ func TestExchangeToken_Opts(t *testing.T) {
 
 	firstOption := testOpts{optsValues[0][0], optsValues[0][1]}
 	secondOption := testOpts{optsValues[1][0], optsValues[1][1]}
-	inputOpts := make(map[string]interface{})
+	inputOpts := make(map[string]any)
 	inputOpts["one"] = firstOption
 	inputOpts["two"] = secondOption
 	ExchangeToken(context.Background(), ts.URL, &exchangeTokenRequest, auth, headers, inputOpts)

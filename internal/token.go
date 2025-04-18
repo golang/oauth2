@@ -25,9 +25,9 @@ import (
 // the requests to access protected resources on the OAuth 2.0
 // provider's backend.
 //
-// This type is a mirror of oauth2.Token and exists to break
+// This type is a mirror of [golang.org/x/oauth2.Token] and exists to break
 // an otherwise-circular dependency. Other internal packages
-// should convert this Token into an oauth2.Token before use.
+// should convert this Token into an [golang.org/x/oauth2.Token] before use.
 type Token struct {
 	// AccessToken is the token that authorizes and authenticates
 	// the requests.
@@ -58,7 +58,7 @@ type Token struct {
 
 	// Raw optionally contains extra metadata from the server
 	// when updating a token.
-	Raw interface{}
+	Raw any
 }
 
 // tokenJSON is the struct representing the HTTP response from OAuth2
@@ -319,7 +319,7 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 			RefreshToken: tj.RefreshToken,
 			Expiry:       tj.expiry(),
 			ExpiresIn:    int64(tj.ExpiresIn),
-			Raw:          make(map[string]interface{}),
+			Raw:          make(map[string]any),
 		}
 		json.Unmarshal(body, &token.Raw) // no error checks for optional fields
 	}

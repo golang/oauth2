@@ -35,7 +35,7 @@ func (cs fileCredentialSource) subjectToken() (string, error) {
 	tokenBytes = bytes.TrimSpace(tokenBytes)
 	switch cs.Format.Type {
 	case "json":
-		jsonData := make(map[string]interface{})
+		jsonData := make(map[string]any)
 		err = json.Unmarshal(tokenBytes, &jsonData)
 		if err != nil {
 			return "", fmt.Errorf("oauth2/google/externalaccount: failed to unmarshal subject token file: %v", err)

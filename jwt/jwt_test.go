@@ -227,7 +227,7 @@ func TestJWTFetch_AssertionPayload(t *testing.T) {
 			PrivateKey:   dummyPrivateKey,
 			PrivateKeyID: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 			TokenURL:     ts.URL,
-			PrivateClaims: map[string]interface{}{
+			PrivateClaims: map[string]any{
 				"private0": "claim0",
 				"private1": "claim1",
 			},
@@ -273,11 +273,11 @@ func TestJWTFetch_AssertionPayload(t *testing.T) {
 				t.Errorf("payload prn = %q; want %q", got, want)
 			}
 			if len(conf.PrivateClaims) > 0 {
-				var got interface{}
+				var got any
 				if err := json.Unmarshal(gotjson, &got); err != nil {
 					t.Errorf("failed to parse payload; err = %q", err)
 				}
-				m := got.(map[string]interface{})
+				m := got.(map[string]any)
 				for v, k := range conf.PrivateClaims {
 					if !reflect.DeepEqual(m[v], k) {
 						t.Errorf("payload private claims key = %q: got %#v; want %#v", v, m[v], k)
