@@ -9,11 +9,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sort"
+	"slices"
 	"testing"
 	"time"
-
-	"github.com/google/go-cmp/cmp"
 )
 
 type testEnvironment struct {
@@ -253,14 +251,12 @@ func TestExecutableCredentialGetEnvironment(t *testing.T) {
 
 			ecs.env = &tt.environment
 
-			// This Transformer sorts a []string.
-			sorter := cmp.Transformer("Sort", func(in []string) []string {
-				out := append([]string(nil), in...) // Copy input to avoid mutating it
-				sort.Strings(out)
-				return out
-			})
+			got := ecs.executableEnvironment()
+			slices.Sort(got)
+			want := tt.expectedEnvironment
+			slices.Sort(want)
 
-			if got, want := ecs.executableEnvironment(), tt.expectedEnvironment; !cmp.Equal(got, want, sorter) {
+			if !slices.Equal(got, want) {
 				t.Errorf("Incorrect environment received.\nReceived: %s\nExpected: %s", got, want)
 			}
 		})

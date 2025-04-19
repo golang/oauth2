@@ -7,9 +7,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestDeviceAuthResponseMarshalJson(t *testing.T) {
@@ -74,7 +71,16 @@ func TestDeviceAuthResponseUnmarshalJson(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !cmp.Equal(got, tc.want, cmpopts.IgnoreUnexported(DeviceAuthResponse{}), cmpopts.EquateApproxTime(time.Second+time.Since(begin))) {
+			margin := time.Second + time.Since(begin)
+			timeDiff := got.Expiry.Sub(tc.want.Expiry)
+			if timeDiff < 0 {
+				timeDiff *= -1
+			}
+			if timeDiff > margin {
+				t.Errorf("expiry time difference too large, got=%v, want=%v margin=%v", got.Expiry, tc.want.Expiry, margin)
+			}
+			got.Expiry, tc.want.Expiry = time.Time{}, time.Time{}
+			if got != tc.want {
 				t.Errorf("want=%#v, got=%#v", tc.want, got)
 			}
 		})

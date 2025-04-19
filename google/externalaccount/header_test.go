@@ -7,8 +7,6 @@ package externalaccount
 import (
 	"runtime"
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
 )
 
 func TestGoVersion(t *testing.T) {
@@ -40,8 +38,8 @@ func TestGoVersion(t *testing.T) {
 	} {
 		version = tst.v
 		got := goVersion()
-		if diff := cmp.Diff(got, tst.want); diff != "" {
-			t.Errorf("got(-),want(+):\n%s", diff)
+		if got != tst.want {
+			t.Errorf("go version = %q, want = %q", got, tst.want)
 		}
 	}
 	version = runtime.Version
