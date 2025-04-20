@@ -75,3 +75,48 @@ func TestExpiresInUpperBound(t *testing.T) {
 		t.Errorf("expiration time = %v; want %v", e, want)
 	}
 }
+
+func TestAuthStyleCache(t *testing.T) {
+	var c LazyAuthStyleCache
+
+	cases := []struct {
+		url      string
+		clientID string
+		style    AuthStyle
+	}{
+		{
+			"https://host1.example.com/token",
+			"client_1",
+			AuthStyleInHeader,
+		}, {
+			"https://host2.example.com/token",
+			"client_2",
+			AuthStyleInParams,
+		}, {
+			"https://host1.example.com/token",
+			"client_3",
+			AuthStyleInParams,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.clientID, func(t *testing.T) {
+			cc := c.Get()
+			got, ok := cc.lookupAuthStyle(tt.url, tt.clientID)
+			if ok {
+				t.Fatalf("unexpected auth style found on first request: %v", got)
+			}
+
+			cc.setAuthStyle(tt.url, tt.clientID, tt.style)
+
+			got, ok = cc.lookupAuthStyle(tt.url, tt.clientID)
+			if !ok {
+				t.Fatalf("auth style not found in cache")
+			}
+
+			if got != tt.style {
+				t.Fatalf("auth style mismatch, got=%v, want=%v", got, tt.style)
+			}
+		})
+	}
+}
