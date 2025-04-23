@@ -163,6 +163,7 @@ func tokenFromInternal(t *internal.Token) *Token {
 		TokenType:    t.TokenType,
 		RefreshToken: t.RefreshToken,
 		Expiry:       t.Expiry,
+		ExpiresIn:    t.ExpiresIn,
 		raw:          t.Raw,
 	}
 }
