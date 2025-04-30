@@ -551,6 +551,32 @@ func TestRefreshToken_RefreshTokenReplacement(t *testing.T) {
 	}
 }
 
+func TestRefreshToken_RefreshWithOpts(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("Failed reading request body: %s.", err)
+		}
+		if string(body) != "foo=bar&grant_type=refresh_token&refresh_token=OLD_REFRESH_TOKEN" {
+			t.Errorf("Unexpected exchange payload; got %q", body)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"access_token":"ACCESS_TOKEN",  "scope": "user", "token_type": "bearer", "refresh_token": "NEW_REFRESH_TOKEN"}`))
+		return
+	}))
+	defer ts.Close()
+	conf := newConf(ts.URL)
+	tkr := conf.TokenSourceWithOptions(context.Background(), &Token{RefreshToken: "OLD_REFRESH_TOKEN"}, SetAuthURLParam("foo", "bar"))
+	tk, err := tkr.Token()
+	if err != nil {
+		t.Errorf("got err = %v; want none", err)
+		return
+	}
+	if want := "NEW_REFRESH_TOKEN"; tk.RefreshToken != want {
+		t.Errorf("RefreshToken = %q; want %q", tk.RefreshToken, want)
+	}
+}
+
 func TestRefreshToken_RefreshTokenPreservation(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
