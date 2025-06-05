@@ -37,6 +37,11 @@ type Token struct {
 	// The Type method returns either this or "Bearer", the default.
 	TokenType string `json:"token_type,omitempty"`
 
+	// SkipSpaceInToken allows you to skip space between token type and token value
+	// If selected, auth header value will be `BearerXXXXX`
+	// If not selected. auth header value will be `Bearer XXXXX`. Default behavior
+	SkipSpaceInToken bool `json:"skip_space_in_token,omitempty"`
+
 	// AuthHeader is name of authorization header.
 	// The SetAuthHeader sets either this or defaults to `Authorization` as header
 	AuthHeader string `json:"auth_header,omitempty"`
@@ -97,7 +102,11 @@ func (t *Token) SetAuthHeader(r *http.Request) {
 	if t.AuthHeader != "" {
 		authHeader = t.AuthHeader
 	}
-	r.Header.Set(authHeader, t.Type()+" "+t.AccessToken)
+	authHeaderValue := t.Type() + " " + t.AccessToken
+	if t.SkipSpaceInToken {
+		authHeaderValue = t.Type() + t.AccessToken
+	}
+	r.Header.Set(authHeader, strings.TrimSpace(authHeaderValue))
 }
 
 // WithExtra returns a new [Token] that's a clone of t, but using the
