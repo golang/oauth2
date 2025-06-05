@@ -37,6 +37,10 @@ type Token struct {
 	// The Type method returns either this or "Bearer", the default.
 	TokenType string `json:"token_type,omitempty"`
 
+	// AuthHeader is name of authorization header.
+	// The SetAuthHeader sets either this or defaults to `Authorization` as header
+	AuthHeader string `json:"auth_header,omitempty"`
+
 	// RefreshToken is a token that's used by the application
 	// (as opposed to the user) to refresh the access token
 	// if it expires.
@@ -89,7 +93,11 @@ func (t *Token) Type() string {
 // This method is unnecessary when using [Transport] or an HTTP Client
 // returned by this package.
 func (t *Token) SetAuthHeader(r *http.Request) {
-	r.Header.Set("Authorization", t.Type()+" "+t.AccessToken)
+	authHeader := "Authorization"
+	if t.AuthHeader != "" {
+		authHeader = t.AuthHeader
+	}
+	r.Header.Set(authHeader, t.Type()+" "+t.AccessToken)
 }
 
 // WithExtra returns a new [Token] that's a clone of t, but using the
