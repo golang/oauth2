@@ -48,6 +48,9 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	req2 := req.Clone(req.Context())
+	if req2.Header == nil {
+		req2.Header = make(http.Header)
+	}
 	token.SetAuthHeader(req2)
 
 	// req.Body is assumed to be closed by the base RoundTripper.
