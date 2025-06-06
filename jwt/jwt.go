@@ -82,10 +82,10 @@ type Config struct {
 	// The SetAuthHeader sets either this or defaults to `Authorization` as header
 	AuthHeader string
 
-	// SkipSpaceInToken allows you to skip space between token type and token value
-	// If selected, auth header value will be `BearerXXXXX`
-	// If not selected. auth header value will be `Bearer XXXXX`. Default behavior
-	SkipSpaceInToken bool
+	// TokenTemplate allows you to customize the token value using
+	// This will be used as token value.
+	// From the template, {{ access_token }} will be replaced with actual access token
+	TokenTemplate string
 }
 
 // TokenSource returns a JWT TokenSource using the configuration
@@ -197,6 +197,6 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	if js.conf.AuthHeader != "" {
 		token.AuthHeader = js.conf.AuthHeader
 	}
-	token.SkipSpaceInToken = js.conf.SkipSpaceInToken
+	token.TokenTemplate = js.conf.TokenTemplate
 	return token, nil
 }

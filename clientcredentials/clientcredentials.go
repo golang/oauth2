@@ -60,10 +60,10 @@ type Config struct {
 	// The SetAuthHeader sets either this or defaults to `Authorization` as header
 	AuthHeader string
 
-	// SkipSpaceInToken allows you to skip space between token type and token value
-	// If selected, auth header value will be `BearerXXXXX`
-	// If not selected. auth header value will be `Bearer XXXXX`. Default behavior
-	SkipSpaceInToken bool
+	// TokenTemplate allows you to customize the token value using
+	// This will be used as token value.
+	// From the template, {{ access_token }} will be replaced with actual access token
+	TokenTemplate string
 }
 
 // Token uses client credentials to retrieve a token.
@@ -139,6 +139,6 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 	if c.conf.AuthHeader != "" {
 		t.AuthHeader = c.conf.AuthHeader
 	}
-	t.SkipSpaceInToken = c.conf.SkipSpaceInToken
+	t.TokenTemplate = c.conf.TokenTemplate
 	return t.WithExtra(tk.Raw), nil
 }
