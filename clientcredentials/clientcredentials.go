@@ -52,10 +52,6 @@ type Config struct {
 	// the zero value (AuthStyleAutoDetect).
 	authStyleCache internal.LazyAuthStyleCache
 
-	// TokenType is the type of token.
-	// The Type method returns either this or "Bearer", the default.
-	TokenType string
-
 	// AuthHeader is name of authorization header.
 	// The SetAuthHeader sets either this or defaults to `Authorization` as header
 	AuthHeader string
@@ -128,17 +124,12 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 		return nil, err
 	}
 	t := &oauth2.Token{
-		AccessToken:  tk.AccessToken,
-		TokenType:    tk.TokenType,
-		RefreshToken: tk.RefreshToken,
-		Expiry:       tk.Expiry,
+		AccessToken:   tk.AccessToken,
+		TokenType:     tk.TokenType,
+		RefreshToken:  tk.RefreshToken,
+		Expiry:        tk.Expiry,
+		AuthHeader:    c.conf.AuthHeader,
+		TokenTemplate: c.conf.TokenTemplate,
 	}
-	if c.conf.TokenType != "" {
-		t.TokenType = c.conf.TokenType
-	}
-	if c.conf.AuthHeader != "" {
-		t.AuthHeader = c.conf.AuthHeader
-	}
-	t.TokenTemplate = c.conf.TokenTemplate
 	return t.WithExtra(tk.Raw), nil
 }

@@ -74,10 +74,6 @@ type Config struct {
 	// of access token when the server returns both.
 	UseIDToken bool
 
-	// TokenType is the type of token.
-	// The Type method returns either this or "Bearer", the default.
-	TokenType string
-
 	// AuthHeader is name of authorization header.
 	// The SetAuthHeader sets either this or defaults to `Authorization` as header
 	AuthHeader string
@@ -191,12 +187,7 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 		}
 		token.AccessToken = tokenRes.IDToken
 	}
-	if js.conf.TokenType != "" {
-		token.TokenType = js.conf.TokenType
-	}
-	if js.conf.AuthHeader != "" {
-		token.AuthHeader = js.conf.AuthHeader
-	}
+	token.AuthHeader = js.conf.AuthHeader
 	token.TokenTemplate = js.conf.TokenTemplate
 	return token, nil
 }

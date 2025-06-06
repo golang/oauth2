@@ -37,14 +37,14 @@ type Token struct {
 	// The Type method returns either this or "Bearer", the default.
 	TokenType string `json:"token_type,omitempty"`
 
+	// AuthHeader is name of authorization header.
+	// The SetAuthHeader sets either this or defaults to `Authorization` as header
+	AuthHeader string `json:"auth_header,omitempty"`
+
 	// TokenTemplate allows you to customize the token value using
 	// This will be used as token value.
 	// From the template, {{ access_token }} will be replaced with actual access token
 	TokenTemplate string `json:"token_template,omitempty"`
-
-	// AuthHeader is name of authorization header.
-	// The SetAuthHeader sets either this or defaults to `Authorization` as header
-	AuthHeader string `json:"auth_header,omitempty"`
 
 	// RefreshToken is a token that's used by the application
 	// (as opposed to the user) to refresh the access token
