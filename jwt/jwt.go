@@ -105,7 +105,6 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	hc := oauth2.NewClient(js.ctx, nil)
 	claimSet := &jws.ClaimSet{
 		Iss:           js.conf.Email,
-		Scope:         strings.Join(js.conf.Scopes, " "),
 		Aud:           js.conf.TokenURL,
 		PrivateClaims: js.conf.PrivateClaims,
 	}
@@ -130,6 +129,9 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	v := url.Values{}
 	v.Set("grant_type", defaultGrantType)
 	v.Set("assertion", payload)
+	if len(js.conf.Scopes) > 0 {
+		v.Set("scope", strings.Join(js.conf.Scopes, " "))
+	}
 	resp, err := hc.PostForm(js.conf.TokenURL, v)
 	if err != nil {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)

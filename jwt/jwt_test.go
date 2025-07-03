@@ -256,8 +256,9 @@ func TestJWTFetch_AssertionPayload(t *testing.T) {
 			if got, want := claimSet.Iss, conf.Email; got != want {
 				t.Errorf("payload email = %q; want %q", got, want)
 			}
-			if got, want := claimSet.Scope, strings.Join(conf.Scopes, " "); got != want {
-				t.Errorf("payload scope = %q; want %q", got, want)
+			// Scope should NOT be in the JWT claim set according to RFC 7521
+			if claimSet.Scope != "" {
+				t.Errorf("payload scope should be empty but got %q; scopes should be sent as request parameter", claimSet.Scope)
 			}
 			aud := conf.TokenURL
 			if conf.Audience != "" {
@@ -314,5 +315,64 @@ func TestTokenRetrieveError(t *testing.T) {
 	expected := fmt.Sprintf("oauth2: cannot fetch token: %v\nResponse: %s", "400 Bad Request", `{"error": "invalid_grant"}`)
 	if errStr := err.Error(); errStr != expected {
 		t.Fatalf("got %#v, expected %#v", errStr, expected)
+	}
+}
+
+func TestJWTFetch_ScopeParameter(t *testing.T) {
+	var receivedScope string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+		receivedScope = r.Form.Get("scope")
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"access_token": "90d64460d14870c08c81352a05dedd3465940a7c",
+			"scope": "user",
+			"token_type": "bearer",
+			"expires_in": 3600
+		}`))
+	}))
+	defer ts.Close()
+
+	tests := []struct {
+		name          string
+		scopes        []string
+		expectedScope string
+	}{
+		{
+			name:          "no scopes",
+			scopes:        nil,
+			expectedScope: "",
+		},
+		{
+			name:          "single scope",
+			scopes:        []string{"read"},
+			expectedScope: "read",
+		},
+		{
+			name:          "multiple scopes",
+			scopes:        []string{"read", "write", "admin"},
+			expectedScope: "read write admin",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conf := &Config{
+				Email:      "aaa@xxx.com",
+				PrivateKey: dummyPrivateKey,
+				TokenURL:   ts.URL,
+				Scopes:     tt.scopes,
+			}
+
+			_, err := conf.TokenSource(context.Background()).Token()
+			if err != nil {
+				t.Fatalf("Failed to fetch token: %v", err)
+			}
+
+			if got, want := receivedScope, tt.expectedScope; got != want {
+				t.Errorf("received scope parameter = %q; want %q", got, want)
+			}
+		})
 	}
 }
