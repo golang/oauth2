@@ -64,7 +64,15 @@ type Config struct {
 	// Audience optionally specifies the intended audience of the
 	// request.  If empty, the value of TokenURL is used as the
 	// intended audience.
+	// Deprecated: Use Audiences for multiple audiences or for RFC 7519 compliance.
 	Audience string
+
+	// Audiences optionally specifies the intended audiences of the
+	// request as a slice of strings. This field takes precedence over
+	// Audience if both are set. If empty, Audience or TokenURL is used.
+	// Per RFC 7519, when there's a single audience, it will be serialized
+	// as a string; when there are multiple audiences, as an array.
+	Audiences []string
 
 	// PrivateClaims optionally specifies custom private claims in the JWT.
 	// See http://tools.ietf.org/html/draft-jones-json-web-token-10#section-4.3
@@ -117,9 +125,22 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	if t := js.conf.Expires; t > 0 {
 		claimSet.Exp = time.Now().Add(t).Unix()
 	}
-	if aud := js.conf.Audience; aud != "" {
+
+	// Handle audience per RFC 7519: single string or array of strings
+	if len(js.conf.Audiences) > 0 {
+		// Use new Audiences field (takes precedence)
+		if len(js.conf.Audiences) == 1 {
+			// Single audience: use string per RFC 7519
+			claimSet.Aud = js.conf.Audiences[0]
+		} else {
+			// Multiple audiences: use array per RFC 7519
+			claimSet.Aud = js.conf.Audiences
+		}
+	} else if aud := js.conf.Audience; aud != "" {
+		// Use legacy Audience field for backward compatibility
 		claimSet.Aud = aud
 	}
+	// If neither is set, Aud remains as TokenURL (set above)
 	h := *defaultHeader
 	h.KeyID = js.conf.PrivateKeyID
 	payload, err := jws.Encode(&h, claimSet, pk)

@@ -232,6 +232,20 @@ func TestJWTFetch_AssertionPayload(t *testing.T) {
 				"private1": "claim1",
 			},
 		},
+		{
+			Email:        "aaa3@xxx.com",
+			PrivateKey:   dummyPrivateKey,
+			PrivateKeyID: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+			TokenURL:     ts.URL,
+			Audiences:    []string{"https://api.example.com"},
+		},
+		{
+			Email:        "aaa4@xxx.com",
+			PrivateKey:   dummyPrivateKey,
+			PrivateKeyID: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+			TokenURL:     ts.URL,
+			Audiences:    []string{"https://api.example.com", "https://other.example.com"},
+		},
 	} {
 		t.Run(conf.Email, func(t *testing.T) {
 			_, err := conf.TokenSource(context.Background()).Token()
@@ -259,13 +273,27 @@ func TestJWTFetch_AssertionPayload(t *testing.T) {
 			// Scope should NOT be in the JWT claim set according to RFC 7521
 			if claimSet.Scope != "" {
 				t.Errorf("payload scope should be empty but got %q; scopes should be sent as request parameter", claimSet.Scope)
+			} // Check audience handling per RFC 7519
+			var expectedAud interface{}
+			if len(conf.Audiences) > 0 {
+				if len(conf.Audiences) == 1 {
+					expectedAud = conf.Audiences[0]
+				} else {
+					// When JSON unmarshals an array, it becomes []interface{}
+					expectedAudSlice := make([]interface{}, len(conf.Audiences))
+					for i, aud := range conf.Audiences {
+						expectedAudSlice[i] = aud
+					}
+					expectedAud = expectedAudSlice
+				}
+			} else if conf.Audience != "" {
+				expectedAud = conf.Audience
+			} else {
+				expectedAud = conf.TokenURL
 			}
-			aud := conf.TokenURL
-			if conf.Audience != "" {
-				aud = conf.Audience
-			}
-			if got, want := claimSet.Aud, aud; got != want {
-				t.Errorf("payload audience = %q; want %q", got, want)
+
+			if !reflect.DeepEqual(claimSet.Aud, expectedAud) {
+				t.Errorf("payload audience = %v (type %T); want %v (type %T)", claimSet.Aud, claimSet.Aud, expectedAud, expectedAud)
 			}
 			if got, want := claimSet.Sub, conf.Subject; got != want {
 				t.Errorf("payload subject = %q; want %q", got, want)
