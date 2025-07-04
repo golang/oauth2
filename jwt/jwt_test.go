@@ -276,16 +276,12 @@ func TestJWTFetch_AssertionPayload(t *testing.T) {
 			} // Check audience handling per RFC 7519
 			var expectedAud interface{}
 			if len(conf.Audiences) > 0 {
-				if len(conf.Audiences) == 1 {
-					expectedAud = conf.Audiences[0]
-				} else {
-					// When JSON unmarshals an array, it becomes []interface{}
-					expectedAudSlice := make([]interface{}, len(conf.Audiences))
-					for i, aud := range conf.Audiences {
-						expectedAudSlice[i] = aud
-					}
-					expectedAud = expectedAudSlice
+				// When JSON unmarshals an array, it becomes []interface{}
+				expectedAudSlice := make([]interface{}, len(conf.Audiences))
+				for i, aud := range conf.Audiences {
+					expectedAudSlice[i] = aud
 				}
+				expectedAud = expectedAudSlice
 			} else if conf.Audience != "" {
 				expectedAud = conf.Audience
 			} else {
