@@ -128,14 +128,8 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 
 	// Handle audience per RFC 7519: single string or array of strings
 	if len(js.conf.Audiences) > 0 {
-		// Use new Audiences field (takes precedence)
-		if len(js.conf.Audiences) == 1 {
-			// Single audience: use string per RFC 7519
-			claimSet.Aud = js.conf.Audiences[0]
-		} else {
-			// Multiple audiences: use array per RFC 7519
-			claimSet.Aud = js.conf.Audiences
-		}
+		// Multiple audiences: use array per RFC 7519
+		claimSet.Aud = js.conf.Audiences
 	} else if aud := js.conf.Audience; aud != "" {
 		// Use legacy Audience field for backward compatibility
 		claimSet.Aud = aud
