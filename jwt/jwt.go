@@ -64,7 +64,15 @@ type Config struct {
 	// Audience optionally specifies the intended audience of the
 	// request.  If empty, the value of TokenURL is used as the
 	// intended audience.
+	// Deprecated: Use Audiences for multiple audiences or for RFC 7519 compliance.
 	Audience string
+
+	// Audiences optionally specifies the intended audiences of the
+	// request as a slice of strings. This field takes precedence over
+	// Audience if both are set. If empty, Audience or TokenURL is used.
+	// Per RFC 7519, when there's a single audience, it will be serialized
+	// as a string; when there are multiple audiences, as an array.
+	Audiences []string
 
 	// PrivateClaims optionally specifies custom private claims in the JWT.
 	// See http://tools.ietf.org/html/draft-jones-json-web-token-10#section-4.3
@@ -105,7 +113,6 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	hc := oauth2.NewClient(js.ctx, nil)
 	claimSet := &jws.ClaimSet{
 		Iss:           js.conf.Email,
-		Scope:         strings.Join(js.conf.Scopes, " "),
 		Aud:           js.conf.TokenURL,
 		PrivateClaims: js.conf.PrivateClaims,
 	}
@@ -118,9 +125,16 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	if t := js.conf.Expires; t > 0 {
 		claimSet.Exp = time.Now().Add(t).Unix()
 	}
-	if aud := js.conf.Audience; aud != "" {
+
+	// Handle audience per RFC 7519: single string or array of strings
+	if len(js.conf.Audiences) > 0 {
+		// Multiple audiences: use array per RFC 7519
+		claimSet.Aud = js.conf.Audiences
+	} else if aud := js.conf.Audience; aud != "" {
+		// Use legacy Audience field for backward compatibility
 		claimSet.Aud = aud
 	}
+	// If neither is set, Aud remains as TokenURL (set above)
 	h := *defaultHeader
 	h.KeyID = js.conf.PrivateKeyID
 	payload, err := jws.Encode(&h, claimSet, pk)
@@ -130,6 +144,9 @@ func (js jwtSource) Token() (*oauth2.Token, error) {
 	v := url.Values{}
 	v.Set("grant_type", defaultGrantType)
 	v.Set("assertion", payload)
+	if len(js.conf.Scopes) > 0 {
+		v.Set("scope", strings.Join(js.conf.Scopes, " "))
+	}
 	resp, err := hc.PostForm(js.conf.TokenURL, v)
 	if err != nil {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
