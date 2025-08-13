@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -184,23 +183,11 @@ func (c *AuthStyleCache) setAuthStyle(tokenURL, clientID string, v AuthStyle) {
 // the POST body (along with any values in v); false means to send it
 // in the Authorization header.
 func newTokenRequest(tokenURL, clientID, clientSecret string, v url.Values, authStyle AuthStyle) (*http.Request, error) {
-	if authStyle == AuthStyleInParams {
-		v = cloneURLValues(v)
-		if clientID != "" {
-			v.Set("client_id", clientID)
-		}
-		if clientSecret != "" {
-			v.Set("client_secret", clientSecret)
-		}
-	}
-	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(v.Encode()))
+	req, err := NewRequestWithClientAuthn("POST", tokenURL, clientID, clientSecret, v, authStyle)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	if authStyle == AuthStyleInHeader {
-		req.SetBasicAuth(url.QueryEscape(clientID), url.QueryEscape(clientSecret))
-	}
 	return req, nil
 }
 
