@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"mime"
 	"net/http"
@@ -301,6 +302,9 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 		}
 	default:
 		var tj tokenJSON
+		if strings.Contains(req.URL.Host, "tiktok") {
+			log.Printf("tiktok token response: %s", string(body))
+		}
 		if err = json.Unmarshal(body, &tj); err != nil {
 			if failureStatus {
 				return nil, retrieveError
