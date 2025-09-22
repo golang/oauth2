@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package vk provides constants for using OAuth2 to access VK.com.
+// Package vk provides constants for using OAuth2 to access VK.ru.
 package vk // import "golang.org/x/oauth2/vk"
 
 import (
