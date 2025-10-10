@@ -134,7 +134,18 @@ func retrieveDeviceAuth(ctx context.Context, c *Config, v url.Values) (*DeviceAu
 			retrieveError.ErrorDescription = vals.Get("error_description")
 			retrieveError.ErrorURI = vals.Get("error_uri")
 		default:
-			json.Unmarshal(body, &retrieveError) // no error checks
+			var tj struct {
+				// https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
+				ErrorCode        string `json:"error"`
+				ErrorDescription string `json:"error_description"`
+				ErrorURI         string `json:"error_uri"`
+			}
+			if json.Unmarshal(body, &tj) != nil {
+				return nil, retrieveError
+			}
+			retrieveError.ErrorCode = tj.ErrorCode
+			retrieveError.ErrorDescription = tj.ErrorDescription
+			retrieveError.ErrorURI = tj.ErrorURI
 		}
 
 		return nil, retrieveError

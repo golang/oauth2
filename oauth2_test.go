@@ -31,8 +31,9 @@ func newConf(url string) *Config {
 		RedirectURL:  "REDIRECT_URL",
 		Scopes:       []string{"scope1", "scope2"},
 		Endpoint: Endpoint{
-			AuthURL:  url + "/auth",
-			TokenURL: url + "/token",
+			AuthURL:       url + "/auth",
+			DeviceAuthURL: url + "/device",
+			TokenURL:      url + "/token",
 		},
 	}
 }
