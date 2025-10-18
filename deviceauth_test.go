@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -100,4 +102,53 @@ func ExampleConfig_DeviceAuth() {
 		panic(err)
 	}
 	fmt.Println(token)
+}
+
+func TestDeviceAuthTokenRetrieveError(t *testing.T) {
+	runner := func(responseFun func(w http.ResponseWriter)) func(t *testing.T) {
+		return func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.String() != "/device" {
+					t.Errorf("Unexpected device auth request URL, %v is found.", r.URL)
+				}
+				responseFun(w)
+			}))
+			defer ts.Close()
+			conf := newConf(ts.URL)
+			_, err := conf.DeviceAuth(context.Background())
+			if err == nil {
+				t.Fatalf("got no error, expected one")
+			}
+			re, ok := err.(*RetrieveError)
+			if !ok {
+				t.Fatalf("got %T error, expected *RetrieveError; error was: %v", err, err)
+			}
+			expected := `oauth2: "invalid_grant" "sometext"`
+			if errStr := err.Error(); errStr != expected {
+				t.Fatalf("got %#v, expected %#v", errStr, expected)
+			}
+			expected = "invalid_grant"
+			if re.ErrorCode != expected {
+				t.Fatalf("got %#v, expected %#v", re.ErrorCode, expected)
+			}
+			expected = "sometext"
+			if re.ErrorDescription != expected {
+				t.Fatalf("got %#v, expected %#v", re.ErrorDescription, expected)
+			}
+		}
+	}
+
+	t.Run("UrlEncoding", runner(func(w http.ResponseWriter) {
+		w.Header().Set("Content-type", "application/x-www-form-urlencoded")
+		// "The authorization server responds with an HTTP 400 (Bad Request)" https://www.rfc-editor.org/rfc/rfc6749#section-5.2
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`error=invalid_grant&error_description=sometext`))
+	}))
+
+	t.Run("JSON", runner(func(w http.ResponseWriter) {
+		w.Header().Set("Content-type", "application/json")
+		// "The authorization server responds with an HTTP 400 (Bad Request)" https://www.rfc-editor.org/rfc/rfc6749#section-5.2
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "invalid_grant", "error_description": "sometext"}`))
+	}))
 }
