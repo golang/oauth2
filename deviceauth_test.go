@@ -138,14 +138,14 @@ func TestDeviceAuthTokenRetrieveError(t *testing.T) {
 		}
 	}
 
-	t.Run("TestDeviceAuthTokenRetrieveErrorUrlEncoding", runner(func(w http.ResponseWriter) {
+	t.Run("UrlEncoding", runner(func(w http.ResponseWriter) {
 		w.Header().Set("Content-type", "application/x-www-form-urlencoded")
 		// "The authorization server responds with an HTTP 400 (Bad Request)" https://www.rfc-editor.org/rfc/rfc6749#section-5.2
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`error=invalid_grant&error_description=sometext`))
 	}))
 
-	t.Run("TestDeviceAuthTokenRetrieveErrorJSON", runner(func(w http.ResponseWriter) {
+	t.Run("JSON", runner(func(w http.ResponseWriter) {
 		w.Header().Set("Content-type", "application/json")
 		// "The authorization server responds with an HTTP 400 (Bad Request)" https://www.rfc-editor.org/rfc/rfc6749#section-5.2
 		w.WriteHeader(http.StatusBadRequest)
