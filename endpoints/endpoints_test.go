@@ -36,7 +36,7 @@ func TestAWSCognitoEndpoint(t *testing.T) {
 		t.Run(tt.in, func(t *testing.T) {
 			endpoint := AWSCognito(tt.in)
 			if endpoint != tt.out {
-				t.Errorf("got %q, want %q", endpoint, tt.out)
+				t.Errorf("got %#v, want %#v", endpoint, tt.out)
 			}
 		})
 	}
