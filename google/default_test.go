@@ -8,6 +8,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -309,4 +310,89 @@ func TestComputeUniverseDomain(t *testing.T) {
 		t.Errorf("got %q, want %q", got, want)
 	}
 
+}
+
+func TestCredentialsFromJSONWithType(t *testing.T) {
+	ctx := context.Background()
+	sa, err := os.ReadFile("testdata/sa.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	user, err := os.ReadFile("testdata/user.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	gdch, err := os.ReadFile("testdata/gdch.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name       string
+		credType   CredentialsType
+		json       []byte
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name:     "ServiceAccount Success",
+			credType: ServiceAccount,
+			json:     sa,
+			wantErr:  false,
+		},
+		{
+			name:     "User Success",
+			credType: AuthorizedUser,
+			json:     user,
+			wantErr:  false,
+		},
+		{
+			name:     "GDCH Success",
+			credType: GDCHServiceAccount,
+			json:     gdch,
+			wantErr:  false,
+		},
+		{
+			name:       "ServiceAccount Mismatch",
+			credType:   ServiceAccount,
+			json:       user,
+			wantErr:    true,
+			wantErrMsg: `google: expected credential type "service_account", found "authorized_user"`,
+		},
+		{
+			name:       "User Mismatch",
+			credType:   AuthorizedUser,
+			json:       sa,
+			wantErr:    true,
+			wantErrMsg: `google: expected credential type "authorized_user", found "service_account"`,
+		},
+		{
+			name:       "Malformed JSON",
+			credType:   ServiceAccount,
+			json:       []byte(`{"type": "service_account",}`),
+			wantErr:    true,
+			wantErrMsg: "invalid character",
+		},
+		{
+			name:       "Missing Type Field",
+			credType:   ServiceAccount,
+			json:       []byte(`{"project_id": "my-proj"}`),
+			wantErr:    true,
+			wantErrMsg: `google: expected credential type "service_account", found ""`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := CredentialsFromJSONWithType(ctx, tt.json, tt.credType)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("CredentialsFromJSONWithType() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				if !strings.Contains(err.Error(), tt.wantErrMsg) {
+					t.Errorf("CredentialsFromJSONWithType() error = %q, want error containing %q", err.Error(), tt.wantErrMsg)
+				}
+				return
+			}
+		})
+	}
 }
