@@ -6,6 +6,7 @@ package oauth2
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -172,6 +173,11 @@ func tokenFromInternal(t *internal.Token) *Token {
 // This token is then mapped from *internal.Token into an *oauth2.Token which is returned along
 // with an error.
 func retrieveToken(ctx context.Context, c *Config, v url.Values) (*Token, error) {
+
+	if c.Endpoint.TokenURL == "" {
+		return nil, errors.New("oauth2: no token endpoint")
+	}
+
 	tk, err := internal.RetrieveToken(ctx, c.ClientID, c.ClientSecret, c.Endpoint.TokenURL, v, internal.AuthStyle(c.Endpoint.AuthStyle), c.authStyleCache.Get())
 	if err != nil {
 		if rErr, ok := err.(*internal.RetrieveError); ok {
