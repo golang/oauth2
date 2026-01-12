@@ -34,7 +34,9 @@ type DeviceAuthResponse struct {
 	VerificationURI string `json:"verification_uri"`
 	// VerificationURIComplete (if populated) includes the user code in the verification URI. This is typically shown to the user in non-textual form, such as a QR code.
 	VerificationURIComplete string `json:"verification_uri_complete,omitempty"`
-	// Expiry is when the device code and user code expire
+	// Expiry is when the device code and user code expire. When encoding or
+	// decoding JSON, the following relation is used: Expiry = time.Now() +
+	// expires_in
 	Expiry time.Time `json:"expires_in,omitempty"`
 	// Interval is the duration in seconds that Poll should wait between requests
 	Interval int64 `json:"interval,omitempty"`
