@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 )
@@ -490,15 +491,13 @@ func TestTokenRetrieveError(t *testing.T) {
 	if err == nil {
 		t.Fatalf("got no error, expected one")
 	}
-	re, ok := err.(*RetrieveError)
-	if !ok {
-		t.Fatalf("got %T error, expected *RetrieveError; error was: %v", err, err)
+	// AuthStyleUnknown probes the server twice; both probes fail here, so
+	// the returned error is a join of two *RetrieveError values.
+	var re *RetrieveError
+	if !errors.As(err, &re) {
+		t.Fatalf("got %T error, expected to unwrap *RetrieveError; error was: %v", err, err)
 	}
-	expected := `oauth2: "invalid_grant"`
-	if errStr := err.Error(); errStr != expected {
-		t.Fatalf("got %#v, expected %#v", errStr, expected)
-	}
-	expected = "invalid_grant"
+	expected := "invalid_grant"
 	if re.ErrorCode != expected {
 		t.Fatalf("got %#v, expected %#v", re.ErrorCode, expected)
 	}
@@ -519,17 +518,50 @@ func TestTokenRetrieveError200(t *testing.T) {
 	if err == nil {
 		t.Fatalf("got no error, expected one")
 	}
-	re, ok := err.(*RetrieveError)
-	if !ok {
-		t.Fatalf("got %T error, expected *RetrieveError; error was: %v", err, err)
+	var re *RetrieveError
+	if !errors.As(err, &re) {
+		t.Fatalf("got %T error, expected to unwrap *RetrieveError; error was: %v", err, err)
 	}
-	expected := `oauth2: "invalid_grant"`
-	if errStr := err.Error(); errStr != expected {
-		t.Fatalf("got %#v, expected %#v", errStr, expected)
-	}
-	expected = "invalid_grant"
+	expected := "invalid_grant"
 	if re.ErrorCode != expected {
 		t.Fatalf("got %#v, expected %#v", re.ErrorCode, expected)
+	}
+}
+
+// TestTokenRetrieveError_AuthStyleProbeJoinsErrors verifies that when
+// Endpoint.AuthStyle is unset (AuthStyleUnknown) and both probes fail with
+// distinct error codes, Exchange returns an error from which errors.As can
+// still recover a public *RetrieveError and whose message mentions both
+// failures. This prevents the first failure from being silently discarded
+// (see golang/oauth2#786).
+func TestTokenRetrieveError_AuthStyleProbeJoinsErrors(t *testing.T) {
+	const headerErrCode = "invalid_client"
+	const paramsErrCode = "invalid_grant"
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		if r.Header.Get("Authorization") != "" {
+			w.Write([]byte(`{"error":"` + headerErrCode + `"}`))
+			return
+		}
+		w.Write([]byte(`{"error":"` + paramsErrCode + `"}`))
+	}))
+	defer ts.Close()
+
+	conf := newConf(ts.URL)
+	_, err := conf.Exchange(context.Background(), "exchange-code")
+	if err == nil {
+		t.Fatalf("got no error, expected one")
+	}
+
+	var re *RetrieveError
+	if !errors.As(err, &re) {
+		t.Fatalf("got %T error, expected to unwrap *RetrieveError; error was: %v", err, err)
+	}
+
+	msg := err.Error()
+	if !strings.Contains(msg, headerErrCode) || !strings.Contains(msg, paramsErrCode) {
+		t.Errorf("err.Error() = %q; want both %q and %q", msg, headerErrCode, paramsErrCode)
 	}
 }
 
