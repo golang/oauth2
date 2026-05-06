@@ -355,12 +355,31 @@ func NewClient(ctx context.Context, src TokenSource) *http.Client {
 		return internal.ContextClient(ctx)
 	}
 	cc := internal.ContextClient(ctx)
+	// Wrap the caller's CheckRedirect (or nil for the default) to stop
+	// cross-host redirects. The oauth2.Transport RoundTripper re-injects
+	// the Authorization header on every RoundTrip call, including redirect
+	// hops; Go's http.Client strips sensitive headers for cross-host
+	// redirects, but the Transport immediately adds them back.  Stopping
+	// at the first cross-host redirect (returning the 3xx response to the
+	// caller) prevents token leakage to unintended hosts.
+	callerRedirect := cc.CheckRedirect
+	checkRedirect := func(req *http.Request, via []*http.Request) error {
+		if callerRedirect != nil {
+			if err := callerRedirect(req, via); err != nil {
+				return err
+			}
+		}
+		if len(via) > 0 && req.URL.Host != via[0].URL.Host {
+			return http.ErrUseLastResponse
+		}
+		return nil
+	}
 	return &http.Client{
 		Transport: &Transport{
 			Base:   cc.Transport,
 			Source: ReuseTokenSource(nil, src),
 		},
-		CheckRedirect: cc.CheckRedirect,
+		CheckRedirect: checkRedirect,
 		Jar:           cc.Jar,
 		Timeout:       cc.Timeout,
 	}
