@@ -89,6 +89,14 @@ var creationTests = []struct {
 		expectedErr:      commandMissingError(),
 	},
 	{
+		name: "Whitespace Command",
+		// strings.Fields would return an empty slice for a whitespace-only
+		// command, panicking at the first-element access when run; the blank
+		// check must reject it.
+		executableConfig: ExecutableConfig{Command: "   "},
+		expectedErr:      commandMissingError(),
+	},
+	{
 		name: "Timeout Too Low",
 		executableConfig: ExecutableConfig{
 			Command:       "blarg",
