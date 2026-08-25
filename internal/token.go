@@ -280,10 +280,11 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 		// some endpoints return a query string
 		vals, err := url.ParseQuery(string(body))
 		if err != nil {
-			if failureStatus {
-				return nil, retrieveError
-			}
-			return nil, fmt.Errorf("oauth2: cannot parse response: %v", err)
+			// Some providers respond with a non-parseable body (e.g. an
+			// HTML error page) even on a 200 status. Surface the raw
+			// response via RetrieveError instead of swallowing it, so
+			// callers can inspect what was actually returned.
+			return nil, retrieveError
 		}
 		retrieveError.ErrorCode = vals.Get("error")
 		retrieveError.ErrorDescription = vals.Get("error_description")
@@ -302,10 +303,11 @@ func doTokenRoundTrip(ctx context.Context, req *http.Request) (*Token, error) {
 	default:
 		var tj tokenJSON
 		if err = json.Unmarshal(body, &tj); err != nil {
-			if failureStatus {
-				return nil, retrieveError
-			}
-			return nil, fmt.Errorf("oauth2: cannot parse json: %v", err)
+			// Some providers respond with a non-parseable body (e.g. an
+			// HTML error page) even on a 200 status. Surface the raw
+			// response via RetrieveError instead of swallowing it, so
+			// callers can inspect what was actually returned.
+			return nil, retrieveError
 		}
 		retrieveError.ErrorCode = tj.ErrorCode
 		retrieveError.ErrorDescription = tj.ErrorDescription
