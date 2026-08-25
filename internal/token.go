@@ -240,9 +240,17 @@ func RetrieveToken(ctx context.Context, clientID, clientSecret, tokenURL string,
 		// We used to maintain a big table in this code of all the sites and which way
 		// they went, but maintaining it didn't scale & got annoying.
 		// So just try both ways.
+		headerErr := err
 		authStyle = AuthStyleInParams // the second way we'll try
 		req, _ = newTokenRequest(tokenURL, clientID, clientSecret, v, authStyle)
 		token, err = doTokenRoundTrip(ctx, req)
+		if err != nil {
+			// Return both errors so callers can see the original
+			// failure from the header probe, which may be the real
+			// cause (e.g. misconfiguration) while the server already
+			// consumed the authorization code on the first attempt.
+			err = errors.Join(headerErr, err)
+		}
 	}
 	if needsAuthStyleProbe && err == nil {
 		styleCache.setAuthStyle(tokenURL, clientID, authStyle)
