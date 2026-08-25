@@ -146,7 +146,10 @@ type executableCredentialSource struct {
 // CreateExecutableCredential creates an executableCredentialSource given an ExecutableConfig.
 // It also performs defaulting and type conversions.
 func createExecutableCredential(ctx context.Context, ec *ExecutableConfig, config *Config) (executableCredentialSource, error) {
-	if ec.Command == "" {
+	// A whitespace-only command would pass a bare "" check but yield an empty
+	// slice from strings.Fields, panicking at the unguarded first-element access
+	// in run. Treat it the same as a missing command.
+	if strings.TrimSpace(ec.Command) == "" {
 		return executableCredentialSource{}, commandMissingError()
 	}
 
