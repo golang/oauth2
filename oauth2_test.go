@@ -280,7 +280,7 @@ func TestExchangeRequest_JSONResponse_Expiry(t *testing.T) {
 	}{
 		{"normal", fmt.Sprintf(`"expires_in": %d`, seconds), true, false},
 		{"paypal", fmt.Sprintf(`"expires_in": "%d"`, seconds), true, false},
-		{"issue_239", fmt.Sprintf(`"expires_in": null`), true, true},
+		{"issue_239", `"expires_in": null`, true, true},
 
 		{"wrong_type", `"expires_in": false`, false, false},
 		{"wrong_type2", `"expires_in": {}`, false, false},
