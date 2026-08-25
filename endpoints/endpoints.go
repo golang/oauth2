@@ -328,8 +328,8 @@ var Uber = oauth2.Endpoint{
 
 // Vk is the endpoint for Vk.
 var Vk = oauth2.Endpoint{
-	AuthURL:  "https://oauth.vk.com/authorize",
-	TokenURL: "https://oauth.vk.com/access_token",
+	AuthURL:  "https://oauth.vk.ru/authorize",
+	TokenURL: "https://oauth.vk.ru/access_token",
 }
 
 // Withings is the endpoint for Withings.
