@@ -316,3 +316,42 @@ func TestTokenRetrieveError(t *testing.T) {
 		t.Fatalf("got %#v, expected %#v", errStr, expected)
 	}
 }
+
+func TestJWTFetch_ContextCancellation(t *testing.T) {
+	blockCh := make(chan struct{})
+	defer close(blockCh)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-blockCh
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"access_token": "90d64460d14870c08c81352a05dedd3465940a7c",
+			"token_type": "bearer"
+		}`))
+	}))
+	defer ts.Close()
+
+	conf := &Config{
+		Email:      "aaa@xxx.com",
+		PrivateKey: dummyPrivateKey,
+		TokenURL:   ts.URL,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	var err error
+	go func() {
+		defer close(done)
+		_, err = conf.TokenSource(ctx).Token()
+	}()
+
+	cancel()
+	<-done
+
+	if err == nil {
+		t.Fatal("expected error after context cancellation, got nil")
+	}
+	if ctx.Err() != context.Canceled {
+		t.Fatalf("expected context.Canceled error, got %v", err)
+	}
+}
