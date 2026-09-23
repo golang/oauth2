@@ -404,12 +404,6 @@ func ReuseTokenSourceWithExpiry(t *Token, src TokenSource, earlyExpiry time.Dura
 	// but cause an unnecessary number of mutex operations.
 	// Just build the equivalent one.
 	if rt, ok := src.(*reuseTokenSource); ok {
-		if t == nil {
-			// Just use it directly, but set the expiryDelta to earlyExpiry,
-			// so the behavior matches what the user expects.
-			rt.expiryDelta = earlyExpiry
-			return rt
-		}
 		src = rt.new
 	}
 	if t != nil {
