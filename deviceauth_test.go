@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 )
 
@@ -151,4 +153,36 @@ func TestDeviceAuthTokenRetrieveError(t *testing.T) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{"error": "invalid_grant", "error_description": "sometext"}`))
 	}))
+}
+
+func TestDeviceAccessTokenInvalidInterval(t *testing.T) {
+	for _, interval := range []int64{-1, 9223372037} {
+		t.Run(fmt.Sprint(interval), func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				ctx := context.WithValue(t.Context(), HTTPClient, &http.Client{Transport: tokenTransport{}})
+				da := &DeviceAuthResponse{DeviceCode: "d", Interval: interval}
+				start := time.Now()
+				tok, err := newConf("http://localhost").DeviceAccessToken(ctx, da)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if tok.AccessToken != "tok" {
+					t.Errorf("got %q, want %q", tok.AccessToken, "tok")
+				}
+				if got, want := time.Since(start), 5*time.Second; got != want {
+					t.Errorf("got %v, want %v", got, want)
+				}
+			})
+		})
+	}
+}
+
+type tokenTransport struct{}
+
+func (tokenTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": {"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(`{"access_token":"tok","token_type":"bearer"}`)),
+	}, nil
 }
