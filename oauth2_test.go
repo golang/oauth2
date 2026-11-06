@@ -533,6 +533,30 @@ func TestTokenRetrieveError200(t *testing.T) {
 	}
 }
 
+// TestTokenRetrieveError200WithUnparseableBody tests handling of a server
+// that returns 200 with a body that isn't valid JSON, e.g. an HTML error
+// page. See golang/oauth2#802.
+func TestTokenRetrieveError200WithUnparseableBody(t *testing.T) {
+	const htmlBody = "<html><body>Something went wrong</body></html>"
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-type", "text/html")
+		w.Write([]byte(htmlBody))
+	}))
+	defer ts.Close()
+	conf := newConf(ts.URL)
+	_, err := conf.Exchange(context.Background(), "exchange-code")
+	if err == nil {
+		t.Fatalf("got no error, expected one")
+	}
+	re, ok := err.(*RetrieveError)
+	if !ok {
+		t.Fatalf("got %T error, expected *RetrieveError; error was: %v", err, err)
+	}
+	if string(re.Body) != htmlBody {
+		t.Fatalf("got body %q, expected %q", re.Body, htmlBody)
+	}
+}
+
 func TestRefreshToken_RefreshTokenReplacement(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
