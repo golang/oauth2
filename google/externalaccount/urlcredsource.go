@@ -67,9 +67,7 @@ func (cs urlCredentialSource) subjectToken() (string, error) {
 			return "", errors.New("oauth2/google/externalaccount: improperly formatted subject token")
 		}
 		return token, nil
-	case "text":
-		return string(respBody), nil
-	case "":
+	case "text", "":
 		return string(respBody), nil
 	default:
 		return "", errors.New("oauth2/google/externalaccount: invalid credential_source file format type")
