@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package vk provides constants for using OAuth2 to access VK.com.
+// Package vk provides constants for using OAuth2 to access VK.ru.
 package vk // import "golang.org/x/oauth2/vk"
 
 import (
@@ -11,6 +11,6 @@ import (
 
 // Endpoint is VK's OAuth 2.0 endpoint.
 var Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://oauth.vk.com/authorize",
-	TokenURL: "https://oauth.vk.com/access_token",
+	AuthURL:  "https://oauth.vk.ru/authorize",
+	TokenURL: "https://oauth.vk.ru/access_token",
 }
