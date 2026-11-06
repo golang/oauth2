@@ -6,6 +6,7 @@ package oauth2
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -174,12 +175,28 @@ func tokenFromInternal(t *internal.Token) *Token {
 func retrieveToken(ctx context.Context, c *Config, v url.Values) (*Token, error) {
 	tk, err := internal.RetrieveToken(ctx, c.ClientID, c.ClientSecret, c.Endpoint.TokenURL, v, internal.AuthStyle(c.Endpoint.AuthStyle), c.authStyleCache.Get())
 	if err != nil {
-		if rErr, ok := err.(*internal.RetrieveError); ok {
-			return nil, (*RetrieveError)(rErr)
-		}
-		return nil, err
+		return nil, convertRetrieveError(err)
 	}
 	return tokenFromInternal(tk), nil
+}
+
+// convertRetrieveError rewrites any *internal.RetrieveError values inside err
+// to the public *RetrieveError type, preserving any errors.Join wrapping.
+// This keeps errors.As(err, *RetrieveError) working even when
+// internal.RetrieveToken joined two failures from its AuthStyle probe.
+func convertRetrieveError(err error) error {
+	if rErr, ok := err.(*internal.RetrieveError); ok {
+		return (*RetrieveError)(rErr)
+	}
+	if u, ok := err.(interface{ Unwrap() []error }); ok {
+		wrapped := u.Unwrap()
+		converted := make([]error, len(wrapped))
+		for i, e := range wrapped {
+			converted[i] = convertRetrieveError(e)
+		}
+		return errors.Join(converted...)
+	}
+	return err
 }
 
 // RetrieveError is the error returned when the token endpoint returns a
