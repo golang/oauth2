@@ -256,7 +256,7 @@ func TestCredentialsFromJSONWithParams_User_UniverseDomain_Params_UniverseDomain
 }
 
 func TestComputeUniverseDomain(t *testing.T) {
-	universeDomainPath := "/computeMetadata/v1/universe/universe_domain"
+	universeDomainPath := "/computeMetadata/v1/universe/universe-domain"
 	universeDomainResponseBody := "example.com"
 	var requests int
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -277,7 +277,7 @@ func TestComputeUniverseDomain(t *testing.T) {
 		Scopes: []string{scope},
 	}
 	universeDomainProvider := func() (string, error) {
-		universeDomain, err := metadata.Get("universe/universe_domain")
+		universeDomain, err := metadata.Get("universe/universe-domain")
 		if err != nil {
 			return "", err
 		}
