@@ -101,6 +101,9 @@ func (e *expirationTime) UnmarshalJSON(b []byte) error {
 	if i > math.MaxInt32 {
 		i = math.MaxInt32
 	}
+	if i < math.MinInt32 {
+		i = math.MinInt32
+	}
 	*e = expirationTime(i)
 	return nil
 }

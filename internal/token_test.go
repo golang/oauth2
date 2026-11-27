@@ -76,6 +76,17 @@ func TestExpiresInUpperBound(t *testing.T) {
 	}
 }
 
+func TestExpiresInLowerBound(t *testing.T) {
+	var e expirationTime
+	if err := e.UnmarshalJSON([]byte(fmt.Sprint(int64(math.MinInt32) - 1))); err != nil {
+		t.Fatal(err)
+	}
+	const want = math.MinInt32
+	if e != want {
+		t.Errorf("expiration time = %v; want %v", e, want)
+	}
+}
+
 func TestAuthStyleCache(t *testing.T) {
 	var c LazyAuthStyleCache
 
